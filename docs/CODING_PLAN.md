@@ -7,9 +7,9 @@
 | Phase | Nội dung | Trạng thái |
 |---|---|---|
 | 0 | Định nghĩa sản phẩm, repo, branch | ✅ |
-| 1 | Database design | ⬜ |
+| 1 | Database design | ✅ `server/src/models/` |
 | 2 | Backend foundation | ✅ `cedc200` |
-| 3 | Authentication | ⬜ |
+| 3 | Authentication | ✅ Backend xong + 12 API test (mobile làm ở Phase 8–11) |
 | 4 | Profile + Goal | ⬜ |
 | 5 | Food system + Nutrition | ⬜ |
 | 6 | Workout | ⬜ |
@@ -21,8 +21,8 @@
 | 12 | Dashboard | ⬜ |
 | 13 | Validation & error handling | 🟡 Có middleware `validate` + `errorHandler` |
 | 14 | Service layer | ⬜ |
-| 15 | Testing | ⬜ |
-| 16 | Security | 🟡 Có helmet, cors, env validation |
+| 15 | Testing | 🟡 Đã setup Vitest + Supertest, có test auth |
+| 16 | Security | 🟡 Có helmet, cors, env validation, bcrypt, JWT + refresh rotation, rate limit auth |
 | 17 | Deployment | ⬜ |
 | 18 | AI (Gemini) | ⬜ |
 | 19 | Firebase notification | ⬜ |
@@ -31,8 +31,22 @@
 
 - **Mobile routes nằm ở `mobile/src/app/`**, không phải `mobile/app/` (quy ước Expo Router trong `mobile/AGENTS.md`). Code không phải route (`api/`, `stores/`, `hooks/`, `components/`, `types/`) nằm trong `mobile/src/`. Alias `@/*` → `mobile/src/*`, nên import `@/api/...`, **không** viết `@/src/...`.
 - **Mobile đang dùng Expo SDK 57**: trước khi dùng API Expo nào, đọc docs theo đúng version. Cài package bằng `npx expo install`.
-- **Server dùng `tsx watch`** thay cho `ts-node-dev`, Express 5, Mongoose 9, Zod 4. Đã có sẵn `helmet`, `morgan`. Còn phải cài: `bcrypt`, `jsonwebtoken` (Phase 3).
+- **Server dùng `tsx watch`** thay cho `ts-node-dev`, Express 5 (tự bắt lỗi async, không cần `asyncHandler`), Mongoose 9, Zod 4.
 - **Base URL của API**: `EXPO_PUBLIC_API_URL=http://<LAN_IP>:4000/api` trong `mobile/.env`.
+
+### Quyết định thiết kế đã chốt
+
+- **Cấu trúc server:** `routes → middlewares (authenticate, validateBody) → controllers → services → models`. Zod schema của request đặt ở `server/src/schemas/`, enum dùng chung ở `server/src/constants/enums.ts`.
+- **Response:** `{ success: true, data }` hoặc `{ success: false, error: { message, details? } }`.
+- **Ngày của FoodLog và BodyMeasurement** lưu dạng chuỗi `YYYY-MM-DD` theo ngày của user, để tránh lệch múi giờ.
+- **FoodLog** có thêm `foodName` trong snapshot. **PersonalRecord** có thêm `sessionId`. **BodyMeasurement** unique theo `(userId, date)`, mỗi ngày một bản ghi.
+- **Auth:**
+  - Access token sống 15 phút. Refresh token sống 7 ngày, được gửi trong body (mobile không dùng cookie).
+  - Refresh token lưu dạng hash SHA-256 trong collection `refreshtokens`, có TTL index để tự xoá khi hết hạn.
+  - **Rotation:** mỗi refresh token chỉ dùng được 1 lần. Nếu một token cũ bị dùng lại thì thu hồi mọi phiên của user đó.
+  - Login sai email và sai mật khẩu trả về cùng một thông báo 401.
+  - Rate limit 10 request / 15 phút cho `register` và `login`.
+- **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 
 ---
 
