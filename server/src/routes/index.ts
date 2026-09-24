@@ -1,5 +1,6 @@
 import { Router } from "express";
 import mongoose from "mongoose";
+import authRoutes from "./auth.routes";
 
 const router = Router();
 
@@ -13,7 +14,7 @@ router.get("/health", (_req, res) => {
   });
 });
 
-// router.use("/auth", authRoutes);       // Phase 3
+router.use("/auth", authRoutes);
 // router.use("/profile", profileRoutes); // Phase 4
 // router.use("/foods", foodRoutes);      // Phase 5
 
