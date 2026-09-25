@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "seed": "tsx src/scripts/seedFoods.ts"
+    "seed": "tsx src/scripts/seed.ts"
   },
   "keywords": [],
   "author": "",

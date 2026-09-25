@@ -1,5 +1,6 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
 import { EQUIPMENTS, MUSCLE_GROUPS } from "../constants/enums";
+import { applyToJSON } from "../utils/toJSON";
 
 const exerciseSchema = new Schema(
   {
@@ -15,7 +16,9 @@ const exerciseSchema = new Schema(
 );
 
 exerciseSchema.index({ muscleGroup: 1 });
-exerciseSchema.index({ createdBy: 1 });
+exerciseSchema.index({ createdBy: 1, name: 1 });
+
+applyToJSON(exerciseSchema);
 
 export type Exercise = InferSchemaType<typeof exerciseSchema>;
 
