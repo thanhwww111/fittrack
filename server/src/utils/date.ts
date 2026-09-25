@@ -27,3 +27,30 @@ export function isValidDateString(value: string) {
   const date = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 }
+
+// Các hàm dưới đây làm việc với chuỗi YYYY-MM-DD như ngày lịch thuần,
+// tính bằng UTC để không bị lệch vì múi giờ của server
+
+export function addDays(date: string, days: number) {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+export function daysBetween(from: string, to: string) {
+  const ms = new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime();
+  return Math.round(ms / 86_400_000);
+}
+
+// Thứ Hai của tuần chứa `date`
+export function startOfWeek(date: string) {
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay(); // 0 = Chủ nhật
+  return addDays(date, -((day + 6) % 7));
+}
+
+// Danh sách ngày từ `from` đến `to`, tính cả hai đầu
+export function dateRange(from: string, to: string) {
+  const days: string[] = [];
+  for (let d = from; d <= to; d = addDays(d, 1)) days.push(d);
+  return days;
+}
