@@ -36,7 +36,8 @@ export function configureAuth(handlers: AuthHandlers) {
 
 const config = {
   baseURL,
-  timeout: 10000,
+  // 30s: server Render gói free ngủ sau 15 phút, request đầu tiên cần ~30–60s để đánh thức
+  timeout: 30000,
   headers: { "Content-Type": "application/json" },
 };
 

@@ -1,8 +1,7 @@
 {
-  "name": "server",
+  "name": "fittrack-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "FitTrack REST API",
   "scripts": {
     "test": "vitest run",
     "dev": "tsx watch src/server.ts",
@@ -10,7 +9,8 @@
     "start": "node dist/server.js",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "seed": "tsx src/scripts/seed.ts"
+    "seed": "tsx src/scripts/seed.ts",
+    "seed:prod": "node dist/scripts/seed.js"
   },
   "keywords": [],
   "author": "",
@@ -39,5 +39,8 @@
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

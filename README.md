@@ -49,3 +49,7 @@ npx expo start
 ## Roadmap
 
 Xem [docs/CODING_PLAN.md](docs/CODING_PLAN.md).
+
+## Deploy
+
+MongoDB Atlas + Render (API) + EAS (app Android). Hướng dẫn từng bước: [docs/DEPLOY.md](docs/DEPLOY.md).
