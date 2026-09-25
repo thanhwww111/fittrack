@@ -205,14 +205,17 @@ async function latestWeightOnOrBefore(userId: string, date: string) {
   return m?.weight ?? null;
 }
 
-export async function getWeeklySummary(userId: string) {
+// Mặc định là tuần hiện tại (thứ Hai → hôm nay). `previousWeek` = tuần trước trọn vẹn,
+// dùng cho báo cáo gửi sáng thứ Hai.
+export async function getWeeklySummary(userId: string, { previousWeek = false } = {}) {
   const { timezone, today } = await userContext(userId);
-  const weekStart = startOfWeek(today);
+  const weekStart = previousWeek ? addDays(startOfWeek(today), -7) : startOfWeek(today);
+  const weekEnd = previousWeek ? addDays(weekStart, 6) : today;
 
   const [sessions, days, current, baseline, records] = await Promise.all([
-    completedSessionsBetween(userId, timezone, weekStart, today),
-    nutritionByDay(userId, weekStart, today),
-    latestWeightOnOrBefore(userId, today),
+    completedSessionsBetween(userId, timezone, weekStart, weekEnd),
+    nutritionByDay(userId, weekStart, weekEnd),
+    latestWeightOnOrBefore(userId, weekEnd),
     // So với lần đo gần nhất trước khi tuần bắt đầu
     latestWeightOnOrBefore(userId, addDays(weekStart, -1)),
     PersonalRecordModel.find({ userId, achievedAt: { $gte: utcLowerBound(weekStart) } })
@@ -222,6 +225,7 @@ export async function getWeeklySummary(userId: string) {
 
   return {
     weekStart,
+    weekEnd,
     today,
     workout: {
       sessions: sessions.length,
@@ -235,8 +239,9 @@ export async function getWeeklySummary(userId: string) {
       baseline,
       change: current !== null && baseline !== null ? round1(current - baseline) : null,
     },
-    newPersonalRecords: records.filter(
-      (r) => todayInTimezone(timezone, r.achievedAt) >= weekStart
-    ).length,
+    newPersonalRecords: records.filter((r) => {
+      const day = todayInTimezone(timezone, r.achievedAt);
+      return day >= weekStart && day <= weekEnd;
+    }).length,
   };
 }

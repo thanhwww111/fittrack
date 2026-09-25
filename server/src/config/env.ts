@@ -20,6 +20,17 @@ const envSchema = z.object({
     .optional()
     .transform((v) => v || undefined),
   GEMINI_MODEL: z.string().min(1).default("gemini-3.8-flash"),
+  // Push notification: token của Expo, chỉ cần khi bật "Enhanced push security" trên EAS
+  EXPO_ACCESS_TOKEN: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  // Secret cho endpoint /api/internal/* (cron gọi báo cáo tuần). Thiếu thì endpoint bị tắt.
+  CRON_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined)
+    .refine((v) => !v || v.length >= 32, "CRON_SECRET must be at least 32 characters"),
   CORS_ORIGINS: z
     .string()
     .optional()
