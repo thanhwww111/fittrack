@@ -10,7 +10,7 @@
 | 1 | Database design | ✅ `server/src/models/` |
 | 2 | Backend foundation | ✅ `cedc200` |
 | 3 | Authentication | ✅ Backend xong + 12 API test (mobile làm ở Phase 8–11) |
-| 4 | Profile + Goal | ⬜ |
+| 4 | Profile + Goal | ✅ Backend xong + test |
 | 5 | Food system + Nutrition | ⬜ |
 | 6 | Workout | ⬜ |
 | 7 | Progress | ⬜ |
@@ -46,6 +46,14 @@
   - **Rotation:** mỗi refresh token chỉ dùng được 1 lần. Nếu một token cũ bị dùng lại thì thu hồi mọi phiên của user đó.
   - Login sai email và sai mật khẩu trả về cùng một thông báo 401.
   - Rate limit 10 request / 15 phút cho `register` và `login`.
+- **"Hôm nay" của user:** `UserProfile.timezone` (IANA, mặc định `Asia/Ho_Chi_Minh`) + `todayInTimezone()`. Không dùng giờ của server.
+- **Goals = NutritionTarget** (không có model Goal riêng; `goalType`/`goalWeight` nằm trong profile):
+  - `GET /api/goals` trả `{ today, current, history }`.
+  - `GET /api/goals/suggestion` xem trước target tính từ profile, không lưu.
+  - `POST /api/goals` nhận `{ mode: "AUTO" }` hoặc `{ mode: "MANUAL", calories, protein, carbs, fat }`, kèm `effectiveFrom?`. Không cho lùi ngày, mỗi ngày tối đa 1 target.
+  - `PUT /api/goals/:id` chỉ sửa được target có `effectiveFrom >= hôm nay`. Target trong quá khứ là bất biến (409).
+  - Công thức AUTO (`utils/nutritionCalculator.ts`): BMR Mifflin-St Jeor × hệ số vận động. Giảm cân −500 kcal, tăng cơ +300 kcal, tối thiểu 1200 kcal. Protein 2.0 / 1.6 / 1.8 g/kg, fat 25% calo, carbs lấy phần còn lại.
+- **Profile:** `goalWeight` phải khớp với `goalType` (WEIGHT_LOSS thì nhỏ hơn cân hiện tại, MUSCLE_GAIN thì lớn hơn).
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 
 ---

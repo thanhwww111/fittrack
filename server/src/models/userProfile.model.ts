@@ -1,7 +1,9 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
 import { ACTIVITY_LEVELS, GENDERS, GOAL_TYPES } from "../constants/enums";
+import { DEFAULT_TIMEZONE } from "../utils/date";
+import { applyToJSON } from "../utils/toJSON";
 
-// Profile được tạo rỗng lúc register, user điền dần ở màn onboarding (Phase 4)
+// Profile được tạo rỗng lúc register, user điền dần ở màn onboarding
 const userProfileSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
@@ -13,9 +15,13 @@ const userProfileSchema = new Schema(
     goalType: { type: String, enum: GOAL_TYPES, default: null },
     goalWeight: { type: Number, min: 20, max: 500, default: null }, // kg
     trainingDaysPerWeek: { type: Number, min: 0, max: 7, default: null },
+    // Dùng để xác định "hôm nay" của user (IANA, ví dụ Asia/Ho_Chi_Minh)
+    timezone: { type: String, default: DEFAULT_TIMEZONE },
   },
   { timestamps: true }
 );
+
+applyToJSON(userProfileSchema);
 
 export type UserProfile = InferSchemaType<typeof userProfileSchema>;
 
