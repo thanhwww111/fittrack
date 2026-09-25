@@ -89,7 +89,12 @@ export async function updateGoal(userId: string, goalId: string, input: UpdateGo
     throw AppError.conflict("Past targets are immutable, create a new target instead");
   }
 
-  target.set({ ...input, source: "MANUAL" });
+  if (input.mode === "AUTO") {
+    target.set({ ...(await getSuggestedTarget(userId)), source: "AUTO" });
+  } else {
+    const { calories, protein, carbs, fat } = input;
+    target.set({ calories, protein, carbs, fat, source: "MANUAL" });
+  }
   await target.save();
   return target.toJSON();
 }

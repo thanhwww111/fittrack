@@ -64,6 +64,13 @@ export const sessionApi = {
 
   active: () => unwrap(api.get<ApiSuccess<WorkoutSession | null>>("/workout-sessions/active")),
 
+  today: () =>
+    unwrap(
+      api.get<
+        ApiSuccess<{ date: string; active: WorkoutSession | null; completed: WorkoutSession[] }>
+      >("/workout-sessions/today")
+    ),
+
   list: (params: { status?: WorkoutStatus; page?: number; limit?: number }) =>
     unwrap(api.get<ApiSuccess<Paginated<WorkoutSession>>>("/workout-sessions", { params })),
 

@@ -65,6 +65,11 @@ export const listSessions: RequestHandler = async (req, res) => {
   res.json({ success: true, data });
 };
 
+export const getTodayWorkout: RequestHandler = async (req, res) => {
+  const data = await sessionService.getTodayWorkout(req.user!.id);
+  res.json({ success: true, data });
+};
+
 export const getActiveSession: RequestHandler = async (req, res) => {
   const data = await sessionService.getActiveSession(req.user!.id);
   res.json({ success: true, data });

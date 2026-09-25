@@ -18,10 +18,10 @@
 | 9 | State management (Zustand) | ✅ `authStore`, `profileStore`, `nutritionStore`, `workoutStore` (+ `exercisePickerStore`) |
 | 10 | API layer mobile | ✅ `client.ts` tự refresh token; `authApi`, `profileApi`, `foodApi`, `nutritionApi`, `workoutApi`, `progressApi` |
 | 11 | UI screens (4 sprint) | ✅ Sprint 1–4 xong (Auth, Home, Profile, Nutrition, Food, Workout, Progress) |
-| 12 | Dashboard | 🟡 Home đã có nutrition hôm nay + tổng kết tuần |
+| 12 | Dashboard | ✅ Home: nutrition hôm nay + buổi tập hôm nay (`/workout-sessions/today`) + tổng kết tuần |
 | 13 | Validation & error handling | ✅ Zod ở mọi route + validate form ở mobile, lỗi server map về từng field |
 | 14 | Service layer | ✅ Controller → Service → Model cho mọi module |
-| 15 | Testing | 🟡 117 test backend (unit + API); mobile chưa có test |
+| 15 | Testing | ✅ 155 test backend (Vitest + Supertest) + 22 test mobile (jest-expo + Testing Library) + CI GitHub Actions |
 | 16 | Security | 🟡 Có helmet, cors, env validation, bcrypt, JWT + refresh rotation, rate limit auth |
 | 17 | Deployment | 🟡 Code + `render.yaml` + `eas.json` + `docs/DEPLOY.md` sẵn sàng; chờ tạo Atlas/Render/EAS và build |
 | 18 | AI (Gemini) | ✅ Gợi ý món + phân tích tập luyện (backend + mobile + test); cần `GEMINI_API_KEY` để chạy thật |
@@ -123,7 +123,7 @@
     - **Bài vừa thêm chưa có set** nằm trong `pendingExercises` ở client, vì server chỉ thêm bài vào session khi có set đầu tiên.
     - **Bắt đầu khi đang có buổi khác:** server trả 409, store tự mở lại buổi đang tập.
     - **`workout/history` và `workout/session?id=`:** lịch sử có phân trang và chi tiết buổi tập. Ngay sau khi hoàn thành, màn chi tiết hiện danh sách PR mới (`lastCompletion`).
-    - **Thời gian nghỉ:** session không lưu `restSeconds` nên dùng mặc định 90 giây. Muốn dùng `restSeconds` của template thì cần copy thêm field này vào session ở server.
+    - **Thời gian nghỉ:** session copy `restSeconds` từ template. Bài thêm ngoài template dùng mặc định 90 giây; `restSeconds = 0` thì không hẹn giờ.
   - **Sprint 4 (Progress):**
     - **Tab Tiến độ:** chọn khoảng 1 / 3 / 6 tháng (30/90/180 ngày cho cân nặng; 4/12/26 tuần cho volume).
     - Cân nặng: con số lớn + mức thay đổi trong kỳ, kèm biểu đồ đường và ô nhập cân nặng hôm nay (nhập lại trong ngày thì ghi đè).
@@ -166,7 +166,12 @@
     - Push là **fire-and-forget và không bao giờ throw**, nên lỗi gửi push không làm hỏng request chính.
   - **Cài đặt:** `GET/PUT /api/notifications/settings` (gộp từng phần, ngày được khử trùng và sắp xếp). Mặc định bật PR/mục tiêu/tổng kết tuần, tắt lịch nhắc.
   - **Bấm vào thông báo:** `data.url` là route trong app. `useNotificationNavigation` mở đúng màn, kể cả khi app đang tắt hẳn (`getLastNotificationResponseAsync`).
-  - **Chưa làm:** Profile "Tính lại từ hồ sơ" khi hôm nay đã có target thì gọi `PUT /goals/:id`, và server đánh dấu `source = MANUAL` dù số liệu là AUTO. Cần thêm `mode` cho PUT nếu muốn phân biệt.
+  - **Tính lại target:** "Tính lại từ hồ sơ" khi hôm nay đã có target thì gọi `PUT /goals/:id { mode: "AUTO" }`; server tính lại từ profile và giữ `source = AUTO`.
+- **Test mobile (Phase 15):** `npm test` trong `mobile/` (jest-expo). Test đặt trong `mobile/__tests__/` (không đặt trong `src/app`), tên file `*-test.ts(x)`.
+  - `lib-test.ts`: trục biểu đồ, dinh dưỡng, workout, validate form.
+  - `api-client-test.ts`: dùng adapter axios giả (gắn vào `axios.defaults.adapter` **trước** khi import client). Kiểm tra refresh 1 lần cho nhiều 401 cùng lúc, `/auth/me` vẫn refresh, sai mật khẩu không refresh, refresh bị từ chối thì hết phiên. Test này đã được xác nhận là fail khi đưa lại bug cũ.
+  - `exercise-logger-test.tsx`: Testing Library **v14 có `render`/`fireEvent` là async**, luôn phải `await`.
+- **CI** (`.github/workflows/ci.yml`): mỗi lần push lên `main`/`develop` hoặc mở PR. Server: typecheck + test (MongoDB service) + build. Mobile: tsc + lint + jest.
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 
 ---

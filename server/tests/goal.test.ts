@@ -127,7 +127,32 @@ describe("PUT /api/goals/:id", () => {
       .set(auth)
       .send({ calories: 2600, protein: 140, carbs: 300, fat: 70 });
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ calories: 2600, protein: 140 });
+    expect(res.body.data).toMatchObject({ calories: 2600, protein: 140, source: "MANUAL" });
+  });
+
+  it("recalculates today's target from the profile with mode AUTO", async () => {
+    const { auth } = await createAuthedUser();
+    await request(app).put("/api/profile").set(auth).send(completeProfile);
+    const created = await request(app).post("/api/goals").set(auth).send(manual);
+
+    const res = await request(app)
+      .put(`/api/goals/${created.body.data.id}`)
+      .set(auth)
+      .send({ mode: "AUTO" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ source: "AUTO", calories: 2594, protein: 112 });
+  });
+
+  it("rejects AUTO recalculation when the profile is incomplete", async () => {
+    const { auth } = await createAuthedUser();
+    const created = await request(app).post("/api/goals").set(auth).send(manual);
+
+    const res = await request(app)
+      .put(`/api/goals/${created.body.data.id}`)
+      .set(auth)
+      .send({ mode: "AUTO" });
+    expect(res.status).toBe(400);
   });
 
   it("refuses to modify a past target", async () => {

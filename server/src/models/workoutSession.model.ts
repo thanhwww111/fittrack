@@ -18,6 +18,7 @@ const sessionExerciseSchema = new Schema(
     exerciseName: { type: String, required: true }, // snapshot để lịch sử vẫn đọc được nếu exercise bị xoá
     targetSets: { type: Number, default: null },
     targetReps: { type: Number, default: null },
+    restSeconds: { type: Number, default: null }, // copy từ template, app dùng cho hẹn giờ nghỉ
     sets: { type: [workoutSetSchema], default: [] },
   },
   { _id: false }

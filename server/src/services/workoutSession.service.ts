@@ -9,9 +9,11 @@ import type {
   StartSessionInput,
 } from "../schemas/workout.schema";
 import { AppError } from "../utils/AppError";
+import { addDays, todayInTimezone } from "../utils/date";
 import { calculateVolume, detectPR, type RecordValues } from "../utils/workoutMath";
 import { getVisibleExercise, getVisibleExercisesByIds } from "./exercise.service";
 import { notifyNewRecords } from "./notification.service";
+import { getUserTimezone } from "./profile.service";
 import { getOwnedTemplate } from "./workoutTemplate.service";
 
 
@@ -56,6 +58,7 @@ export async function startSession(userId: string, input: StartSessionInput) {
     exerciseName: string;
     targetSets: number;
     targetReps: number;
+    restSeconds: number;
     sets: [];
   }[] = [];
 
@@ -73,6 +76,7 @@ export async function startSession(userId: string, input: StartSessionInput) {
       exerciseName: byId.get(String(e.exerciseId))!.name,
       targetSets: e.targetSets,
       targetReps: e.targetReps,
+      restSeconds: e.restSeconds,
       sets: [],
     }));
   }
@@ -109,6 +113,29 @@ export async function listSessions(userId: string, query: ListSessionsQuery) {
 export async function getActiveSession(userId: string) {
   const session = await WorkoutSessionModel.findOne({ userId, status: "IN_PROGRESS" });
   return session?.toJSON() ?? null;
+}
+
+// Cho Dashboard: buổi đang tập (nếu có) + các buổi đã hoàn thành trong hôm nay của user
+export async function getTodayWorkout(userId: string) {
+  const timezone = await getUserTimezone(userId);
+  const today = todayInTimezone(timezone);
+
+  const [active, recent] = await Promise.all([
+    WorkoutSessionModel.findOne({ userId, status: "IN_PROGRESS" }),
+    // Lùi 1 ngày UTC để không sót múi giờ đi trước UTC, rồi lọc lại theo ngày địa phương
+    WorkoutSessionModel.find({
+      userId,
+      status: "COMPLETED",
+      completedAt: { $gte: new Date(`${addDays(today, -1)}T00:00:00Z`) },
+    }).sort({ completedAt: -1 }),
+  ]);
+
+  const completed = recent.filter((s) => todayInTimezone(timezone, s.completedAt!) === today);
+  return {
+    date: today,
+    active: active?.toJSON() ?? null,
+    completed: completed.map((s) => s.toJSON()),
+  };
 }
 
 export async function getSession(userId: string, sessionId: string) {
