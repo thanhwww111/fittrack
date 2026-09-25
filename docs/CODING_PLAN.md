@@ -24,7 +24,7 @@
 | 15 | Testing | 🟡 117 test backend (unit + API); mobile chưa có test |
 | 16 | Security | 🟡 Có helmet, cors, env validation, bcrypt, JWT + refresh rotation, rate limit auth |
 | 17 | Deployment | 🟡 Code + `render.yaml` + `eas.json` + `docs/DEPLOY.md` sẵn sàng; chờ tạo Atlas/Render/EAS và build |
-| 18 | AI (Gemini) | ⬜ |
+| 18 | AI (Gemini) | ✅ Gợi ý món + phân tích tập luyện (backend + mobile + test); cần `GEMINI_API_KEY` để chạy thật |
 | 19 | Firebase notification | ⬜ |
 
 ## Điều chỉnh so với plan gốc (theo code thực tế)
@@ -135,6 +135,20 @@
       - Lưới mảnh nét liền. Chỉ ghi giá trị ở điểm cuối (biểu đồ đường); nhãn trục x được thưa bớt để không chồng nhau.
       - Chạm vào biểu đồ để xem giá trị ở dòng phía trên. Mỗi biểu đồ có nút chuyển sang **dạng bảng**.
     - Đường mục tiêu calo không có chữ trong biểu đồ (vì dễ đè lên cột); phụ đề giải thích đường kẻ.
+- **AI (Phase 18, Gemini):**
+  - **SDK:** `@google/genai` 2.x dùng **Interactions API**: `ai.interactions.create({ model, system_instruction, input, response_format: { type: "text", mime_type: "application/json", schema }, store: false })`, đọc kết quả ở `output_text`. Model mặc định `gemini-3.8-flash` (`GEMINI_MODEL`).
+  - **`services/ai/llm.ts`:**
+    - Schema lấy từ `z.toJSONSchema(zodSchema)`, bỏ `$schema` và `additionalProperties` ở mọi cấp. Output **luôn được validate lại bằng Zod**.
+    - Không có key thì trả 503. SDK lỗi hoặc JSON sai dạng thì trả 502.
+  - **`POST /api/ai/meal-suggestions { mealType, preferences? }`:**
+    - Cần có target. Prompt gồm calo/macro **còn lại** hôm nay và mục tiêu. `preferences` (tối đa 200 ký tự) được đặt trong `"""..."""` và prompt nói rõ đó là dữ liệu, không phải chỉ dẫn.
+    - AI trả 3 món. Server tự gắn `fitsRemaining` (≤ còn lại × 1.1 + 50 kcal), không tin số của AI.
+  - **`POST /api/ai/workout-analysis`:**
+    - Cần ≥ 2 buổi COMPLETED trong 4 tuần. `summarizeWorkoutHistory` lấy set tốt nhất (1RM ước tính cao nhất, bài bodyweight thì theo rep) cho mỗi bài mỗi tuần; chỉ giữ 10 bài tập nhiều nhất.
+    - AI trả `{ summary, highlights[], suggestions[] }`.
+  - **Giới hạn và quyền riêng tư:** `aiLimiter` 10 request/giờ/user (theo `req.user.id`). Chỉ gửi số liệu tổng hợp và tên bài/món, không gửi tên hay email.
+  - **Test:** không bao giờ gọi Gemini thật. `vitest.config.mts` ép `GEMINI_API_KEY=""`, test API mock `llm.generateJson`, test `llm.test.ts` mock `@google/genai`.
+  - **Mobile:** `ai/meal` (mở từ tab Dinh dưỡng, chỉ khi xem hôm nay và đã có target) và `ai/workout` (mở từ tab Tập luyện khi đã có buổi tập). Lỗi 503/429/502 có thông báo tiếng Việt riêng (`lib/aiErrors.ts`).
   - **Chưa làm:** Profile "Tính lại từ hồ sơ" khi hôm nay đã có target thì gọi `PUT /goals/:id`, và server đánh dấu `source = MANUAL` dù số liệu là AUTO. Cần thêm `mode` cho PUT nếu muốn phân biệt.
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 

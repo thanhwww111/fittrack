@@ -95,6 +95,13 @@ export default function NutritionScreen() {
               </View>
             </View>
             <MacroBars consumed={summary.consumed} target={summary.target} />
+            {isToday ? (
+              <Button
+                title="✨ Gợi ý món cho phần còn lại"
+                variant="secondary"
+                onPress={() => router.push("/ai/meal")}
+              />
+            ) : null}
           </>
         ) : (
           <>
