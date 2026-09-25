@@ -21,12 +21,12 @@
 | 12 | Dashboard | ✅ Home: nutrition hôm nay + buổi tập hôm nay (`/workout-sessions/today`) + tổng kết tuần |
 | 13 | Validation & error handling | ✅ Zod ở mọi route + validate form ở mobile, lỗi server map về từng field |
 | 14 | Service layer | ✅ Controller → Service → Model cho mọi module |
-| 15 | Testing | ✅ 181 test backend (Vitest + Supertest) + 24 test mobile (jest-expo + Testing Library) + CI GitHub Actions |
-| 16 | Security | 🟡 Có helmet, cors, env validation, bcrypt, JWT + refresh rotation, rate limit auth |
+| 15 | Testing | ✅ 194 test backend (Vitest + Supertest) + 26 test mobile (jest-expo + Testing Library) + CI GitHub Actions |
+| 16 | Security | ✅ helmet, CORS theo env, env validation, bcrypt, JWT + refresh rotation, rate limit auth (login/register/đổi & quên mật khẩu/xoá tài khoản); access token bị từ chối khi user đã xoá hoặc cấp trước lần đổi mật khẩu; mã reset 6 số hash SHA-256, 15 phút, tối đa 5 lần thử, 1 email/phút; server `npm audit` sạch |
 | 17 | Deployment | 🟡 Code + `render.yaml` + `eas.json` + `docs/DEPLOY.md` sẵn sàng; chờ tạo Atlas/Render/EAS và build |
 | 18 | AI (Gemini) | ✅ Gợi ý món + phân tích tập luyện (backend + mobile + test); cần `GEMINI_API_KEY` để chạy thật |
 | 19 | Firebase notification | ✅ Lịch nhắc cục bộ + push PR/mục tiêu/tổng kết tuần (backend + mobile + test); cần Firebase + FCM key trên EAS để push chạy thật |
-| 20 | Bổ sung chức năng (`feature/missing-ui`) | ✅ Sửa/xoá món & bài tập custom, số đo cơ thể, mục tiêu thủ công, bữa mẫu, chép bữa, món gần đây, nước uống, tài khoản (đổi tên / mật khẩu / xoá), sửa/xoá buổi tập + ghi chú, tiến bộ từng bài, nhân bản template, thao tác nhanh trên Home |
+| 20 | Bổ sung chức năng (`feature/missing-ui`) | ✅ Dark mode (Theo hệ thống / Sáng / Tối), quên mật khẩu qua email, ảnh đại diện, món yêu thích, Sửa/xoá món & bài tập custom, số đo cơ thể, mục tiêu thủ công, bữa mẫu, chép bữa, món gần đây, nước uống, tài khoản (đổi tên / mật khẩu / xoá), sửa/xoá buổi tập + ghi chú, tiến bộ từng bài, nhân bản template, thao tác nhanh trên Home |
 
 ## Điều chỉnh so với plan gốc (theo code thực tế)
 

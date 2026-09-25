@@ -5,6 +5,7 @@ import { env } from "../config/env";
 export interface AccessTokenPayload {
   sub: string;
   type: "access";
+  iat?: number; // giây, jsonwebtoken tự thêm khi ký
 }
 
 export interface RefreshTokenPayload {

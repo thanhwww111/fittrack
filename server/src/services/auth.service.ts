@@ -155,6 +155,7 @@ async function getUserWithPassword(userId: string, password: string, field: stri
 export async function changePassword(userId: string, input: ChangePasswordInput) {
   const user = await getUserWithPassword(userId, input.currentPassword, "currentPassword");
   user.passwordHash = await bcrypt.hash(input.newPassword, env.BCRYPT_ROUNDS);
+  user.set("passwordChangedAt", new Date(Math.floor(Date.now() / 1000) * 1000));
   await user.save();
 
   await RefreshTokenModel.deleteMany({ userId });

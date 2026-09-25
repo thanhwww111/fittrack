@@ -56,7 +56,7 @@ export default function ResetPasswordScreen() {
     setFormError(null);
     try {
       await passwordResetApi.request(email);
-      setNotice("Đã gửi mã mới. Mã cũ không còn dùng được.");
+      setNotice("Nếu đã quá 1 phút kể từ lần gửi trước, mã mới sẽ được gửi tới email. Mã cũ không còn dùng được.");
     } catch (err) {
       setFormError(errorMessage(err));
     } finally {

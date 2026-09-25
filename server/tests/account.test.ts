@@ -144,3 +144,29 @@ describe("avatar", () => {
     }
   });
 });
+
+describe("access tokens after security events", () => {
+  it("rejects old access tokens after a password change but accepts the new one", async () => {
+    const { auth } = await registerUser();
+    // iat của JWT tính theo giây: đợi sang giây mới để token cũ chắc chắn cũ hơn mốc đổi mật khẩu
+    await new Promise((r) => setTimeout(r, 1100));
+
+    const res = await request(app)
+      .post("/api/auth/change-password")
+      .set(auth)
+      .send({ currentPassword: "password123", newPassword: "newpassword456" });
+    expect(res.status).toBe(200);
+
+    expect((await request(app).get("/api/water").set(auth)).status).toBe(401);
+    const fresh = { Authorization: `Bearer ${res.body.data.accessToken}` };
+    expect((await request(app).get("/api/water").set(fresh)).status).toBe(200);
+  });
+
+  it("rejects tokens of a deleted account on every route", async () => {
+    const { auth } = await registerUser();
+    await request(app).delete("/api/auth/me").set(auth).send({ password: "password123" });
+    const res = await request(app).post("/api/water/add").set(auth).send({ amount: 250 });
+    expect(res.status).toBe(401);
+    expect(await WaterLogModel.countDocuments()).toBe(0);
+  });
+});

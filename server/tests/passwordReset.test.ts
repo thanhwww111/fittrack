@@ -109,3 +109,19 @@ describe("POST /api/auth/reset-password", () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe("reset email rate limit", () => {
+  it("sends at most one code per minute to the same email", async () => {
+    await registerUser();
+    const mailbox = captureMail();
+    await request(app).post("/api/auth/forgot-password").send({ email: "an@example.com" });
+    const again = await request(app).post("/api/auth/forgot-password").send({ email: "an@example.com" });
+    expect(again.status).toBe(200);
+    expect(mailbox.sent).toHaveLength(1);
+
+    // Hết thời gian chờ thì gửi mã mới
+    await PasswordResetModel.updateMany({}, { $set: { sentAt: new Date(Date.now() - 61_000) } });
+    await request(app).post("/api/auth/forgot-password").send({ email: "an@example.com" });
+    expect(mailbox.sent).toHaveLength(2);
+  });
+});

@@ -12,6 +12,8 @@ import { sendMail } from "./mail.service";
 
 const CODE_TTL_MINUTES = 15;
 const MAX_ATTEMPTS = 5;
+// Một email chỉ nhận mã mới sau mỗi 60 giây, chặn việc spam hộp thư người khác
+const RESEND_COOLDOWN_MS = 60 * 1000;
 
 function invalidCode() {
   return AppError.badRequest("Invalid or expired code", [
@@ -24,6 +26,9 @@ export async function requestPasswordReset({ email }: ForgotPasswordInput) {
   const user = await UserModel.findOne({ email });
   if (!user) return;
 
+  const existing = await PasswordResetModel.findOne({ userId: user._id }).select("sentAt").lean();
+  if (existing && Date.now() - existing.sentAt.getTime() < RESEND_COOLDOWN_MS) return;
+
   const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
   await PasswordResetModel.findOneAndUpdate(
     { userId: user._id },
@@ -32,12 +37,14 @@ export async function requestPasswordReset({ email }: ForgotPasswordInput) {
         codeHash: hashToken(code),
         attempts: 0,
         expiresAt: new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000),
+        sentAt: new Date(),
       },
     },
     { upsert: true }
   );
 
-  await sendMail({
+  // Không chờ gửi mail: thời gian phản hồi giống trường hợp email không tồn tại
+  void sendMail({
     to: user.email,
     subject: `Mã đặt lại mật khẩu FitTrack: ${code}`,
     text:
@@ -45,7 +52,7 @@ export async function requestPasswordReset({ email }: ForgotPasswordInput) {
       `Mã đặt lại mật khẩu của bạn là: ${code}\n` +
       `Mã có hiệu lực trong ${CODE_TTL_MINUTES} phút. Nếu bạn không yêu cầu, hãy bỏ qua email này.\n\n` +
       `FitTrack`,
-  });
+  }).catch((err) => console.error("✉️  Failed to send reset email:", err));
 }
 
 // Đúng mã thì đổi mật khẩu, thu hồi mọi phiên cũ và đăng nhập luôn trên máy này
@@ -67,6 +74,7 @@ export async function resetPassword({ email, code, newPassword }: ResetPasswordI
   }
 
   user.passwordHash = await bcrypt.hash(newPassword, env.BCRYPT_ROUNDS);
+  user.set("passwordChangedAt", new Date(Math.floor(Date.now() / 1000) * 1000));
   await user.save();
   await Promise.all([reset.deleteOne(), RefreshTokenModel.deleteMany({ userId: user._id })]);
 
