@@ -6,6 +6,7 @@ import foodLogRoutes from "./foodLog.routes";
 import goalRoutes from "./goal.routes";
 import nutritionRoutes from "./nutrition.routes";
 import profileRoutes from "./profile.routes";
+import { bodyMeasurementRoutes, progressRoutes } from "./progress.routes";
 import {
   exerciseRoutes,
   personalRecordRoutes,
@@ -35,5 +36,7 @@ router.use("/exercises", exerciseRoutes);
 router.use("/workout-templates", workoutTemplateRoutes);
 router.use("/workout-sessions", workoutSessionRoutes);
 router.use("/personal-records", personalRecordRoutes);
+router.use("/body-measurements", bodyMeasurementRoutes);
+router.use("/progress", progressRoutes);
 
 export default router;

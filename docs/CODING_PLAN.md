@@ -13,7 +13,7 @@
 | 4 | Profile + Goal | ✅ Backend xong + test |
 | 5 | Food system + Nutrition | ✅ Backend xong + test (MealTemplate API chưa làm) |
 | 6 | Workout | ✅ Backend xong + test |
-| 7 | Progress | ⬜ |
+| 7 | Progress | ✅ Backend xong + test |
 | 8 | Mobile foundation | 🟡 Mới có màn check `/health` (`a966f27`) |
 | 9 | State management (Zustand) | ⬜ |
 | 10 | API layer mobile | 🟡 Có `client.ts`, `healthApi.ts` |
@@ -80,6 +80,17 @@
     - Tính `duration` và `totalVolume`, rồi upsert `PersonalRecord`.
   - **PR:** `maxWeight`, `maxReps` và `estimatedOneRepMax` (công thức Epley, 1 rep thì lấy đúng mức tạ). Mỗi chỉ số so sánh độc lập. Buổi tập bị cancel không tính PR. Xem danh sách bằng `GET /api/personal-records`.
   - Seed chung bằng `npm run seed` (foods + exercises).
+- **Progress:**
+  - **Body measurements:** `POST /api/body-measurements` upsert theo `(userId, date)`. Field không gửi lên thì về `null` (mỗi ngày là một lần đo hoàn chỉnh). Không cho nhập ngày tương lai. Xem bằng `GET ?from=&to=`, xoá bằng `DELETE /:id`.
+  - **Đồng bộ cân nặng:** `profile.currentWeight` luôn bằng cân nặng của lần đo mới nhất, kể cả khi nhập bù ngày cũ hoặc xoá bản ghi.
+  - **Tính theo ngày địa phương:** mọi thống kê tính theo ngày của user (timezone trong profile). Tuần bắt đầu từ thứ Hai. Ngày/tuần không có dữ liệu vẫn được trả về (giá trị 0) để vẽ biểu đồ liền mạch. Khoảng ngày tối đa 366 ngày.
+  - **Các endpoint:**
+    - `GET /api/progress/weight` (mặc định 90 ngày): `points` + `summary { start, current, change }`.
+    - `GET /api/progress/workout?weeks=8`: volume, số buổi, số set, thời gian theo từng tuần. Chỉ tính buổi COMPLETED.
+    - `GET /api/progress/nutrition` (mặc định 7 ngày): từng ngày gồm `consumed` và target áp dụng ngày đó.
+      - Trung bình chỉ tính trên các ngày có log.
+      - `daysOnCalorieTarget` là số ngày ăn trong khoảng ±10% target calo, `daysProteinGoalMet` là số ngày ăn đủ protein.
+    - `GET /api/progress/weekly`: tổng kết tuần hiện tại gồm workout, nutrition, thay đổi cân nặng (so với lần đo gần nhất trước tuần) và số PR mới.
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 
 ---
