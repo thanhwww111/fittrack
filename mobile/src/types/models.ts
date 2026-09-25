@@ -221,3 +221,43 @@ export interface PersonalRecord extends RecordValues {
   exerciseName: string;
   achievedAt: string;
 }
+
+export interface BodyMeasurement {
+  id: string;
+  date: string;
+  weight: number;
+  bodyFat: number | null;
+  chest: number | null;
+  waist: number | null;
+  arm: number | null;
+  thigh: number | null;
+}
+
+export interface WeightProgress {
+  from: string;
+  to: string;
+  points: { date: string; weight: number }[];
+  summary: { start: number | null; current: number | null; change: number | null };
+}
+
+export interface WorkoutWeek {
+  weekStart: string;
+  sessions: number;
+  sets: number;
+  totalVolume: number;
+  duration: number;
+}
+
+export interface NutritionDay {
+  date: string;
+  logged: boolean;
+  consumed: Macros;
+  target: Macros | null;
+}
+
+export interface NutritionProgress {
+  from: string;
+  to: string;
+  days: NutritionDay[];
+  summary: WeeklySummary["nutrition"];
+}

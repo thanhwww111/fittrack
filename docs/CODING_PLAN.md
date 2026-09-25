@@ -17,7 +17,7 @@
 | 8 | Mobile foundation | ✅ Route `(auth)`, `(tabs)`, `profile` + `Stack.Protected` |
 | 9 | State management (Zustand) | ✅ `authStore`, `profileStore`, `nutritionStore`, `workoutStore` (+ `exercisePickerStore`) |
 | 10 | API layer mobile | ✅ `client.ts` tự refresh token; `authApi`, `profileApi`, `foodApi`, `nutritionApi`, `workoutApi`, `progressApi` |
-| 11 | UI screens (4 sprint) | 🟡 Sprint 1–3 xong (Auth, Home, Profile, Nutrition, Food, Workout); Sprint 4 (Progress) chưa làm |
+| 11 | UI screens (4 sprint) | ✅ Sprint 1–4 xong (Auth, Home, Profile, Nutrition, Food, Workout, Progress) |
 | 12 | Dashboard | 🟡 Home đã có nutrition hôm nay + tổng kết tuần |
 | 13 | Validation & error handling | ✅ Zod ở mọi route + validate form ở mobile, lỗi server map về từng field |
 | 14 | Service layer | ✅ Controller → Service → Model cho mọi module |
@@ -124,6 +124,17 @@
     - **Bắt đầu khi đang có buổi khác:** server trả 409, store tự mở lại buổi đang tập.
     - **`workout/history` và `workout/session?id=`:** lịch sử có phân trang và chi tiết buổi tập. Ngay sau khi hoàn thành, màn chi tiết hiện danh sách PR mới (`lastCompletion`).
     - **Thời gian nghỉ:** session không lưu `restSeconds` nên dùng mặc định 90 giây. Muốn dùng `restSeconds` của template thì cần copy thêm field này vào session ở server.
+  - **Sprint 4 (Progress):**
+    - **Tab Tiến độ:** chọn khoảng 1 / 3 / 6 tháng (30/90/180 ngày cho cân nặng; 4/12/26 tuần cho volume).
+    - Cân nặng: con số lớn + mức thay đổi trong kỳ, kèm biểu đồ đường và ô nhập cân nặng hôm nay (nhập lại trong ngày thì ghi đè).
+    - Volume theo tuần: biểu đồ cột.
+    - Calo 7 ngày: biểu đồ cột, có đường kẻ mục tiêu và 3 chỉ số (trung bình kcal, trung bình protein, số ngày đủ protein).
+    - **Biểu đồ** tự vẽ bằng `react-native-svg` (`components/charts/`), theo quy chuẩn trong skill dataviz:
+      - Chỉ 1 chuỗi dữ liệu nên không có legend, màu primary `#2563eb` đã qua script kiểm tra màu.
+      - Đường dày 2px, vùng nền 10%, điểm cuối có viền trắng 2px. Cột rộng tối đa 24px (≤ 60% ô), bo đầu 4px.
+      - Lưới mảnh nét liền. Chỉ ghi giá trị ở điểm cuối (biểu đồ đường); nhãn trục x được thưa bớt để không chồng nhau.
+      - Chạm vào biểu đồ để xem giá trị ở dòng phía trên. Mỗi biểu đồ có nút chuyển sang **dạng bảng**.
+    - Đường mục tiêu calo không có chữ trong biểu đồ (vì dễ đè lên cột); phụ đề giải thích đường kẻ.
   - **Chưa làm:** Profile "Tính lại từ hồ sơ" khi hôm nay đã có target thì gọi `PUT /goals/:id`, và server đánh dấu `source = MANUAL` dù số liệu là AUTO. Cần thêm `mode` cho PUT nếu muốn phân biệt.
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 
