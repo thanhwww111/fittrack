@@ -15,9 +15,9 @@
 | 6 | Workout | ✅ Backend xong + test |
 | 7 | Progress | ✅ Backend xong + test |
 | 8 | Mobile foundation | ✅ Route `(auth)`, `(tabs)`, `profile` + `Stack.Protected` |
-| 9 | State management (Zustand) | 🟡 Có `authStore`, `profileStore`, `nutritionStore` (workout store làm ở Sprint 3) |
-| 10 | API layer mobile | 🟡 `client.ts` tự refresh token; có `authApi`, `profileApi`, `foodApi`, `nutritionApi`, `progressApi` |
-| 11 | UI screens (4 sprint) | 🟡 Sprint 1–2 xong (Auth, Home, Profile, Nutrition, Food search/add/detail/create); Sprint 3–4 chưa làm |
+| 9 | State management (Zustand) | ✅ `authStore`, `profileStore`, `nutritionStore`, `workoutStore` (+ `exercisePickerStore`) |
+| 10 | API layer mobile | ✅ `client.ts` tự refresh token; `authApi`, `profileApi`, `foodApi`, `nutritionApi`, `workoutApi`, `progressApi` |
+| 11 | UI screens (4 sprint) | 🟡 Sprint 1–3 xong (Auth, Home, Profile, Nutrition, Food, Workout); Sprint 4 (Progress) chưa làm |
 | 12 | Dashboard | 🟡 Home đã có nutrition hôm nay + tổng kết tuần |
 | 13 | Validation & error handling | ✅ Zod ở mọi route + validate form ở mobile, lỗi server map về từng field |
 | 14 | Service layer | ✅ Controller → Service → Model cho mọi module |
@@ -111,6 +111,19 @@
     - **`food/detail`:** sửa khối lượng hoặc bữa (xem trước bằng cách scale từ snapshot của log), xoá có hộp thoại xác nhận.
     - **`food/create`:** tạo món custom, xong chuyển thẳng sang `food/add` bằng `router.replace`.
     - **`nutritionStore`:** sau mỗi lần thêm/sửa/xoá thì tải lại tổng hợp từ server, không tự cộng trừ ở client.
+  - **Sprint 3 (Workout):**
+    - **Tab Tập luyện:** thẻ "Đang tập" (nếu có buổi dở) hoặc bắt đầu nhanh từ template / buổi trống; 3 buổi gần nhất; danh sách PR.
+    - **`workout/templates` và `workout/template?id=`:** tạo/sửa template (thêm bài qua picker, set/rep/nghỉ, đổi thứ tự ↑↓, xoá).
+    - **`workout/exercises`** (modal): chọn bài theo nhóm cơ và tìm kiếm. Màn gọi đăng ký callback qua `exercisePickerStore.open(onPick, selectedIds)`.
+    - **`workout/start`** (buổi đang tập):
+      - Đồng hồ chạy theo `startedAt`. Mỗi bài có ô kg × rep, tự điền theo set trước hoặc theo rep mục tiêu.
+      - Bấm vào set để sửa (gửi kèm `setNumber`), bấm × để xoá.
+      - Banner "🏆 PR mới" lấy từ `prCheck`, tự ẩn sau 4 giây. Hẹn giờ nghỉ 90 giây (±15 giây), rung khi hết giờ.
+      - Hoàn thành hoặc huỷ đều hỏi xác nhận.
+    - **Bài vừa thêm chưa có set** nằm trong `pendingExercises` ở client, vì server chỉ thêm bài vào session khi có set đầu tiên.
+    - **Bắt đầu khi đang có buổi khác:** server trả 409, store tự mở lại buổi đang tập.
+    - **`workout/history` và `workout/session?id=`:** lịch sử có phân trang và chi tiết buổi tập. Ngay sau khi hoàn thành, màn chi tiết hiện danh sách PR mới (`lastCompletion`).
+    - **Thời gian nghỉ:** session không lưu `restSeconds` nên dùng mặc định 90 giây. Muốn dùng `restSeconds` của template thì cần copy thêm field này vào session ở server.
   - **Chưa làm:** Profile "Tính lại từ hồ sơ" khi hôm nay đã có target thì gọi `PUT /goals/:id`, và server đánh dấu `source = MANUAL` dù số liệu là AUTO. Cần thêm `mode` cho PUT nếu muốn phân biệt.
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 

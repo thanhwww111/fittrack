@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { colors, spacing } from "@/constants/theme";
 import { useDashboard } from "@/hooks/useDashboard";
+import { formatDuration } from "@/lib/workout";
 import { useAuthStore } from "@/stores/authStore";
 
 function greeting(hour: number) {
@@ -19,10 +20,6 @@ function formatNumber(value: number) {
   return value.toLocaleString("vi-VN", { maximumFractionDigits: 1 });
 }
 
-function formatDuration(seconds: number) {
-  const minutes = Math.round(seconds / 60);
-  return minutes < 60 ? `${minutes} phút` : `${Math.floor(minutes / 60)}h${minutes % 60}p`;
-}
 
 export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);

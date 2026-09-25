@@ -118,3 +118,106 @@ export interface Paginated<T> {
   limit: number;
   total: number;
 }
+
+export type MuscleGroup =
+  | "CHEST"
+  | "BACK"
+  | "SHOULDERS"
+  | "BICEPS"
+  | "TRICEPS"
+  | "LEGS"
+  | "GLUTES"
+  | "CORE"
+  | "FULL_BODY";
+
+export type Equipment =
+  | "BARBELL"
+  | "DUMBBELL"
+  | "MACHINE"
+  | "CABLE"
+  | "BODYWEIGHT"
+  | "KETTLEBELL"
+  | "OTHER";
+
+export type WorkoutStatus = "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
+export interface Exercise {
+  id: string;
+  name: string;
+  muscleGroup: MuscleGroup;
+  equipment: Equipment;
+  description: string;
+  isCustom: boolean;
+}
+
+export interface TemplateExercise {
+  // GET /workout-templates/:id populate thành object, danh sách thì chỉ là id
+  exerciseId: string | Pick<Exercise, "id" | "name" | "muscleGroup" | "equipment">;
+  order: number;
+  targetSets: number;
+  targetReps: number;
+  restSeconds: number;
+}
+
+export interface WorkoutTemplate {
+  id: string;
+  name: string;
+  exercises: TemplateExercise[];
+  updatedAt: string;
+}
+
+export interface TemplateExerciseInput {
+  exerciseId: string;
+  targetSets: number;
+  targetReps: number;
+  restSeconds?: number;
+}
+
+export interface WorkoutSet {
+  setNumber: number;
+  weight: number;
+  reps: number;
+  completed: boolean;
+}
+
+export interface SessionExercise {
+  exerciseId: string;
+  exerciseName: string;
+  targetSets: number | null;
+  targetReps: number | null;
+  sets: WorkoutSet[];
+}
+
+export interface WorkoutSession {
+  id: string;
+  name: string;
+  templateId: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  exercises: SessionExercise[];
+  totalVolume: number;
+  duration: number;
+  status: WorkoutStatus;
+}
+
+export type RecordField = "maxWeight" | "maxReps" | "estimatedOneRepMax";
+
+export interface RecordValues {
+  maxWeight: number;
+  maxReps: number;
+  estimatedOneRepMax: number;
+}
+
+export interface NewRecord {
+  exerciseId: string;
+  exerciseName: string;
+  improved: RecordField[];
+  record: RecordValues;
+}
+
+export interface PersonalRecord extends RecordValues {
+  id: string;
+  exerciseId: string;
+  exerciseName: string;
+  achievedAt: string;
+}

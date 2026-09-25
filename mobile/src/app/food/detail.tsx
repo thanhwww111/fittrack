@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { QuantityForm } from "@/components/nutrition/QuantityForm";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { colors, spacing } from "@/constants/theme";
+import { confirmAction } from "@/lib/confirm";
 import { errorMessage, parseNumber } from "@/lib/formErrors";
 import { formatServing } from "@/lib/nutrition";
 import { useNutritionStore } from "@/stores/nutritionStore";
@@ -86,16 +87,14 @@ function LogEditor({ log }: { log: FoodLog }) {
     }
   }
 
-  function confirmDelete() {
-    // Alert có nút chỉ chạy trên iOS/Android, web thì xoá luôn
-    if (Platform.OS === "web") {
-      remove();
-      return;
-    }
-    Alert.alert("Xoá món này?", `${log.foodName} sẽ bị xoá khỏi nhật ký.`, [
-      { text: "Huỷ", style: "cancel" },
-      { text: "Xoá", style: "destructive", onPress: remove },
-    ]);
+  async function confirmDelete() {
+    const ok = await confirmAction({
+      title: "Xoá món này?",
+      message: `${log.foodName} sẽ bị xoá khỏi nhật ký.`,
+      confirmText: "Xoá",
+      destructive: true,
+    });
+    if (ok) remove();
   }
 
   return (
