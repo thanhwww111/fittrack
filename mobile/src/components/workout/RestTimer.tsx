@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, Vibration, View } from "react-native";
-import { colors, radius, spacing } from "@/constants/theme";
+import { Pressable, Text, Vibration, View } from "react-native";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { formatClock } from "@/lib/workout";
 
 interface RestTimerProps {
@@ -51,19 +51,19 @@ function SmallButton({ label, onPress }: { label: string; onPress: () => void })
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   bar: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    backgroundColor: colors.text,
+    backgroundColor: colors.inverse,
     borderRadius: radius.lg,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
   },
   barDone: { backgroundColor: colors.success },
-  label: { color: "#fff", fontSize: 14 },
-  time: { color: "#fff", fontSize: 22, fontWeight: "700", fontVariant: ["tabular-nums"], flex: 1 },
+  label: { color: colors.onPrimary, fontSize: 14 },
+  time: { color: colors.onPrimary, fontSize: 22, fontWeight: "700", fontVariant: ["tabular-nums"], flex: 1 },
   actions: { flexDirection: "row", gap: spacing.xs },
   button: {
     paddingVertical: spacing.xs,
@@ -71,5 +71,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: "rgba(255,255,255,0.18)",
   },
-  buttonText: { color: "#fff", fontSize: 13, fontWeight: "600" },
-});
+  buttonText: { color: colors.onPrimary, fontSize: 13, fontWeight: "600" },
+}));

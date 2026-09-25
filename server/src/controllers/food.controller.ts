@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { listFoodsQuerySchema } from "../schemas/food.schema";
+import { listFoodsQuerySchema, recentFoodsQuerySchema } from "../schemas/food.schema";
 import * as foodService from "../services/food.service";
 
 export const listFoods: RequestHandler = async (req, res) => {
@@ -25,5 +25,26 @@ export const updateFood: RequestHandler<{ id: string }> = async (req, res) => {
 
 export const deleteFood: RequestHandler<{ id: string }> = async (req, res) => {
   await foodService.deleteFood(req.user!.id, req.params.id);
+  res.status(204).end();
+};
+
+export const listRecentFoods: RequestHandler = async (req, res) => {
+  const { limit } = recentFoodsQuerySchema.parse(req.query);
+  const data = await foodService.listRecentFoods(req.user!.id, limit);
+  res.json({ success: true, data });
+};
+
+export const listFavoriteFoods: RequestHandler = async (req, res) => {
+  const data = await foodService.listFavoriteFoods(req.user!.id);
+  res.json({ success: true, data });
+};
+
+export const addFavoriteFood: RequestHandler<{ id: string }> = async (req, res) => {
+  await foodService.addFavoriteFood(req.user!.id, req.params.id);
+  res.status(204).end();
+};
+
+export const removeFavoriteFood: RequestHandler<{ id: string }> = async (req, res) => {
+  await foodService.removeFavoriteFood(req.user!.id, req.params.id);
   res.status(204).end();
 };

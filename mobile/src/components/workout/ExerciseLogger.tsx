@@ -1,9 +1,9 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage, parseNumber } from "@/lib/formErrors";
 import { formatWeight } from "@/lib/workout";
 import type { SessionExercise, WorkoutSet } from "@/types/models";
@@ -157,7 +157,7 @@ export function ExerciseLogger({ exercise, onRecord, onRemoveSet }: ExerciseLogg
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   header: { gap: 2 },
   name: { fontSize: 17, fontWeight: "700", color: colors.text },
   target: { fontSize: 13, color: colors.textMuted },
@@ -191,4 +191,4 @@ const styles = StyleSheet.create({
   recordButton: { flex: 1, paddingHorizontal: spacing.sm },
   cancelEdit: { fontSize: 14, color: colors.primary, fontWeight: "600" },
   error: { fontSize: 13, color: colors.danger },
-});
+}));

@@ -6,7 +6,7 @@ import { sessionApi } from "@/api/workoutApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage } from "@/lib/formErrors";
 import { formatDate, formatDuration, formatVolume, formatWeight } from "@/lib/workout";
 import { useWorkoutStore } from "@/stores/workoutStore";
@@ -173,7 +173,13 @@ export default function WorkoutDashboardScreen() {
           <Text style={styles.muted}>Hoàn thành buổi tập đầu tiên để ghi nhận PR.</Text>
         ) : (
           records.map((r) => (
-            <View key={r.id} style={styles.prRow}>
+            <Pressable
+              key={r.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Xem tiến bộ ${r.exerciseName}`}
+              onPress={() => router.push({ pathname: "/workout/exercise", params: { id: r.exerciseId } })}
+              style={({ pressed }) => [styles.prRow, pressed && styles.pressed]}
+            >
               <Text style={[styles.templateName, styles.flex]} numberOfLines={1}>
                 {r.exerciseName}
               </Text>
@@ -181,7 +187,8 @@ export default function WorkoutDashboardScreen() {
                 {r.maxWeight > 0 ? formatWeight(r.maxWeight) : `${r.maxReps} rep`}
                 {r.estimatedOneRepMax > 0 ? ` · 1RM ~${formatWeight(r.estimatedOneRepMax)}` : ""}
               </Text>
-            </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </Pressable>
           ))
         )}
       </Card>
@@ -189,7 +196,7 @@ export default function WorkoutDashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   content: { padding: spacing.lg, gap: spacing.lg },
   flex: { flex: 1 },
   pressed: { opacity: 0.6 },
@@ -220,5 +227,5 @@ const styles = StyleSheet.create({
   linkText: { fontSize: 15, fontWeight: "600", color: colors.primary },
   historyRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
   volume: { fontSize: 15, fontWeight: "600", color: colors.text, fontVariant: ["tabular-nums"] },
-  prRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-});
+  prRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
+}));

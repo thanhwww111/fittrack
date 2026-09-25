@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { aiApi } from "@/api/aiApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { aiErrorMessage } from "@/lib/aiErrors";
 import { formatVolume } from "@/lib/workout";
 import { shortDate } from "@/components/charts/scale";
@@ -94,7 +94,7 @@ export default function AiWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   loading: { alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xl },
   muted: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
@@ -104,4 +104,4 @@ const styles = StyleSheet.create({
   weekLabel: { fontSize: 12, color: colors.textMuted },
   weekValue: { fontSize: 15, fontWeight: "700", color: colors.text },
   disclaimer: { fontSize: 12, color: colors.textMuted },
-});
+}));

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { StyleSheet, Text, View, type ViewStyle } from "react-native";
-import { colors, radius, spacing } from "@/constants/theme";
+import { Text, View, type ViewStyle } from "react-native";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 
 interface CardProps {
   title?: string;
@@ -17,7 +17,7 @@ export function Card({ title, children, style }: CardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -27,4 +27,4 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   title: { fontSize: 16, fontWeight: "700", color: colors.text },
-});
+}));

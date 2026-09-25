@@ -1,23 +1,26 @@
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
 import { aiApi } from "@/api/aiApi";
+import { foodApi } from "@/api/foodApi";
 import { MacroChips } from "@/components/nutrition/MacroChips";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { aiErrorMessage } from "@/lib/aiErrors";
+import { confirmAction } from "@/lib/confirm";
+import { errorMessage } from "@/lib/formErrors";
+import { useNutritionStore } from "@/stores/nutritionStore";
 import { MEAL_LABELS, MEAL_ORDER, mealTypeForHour } from "@/lib/nutrition";
 import type { MealSuggestion, MealSuggestionResult, MealType } from "@/types/models";
 
@@ -35,6 +38,8 @@ export default function AiMealScreen() {
   const [result, setResult] = useState<MealSuggestionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [logging, setLogging] = useState<number | null>(null);
+  const addLog = useNutritionStore((s) => s.addLog);
 
   async function handleSuggest() {
     setLoading(true);
@@ -47,6 +52,37 @@ export default function AiMealScreen() {
       setError(aiErrorMessage(err));
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Lưu gợi ý thành món tự tạo "1 phần" với macro AI ước tính, rồi ghi vào bữa đang chọn
+  async function logSuggestion(suggestion: MealSuggestion, index: number) {
+    const ok = await confirmAction({
+      title: `Ghi "${suggestion.name}" vào ${MEAL_LABELS[mealType].toLowerCase()}?`,
+      message:
+        "Món sẽ được lưu vào danh sách món của bạn (1 phần) với số liệu AI ước tính. Bạn có thể sửa lại sau.",
+      confirmText: "Ghi vào nhật ký",
+    });
+    if (!ok) return;
+
+    setLogging(index);
+    setError(null);
+    try {
+      const food = await foodApi.create({
+        name: suggestion.name.slice(0, 100),
+        servingSize: 1,
+        servingUnit: "piece",
+        calories: Math.max(0, Math.round(suggestion.calories)),
+        protein: Math.max(0, Math.round(suggestion.protein)),
+        carbs: Math.max(0, Math.round(suggestion.carbs)),
+        fat: Math.max(0, Math.round(suggestion.fat)),
+        fiber: 0,
+      });
+      await addLog({ foodId: food.id, mealType, quantity: 1, date: result?.date });
+      router.dismissTo("/nutrition");
+    } catch (err) {
+      setError(errorMessage(err));
+      setLogging(null);
     }
   }
 
@@ -88,7 +124,13 @@ export default function AiMealScreen() {
               {fmt(result.remaining.protein)} g
             </Text>
             {result.suggestions.map((s, i) => (
-              <SuggestionCard key={`${s.name}-${i}`} suggestion={s} />
+              <SuggestionCard
+                key={`${s.name}-${i}`}
+                suggestion={s}
+                logging={logging === i}
+                disabled={logging !== null}
+                onLog={() => logSuggestion(s, i)}
+              />
             ))}
             <Text style={styles.disclaimer}>
               Calo và macro do AI ước tính, có thể sai lệch. Khi ghi vào nhật ký, hãy chọn món và
@@ -101,7 +143,17 @@ export default function AiMealScreen() {
   );
 }
 
-function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
+function SuggestionCard({
+  suggestion,
+  onLog,
+  logging,
+  disabled,
+}: {
+  suggestion: MealSuggestion;
+  onLog: () => void;
+  logging: boolean;
+  disabled: boolean;
+}) {
   return (
     <Card>
       <View style={styles.cardHeader}>
@@ -119,11 +171,18 @@ function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
           </Text>
         ))}
       </View>
+      <Button
+        title="Ghi vào nhật ký"
+        variant="secondary"
+        onPress={onLog}
+        loading={logging}
+        disabled={disabled}
+      />
     </Card>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   loading: { alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xl },
@@ -139,10 +198,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     overflow: "hidden",
   },
-  badgeOk: { color: colors.success, backgroundColor: "#dcfce7" },
+  badgeOk: { color: colors.success, backgroundColor: colors.successSoft },
   badgeOver: { color: colors.danger, backgroundColor: colors.dangerSoft },
   ingredients: { gap: 2 },
   ingredient: { fontSize: 14, color: colors.text },
   amount: { color: colors.textMuted },
   disclaimer: { fontSize: 12, color: colors.textMuted, lineHeight: 18 },
-});
+}));

@@ -22,6 +22,9 @@ export const goalApi = {
 
   createAuto: () => unwrap(api.post<ApiSuccess<NutritionTarget>>("/goals", { mode: "AUTO" })),
 
+  createManual: (macros: Macros) =>
+    unwrap(api.post<ApiSuccess<NutritionTarget>>("/goals", { mode: "MANUAL", ...macros })),
+
   // Gửi macro = tự nhập (MANUAL); { mode: "AUTO" } = server tính lại từ profile
   update: (id: string, input: Macros | { mode: "AUTO" }) =>
     unwrap(api.put<ApiSuccess<NutritionTarget>>(`/goals/${id}`, input)),

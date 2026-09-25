@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
-import { colors, spacing } from "@/constants/theme";
+import { Text, View } from "react-native";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 
 // Placeholder cho các tab sẽ làm ở Sprint sau
 export function ComingSoon({ title, sprint }: { title: string; sprint: number }) {
@@ -11,8 +11,8 @@ export function ComingSoon({ title, sprint }: { title: string; sprint: number })
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm },
   title: { fontSize: 20, fontWeight: "700", color: colors.text },
   subtitle: { fontSize: 15, color: colors.textMuted },
-});
+}));

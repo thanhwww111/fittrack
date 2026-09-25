@@ -1,10 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useWorkoutStore } from "@/stores/workoutStore";
 
 export default function TemplatesScreen() {
@@ -51,7 +51,7 @@ export default function TemplatesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, padding: spacing.lg, gap: spacing.md },
   flex: { flex: 1 },
   list: { gap: spacing.sm, flexGrow: 1 },
@@ -69,4 +69,4 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: "600", color: colors.text },
   muted: { fontSize: 14, color: colors.textMuted },
   empty: { textAlign: "center", color: colors.textMuted, paddingVertical: spacing.xl, lineHeight: 21 },
-});
+}));

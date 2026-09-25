@@ -1,5 +1,7 @@
-import type { QueryFilter } from "mongoose";
+import { isValidObjectId, Types, type QueryFilter } from "mongoose";
 import { FoodModel, type Food } from "../models/food.model";
+import { FoodLogModel } from "../models/foodLog.model";
+import { UserProfileModel } from "../models/userProfile.model";
 import type { CreateFoodInput, ListFoodsQuery, UpdateFoodInput } from "../schemas/food.schema";
 import { AppError } from "../utils/AppError";
 import { escapeRegex, visibleToUser } from "../utils/ownership";
@@ -74,4 +76,60 @@ export async function updateFood(userId: string, foodId: string, input: UpdateFo
 export async function deleteFood(userId: string, foodId: string) {
   const food = await getOwnedFood(userId, foodId);
   await food.deleteOne();
+}
+
+// Món ăn user ghi gần đây nhất (mỗi món một lần), để thêm nhanh không cần tìm
+export async function listRecentFoods(userId: string, limit: number) {
+  const recent = await FoodLogModel.aggregate<{ _id: Types.ObjectId }>([
+    { $match: { userId: new Types.ObjectId(userId) } },
+    { $sort: { createdAt: -1 } },
+    { $group: { _id: "$foodId", lastLoggedAt: { $first: "$createdAt" } } },
+    { $sort: { lastLoggedAt: -1 } },
+    // Lấy dư một chút vì món đã bị xoá sẽ bị lọc ra
+    { $limit: limit * 2 },
+  ]);
+
+  const ids = recent.map((r) => r._id);
+  const foods = await FoodModel.find({ _id: { $in: ids }, ...visibleTo(userId) });
+  const byId = new Map(foods.map((f) => [f.id as string, f]));
+
+  return ids
+    .map((id) => byId.get(String(id)))
+    .filter((f) => f !== undefined)
+    .slice(0, limit)
+    .map((f) => f.toJSON());
+}
+
+const MAX_FAVORITES = 100;
+
+// Món yêu thích còn tồn tại, giữ thứ tự mới thêm trước
+export async function listFavoriteFoods(userId: string) {
+  const profile = await UserProfileModel.findOne({ userId }).select("favoriteFoods").lean();
+  const ids = profile?.favoriteFoods ?? [];
+  if (ids.length === 0) return [];
+
+  const foods = await FoodModel.find({ _id: { $in: ids }, ...visibleTo(userId) });
+  const byId = new Map(foods.map((f) => [f.id as string, f]));
+  return ids.flatMap((id) => {
+    const food = byId.get(String(id));
+    return food ? [food.toJSON()] : [];
+  });
+}
+
+export async function addFavoriteFood(userId: string, foodId: string) {
+  const food = await getVisibleFood(userId, foodId);
+  // Bỏ bản cũ (nếu có) rồi chèn lên đầu, giới hạn độ dài danh sách
+  await UserProfileModel.updateOne({ userId }, { $pull: { favoriteFoods: food._id } });
+  await UserProfileModel.updateOne(
+    { userId },
+    { $push: { favoriteFoods: { $each: [food._id], $position: 0, $slice: MAX_FAVORITES } } }
+  );
+}
+
+export async function removeFavoriteFood(userId: string, foodId: string) {
+  if (!isValidObjectId(foodId)) throw AppError.notFound("Food not found");
+  await UserProfileModel.updateOne(
+    { userId },
+    { $pull: { favoriteFoods: new Types.ObjectId(foodId) } }
+  );
 }

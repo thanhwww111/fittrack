@@ -51,6 +51,16 @@ export async function updateTemplate(userId: string, templateId: string, input: 
   return template.toJSON();
 }
 
+export async function duplicateTemplate(userId: string, templateId: string) {
+  const source = await getOwnedTemplate(userId, templateId);
+  const copy = await WorkoutTemplateModel.create({
+    userId,
+    name: `${source.name} (bản sao)`.slice(0, 100),
+    exercises: source.exercises.map((e) => e.toObject()),
+  });
+  return copy.toJSON();
+}
+
 // Session cũ tạo từ template vẫn giữ nguyên vì đã copy bài tập + tên vào session
 export async function deleteTemplate(userId: string, templateId: string) {
   const template = await getOwnedTemplate(userId, templateId);

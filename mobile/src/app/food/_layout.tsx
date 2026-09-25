@@ -13,6 +13,7 @@ export default function FoodLayout() {
       <Stack.Screen name="add" options={{ title: "Thêm món" }} />
       <Stack.Screen name="detail" options={{ title: "Chi tiết món đã ăn" }} />
       <Stack.Screen name="create" options={{ title: "Tạo món mới" }} />
+      <Stack.Screen name="templates" options={{ title: "Bữa mẫu" }} />
     </Stack>
   );
 }

@@ -3,7 +3,9 @@ import { Link } from "expo-router";
 import { Tabs } from "expo-router/js-tabs";
 import type { ComponentProps } from "react";
 import { Pressable, type ColorValue } from "react-native";
+import { Avatar } from "@/components/ui/Avatar";
 import { colors, spacing } from "@/constants/theme";
+import { useAuthStore } from "@/stores/authStore";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -26,10 +28,15 @@ const TABS: { name: string; title: string; icon: IconName; focusedIcon: IconName
   { name: "progress", title: "Tiến độ", icon: "stats-chart-outline", focusedIcon: "stats-chart" },
 ];
 function ProfileButton() {
+  const user = useAuthStore((s) => s.user);
   return (
     <Link href="/profile" asChild>
       <Pressable accessibilityLabel="Hồ sơ" hitSlop={8} style={{ marginRight: spacing.lg }}>
-        <Ionicons name="person-circle-outline" size={28} color={colors.primary} />
+        {user?.avatar ? (
+          <Avatar name={user.name} uri={user.avatar} size={30} />
+        ) : (
+          <Ionicons name="person-circle-outline" size={28} color={colors.primary} />
+        )}
       </Pressable>
     </Link>
   );

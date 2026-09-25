@@ -14,7 +14,7 @@ async function getSettingsDocument(userId: string) {
   return NotificationSettingsModel.findOneAndUpdate(
     { userId },
     { $setOnInsert: { userId } },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
   );
 }
 

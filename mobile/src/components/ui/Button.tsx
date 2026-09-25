@@ -1,5 +1,5 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, type ViewStyle } from "react-native";
-import { colors, radius, spacing } from "@/constants/theme";
+import { ActivityIndicator, Pressable, Text, type ViewStyle } from "react-native";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 
 interface ButtonProps {
   title: string;
@@ -19,7 +19,7 @@ export function Button({
   style,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
-  const textColor = variant === "secondary" ? colors.primary : "#fff";
+  const textColor = variant === "secondary" ? colors.primary : colors.onPrimary;
 
   return (
     <Pressable
@@ -44,7 +44,7 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   base: {
     minHeight: 48,
     borderRadius: radius.md,
@@ -58,4 +58,4 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.5 },
   text: { fontSize: 16, fontWeight: "600" },
-});
+}));

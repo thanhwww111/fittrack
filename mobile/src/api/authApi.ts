@@ -24,3 +24,26 @@ export const authApi = {
 
   me: () => unwrap(api.get<ApiSuccess<{ user: User; profile: UserProfile | null }>>("/auth/me")),
 };
+
+export const accountApi = {
+  // avatar: data URI JPEG 256px, null = gỡ ảnh
+  updateMe: (input: { name?: string; avatar?: string | null }) => unwrap(api.patch<ApiSuccess<User>>("/auth/me", input)),
+
+  // Server thu hồi mọi phiên cũ và trả về token mới cho máy này
+  changePassword: (input: { currentPassword: string; newPassword: string }) =>
+    unwrap(api.post<ApiSuccess<AuthResult>>("/auth/change-password", input)),
+
+  deleteAccount: async (password: string) => {
+    await api.delete("/auth/me", { data: { password } });
+  },
+};
+
+export const passwordResetApi = {
+  // Luôn thành công (không tiết lộ email nào đã đăng ký); mã 6 số được gửi qua email
+  request: (email: string) =>
+    unwrap(api.post<ApiSuccess<null>>("/auth/forgot-password", { email })),
+
+  // Đúng mã thì server đổi mật khẩu và trả về phiên đăng nhập mới
+  reset: (input: { email: string; code: string; newPassword: string }) =>
+    unwrap(api.post<ApiSuccess<AuthResult>>("/auth/reset-password", input)),
+};

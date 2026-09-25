@@ -5,7 +5,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
@@ -14,7 +13,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage } from "@/lib/formErrors";
 import { ensurePermission } from "@/lib/notifications";
 import { useNotificationStore } from "@/stores/notificationStore";
@@ -250,7 +249,7 @@ function TimeRow({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
@@ -277,7 +276,7 @@ const styles = StyleSheet.create({
   },
   daySelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   dayText: { fontSize: 13, color: colors.text },
-  dayTextSelected: { color: "#fff", fontWeight: "600" },
+  dayTextSelected: { color: colors.onPrimary, fontWeight: "600" },
   timeInput: {
     width: 80,
     minHeight: 40,
@@ -290,4 +289,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   timeInvalid: { borderColor: colors.danger },
-});
+}));

@@ -29,3 +29,7 @@ export const listFoodsQuerySchema = z.object({
 export type CreateFoodInput = z.infer<typeof createFoodSchema>;
 export type UpdateFoodInput = z.infer<typeof updateFoodSchema>;
 export type ListFoodsQuery = z.infer<typeof listFoodsQuerySchema>;
+
+export const recentFoodsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(30).default(10),
+});

@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
-import { colors, radius, spacing } from "@/constants/theme";
+import { Text, View } from "react-native";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 
 interface ProgressBarProps {
   label: string;
@@ -35,11 +35,11 @@ export function ProgressBar({ label, value, target, unit, color = colors.primary
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { gap: spacing.xs },
   header: { flexDirection: "row", justifyContent: "space-between" },
   label: { fontSize: 14, color: colors.text, fontWeight: "500" },
   value: { fontSize: 14, color: colors.textMuted, fontVariant: ["tabular-nums"] },
   track: { height: 8, borderRadius: radius.pill, backgroundColor: colors.border, overflow: "hidden" },
   fill: { height: "100%", borderRadius: radius.pill },
-});
+}));
