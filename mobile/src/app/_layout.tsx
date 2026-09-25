@@ -41,6 +41,7 @@ export default function RootLayout() {
         />
         <Stack.Screen name="food" />
         <Stack.Screen name="workout" />
+        <Stack.Screen name="ai" />
       </Stack.Protected>
 
       <Stack.Protected guard={!isAuthenticated}>

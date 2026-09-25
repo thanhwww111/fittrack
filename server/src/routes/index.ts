@@ -1,5 +1,6 @@
 import { Router } from "express";
 import mongoose from "mongoose";
+import aiRoutes from "./ai.routes";
 import authRoutes from "./auth.routes";
 import foodRoutes from "./food.routes";
 import foodLogRoutes from "./foodLog.routes";
@@ -38,5 +39,6 @@ router.use("/workout-sessions", workoutSessionRoutes);
 router.use("/personal-records", personalRecordRoutes);
 router.use("/body-measurements", bodyMeasurementRoutes);
 router.use("/progress", progressRoutes);
+router.use("/ai", aiRoutes);
 
 export default router;

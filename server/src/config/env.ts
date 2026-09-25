@@ -14,6 +14,12 @@ const envSchema = z.object({
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
   // Danh sách origin được gọi API từ trình duyệt, cách nhau bằng dấu phẩy.
   // App mobile không bị CORS chặn nên production có thể để trống.
+  // Không có key thì các API /ai trả 503, phần còn lại của app vẫn chạy bình thường
+  GEMINI_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  GEMINI_MODEL: z.string().min(1).default("gemini-3.8-flash"),
   CORS_ORIGINS: z
     .string()
     .optional()

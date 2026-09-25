@@ -52,7 +52,8 @@ Repo đã có sẵn `render.yaml` (Blueprint) ở thư mục gốc. Render đọ
      ```
    - Có gói trả phí thì vào tab **Shell** của service và chạy `npm run seed:prod`.
    - Seed dùng upsert, chạy lại nhiều lần cũng không bị trùng.
-6. Kiểm tra: mở `https://fittrack-api.onrender.com/api/health` → phải thấy `"db":"connected"`.
+6. **Bật AI (tuỳ chọn):** lấy API key tại https://aistudio.google.com/apikey, vào service trên Render → **Environment** → sửa `GEMINI_API_KEY` → Save (Render tự deploy lại). Không có key thì app vẫn chạy bình thường, chỉ 2 màn AI báo "chưa được bật".
+7. Kiểm tra: mở `https://fittrack-api.onrender.com/api/health` → phải thấy `"db":"connected"`.
    Nếu tên `fittrack-api` đã bị người khác dùng, Render sẽ gán URL khác. Khi đó sửa URL trong `mobile/eas.json` cho khớp.
 
 **Lưu ý về gói free:** service ngủ sau 15 phút không có request. Request đầu tiên sau đó mất khoảng 30–60 giây để server khởi động lại. App có timeout 30 giây; nếu vẫn báo "Server phản hồi quá lâu" thì kéo để tải lại.
@@ -101,4 +102,6 @@ iOS: cần tài khoản Apple Developer (99 USD/năm) mới build được bản
 | `PORT` | | Render tự đặt |
 | `TRUST_PROXY` | | `1` khi chạy sau proxy của Render/Railway, để rate limit lấy đúng IP |
 | `CORS_ORIGINS` | | Chỉ cần nếu có web app gọi API; app mobile không bị CORS chặn |
+| `GEMINI_API_KEY` | | Bật tính năng AI; thiếu thì /api/ai trả 503 |
+| `GEMINI_MODEL` | | Mặc định `gemini-3.8-flash` |
 | `ACCESS_TOKEN_TTL_SECONDS`, `REFRESH_TOKEN_TTL_SECONDS`, `BCRYPT_ROUNDS` | | Có giá trị mặc định |

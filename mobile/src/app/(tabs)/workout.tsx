@@ -138,6 +138,14 @@ export default function WorkoutDashboardScreen() {
         </Link>
       </View>
 
+      {recent.length > 0 ? (
+        <Button
+          title="✨ Phân tích 4 tuần bằng AI"
+          variant="secondary"
+          onPress={() => router.push("/ai/workout")}
+        />
+      ) : null}
+
       <Card title="Buổi tập gần đây">
         {recent.length === 0 ? (
           <Text style={styles.muted}>Chưa có buổi tập nào hoàn thành.</Text>

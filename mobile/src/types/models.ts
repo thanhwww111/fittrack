@@ -261,3 +261,25 @@ export interface NutritionProgress {
   days: NutritionDay[];
   summary: WeeklySummary["nutrition"];
 }
+
+export interface MealSuggestion extends Macros {
+  name: string;
+  description: string;
+  ingredients: { name: string; amount: string }[];
+  // Server tự đánh giá món có vừa với calo còn lại không (số của AI chỉ là ước tính)
+  fitsRemaining: boolean;
+}
+
+export interface MealSuggestionResult {
+  date: string;
+  mealType: MealType;
+  remaining: Macros;
+  suggestions: MealSuggestion[];
+}
+
+export interface WorkoutAnalysis {
+  weeks: { weekStart: string; sessions: number; volume: number }[];
+  summary: string;
+  highlights: string[];
+  suggestions: string[];
+}

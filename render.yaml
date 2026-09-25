@@ -28,3 +28,8 @@ services:
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      # Tuỳ chọn: không có key thì chỉ các tính năng AI bị tắt (API /ai trả 503)
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash

@@ -15,3 +15,19 @@ export const authLimiter = rateLimit({
     });
   },
 });
+
+// Giới hạn chi phí gọi AI: 10 lần / giờ / user. Phải đặt sau `authenticate` để có req.user.
+export const aiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user!.id,
+  skip: () => env.NODE_ENV === "test",
+  handler: (_req, res) => {
+    res.status(429).json({
+      success: false,
+      error: { message: "AI request limit reached, please try again in an hour" },
+    });
+  },
+});
