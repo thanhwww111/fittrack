@@ -1,0 +1,30 @@
+# Render Blueprint: Render đọc file này để tạo web service cho backend.
+# Hướng dẫn: docs/DEPLOY.md
+services:
+  - type: web
+    name: fittrack-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: server
+    branch: main
+    # --include=dev vì cần typescript để build (NODE_ENV=production sẽ bỏ devDependencies)
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"
+      # Dán connection string của MongoDB Atlas khi Render hỏi (không commit)
+      - key: MONGO_URI
+        sync: false
+      # Render tự sinh chuỗi ngẫu nhiên đủ dài cho 2 secret
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true

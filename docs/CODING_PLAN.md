@@ -23,7 +23,7 @@
 | 14 | Service layer | ✅ Controller → Service → Model cho mọi module |
 | 15 | Testing | 🟡 117 test backend (unit + API); mobile chưa có test |
 | 16 | Security | 🟡 Có helmet, cors, env validation, bcrypt, JWT + refresh rotation, rate limit auth |
-| 17 | Deployment | ⬜ |
+| 17 | Deployment | 🟡 Code + `render.yaml` + `eas.json` + `docs/DEPLOY.md` sẵn sàng; chờ tạo Atlas/Render/EAS và build |
 | 18 | AI (Gemini) | ⬜ |
 | 19 | Firebase notification | ⬜ |
 
