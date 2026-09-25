@@ -84,13 +84,60 @@ Muốn đổi URL API cho bản build: sửa `EXPO_PUBLIC_API_URL` trong `eas.js
 
 iOS: cần tài khoản Apple Developer (99 USD/năm) mới build được bản cài trên máy thật. Trong lúc chưa có thì dùng Expo Go để test.
 
-## 4. Checklist sau khi deploy
+## 4. Thông báo đẩy (Firebase Cloud Messaging)
+
+Có 2 loại thông báo:
+
+| Loại | Cần làm gì |
+|---|---|
+| **Lịch nhắc** tập / ghi bữa ăn | Không cần gì thêm: máy tự đặt lịch, chạy được cả trong Expo Go |
+| **Push từ server** (🏆 PR mới, 🎯 đạt mục tiêu, 📊 tổng kết tuần) | Các bước 4.1 → 4.3 bên dưới; chỉ hoạt động trên bản build (APK), Expo Go trên Android không nhận được |
+
+App dùng Expo Push Service; trên Android, Expo gửi tiếp qua FCM nên cần credential của Firebase.
+
+### 4.1. Tạo Firebase project và file `google-services.json`
+
+1. Vào https://console.firebase.google.com → **Add project** → đặt tên `fittrack` (có thể tắt Google Analytics).
+2. **Add app → Android**, package name: `com.thanhwww111.fittrack` (phải khớp `android.package` trong `app.json`).
+3. Tải **`google-services.json`**, đặt vào `mobile/google-services.json`.
+4. Thêm vào `mobile/app.json`, trong mục `android`:
+   ```json
+   "googleServicesFile": "./google-services.json"
+   ```
+5. Commit file này. Nó chỉ định danh project Firebase, không phải secret, và EAS chỉ upload những file được git theo dõi.
+
+### 4.2. Upload FCM V1 key lên EAS
+
+1. Firebase Console → ⚙️ **Project settings → Service accounts → Generate new private key** → tải file JSON.
+   **File này là secret: không commit, không gửi cho ai.**
+2. Trong `mobile/`:
+   ```powershell
+   npx eas-cli@latest credentials
+   ```
+   Chọn Android → profile `preview` (sau đó làm lại cho `production`) → **Google Service Account** → **Manage your Google Service Account Key for Push Notifications (FCM V1)** → **Upload** file JSON vừa tải.
+3. Build lại app: `npx eas-cli@latest build -p android --profile preview`.
+4. Mở app → Hồ sơ → **Cài đặt thông báo**. Nếu không có dòng cảnh báo màu xanh ở đầu màn, máy đã đăng ký nhận push thành công.
+
+### 4.3. Cron gửi "Tổng kết tuần"
+
+Server Render gói free ngủ khi không có request, nên cron chạy bên trong server không đáng tin. Thay vào đó, GitHub Actions (`.github/workflows/weekly-report.yml`) gọi server mỗi **thứ Hai 08:00 giờ Việt Nam**.
+
+1. Render → service → **Environment** → copy giá trị `CRON_SECRET` (Render tự sinh).
+2. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**:
+   - `CRON_SECRET` = giá trị vừa copy
+   - `FITTRACK_API_URL` = `https://fittrack-api.onrender.com/api`
+3. Thử ngay: tab **Actions → Weekly report push → Run workflow**. Log phải có dạng `{"success":true,"data":{"users":1,"skipped":0,"sent":1}}`.
+   User không có hoạt động nào trong tuần trước sẽ bị bỏ qua (`skipped`).
+
+## 5. Checklist sau khi deploy
 
 - [ ] `GET /api/health` trên Render trả `"db":"connected"`
 - [ ] Đăng ký tài khoản mới trong app APK
 - [ ] Tìm món "chicken" có kết quả (đã seed)
 - [ ] Bắt đầu buổi tập, chọn bài tập có danh sách (đã seed)
 - [ ] Tắt hẳn app rồi mở lại vẫn còn đăng nhập (refresh token trong SecureStore)
+- [ ] Bật nhắc tập với giờ sắp tới trong vài phút → thông báo hiện đúng giờ
+- [ ] Hoàn thành một buổi tập có PR → nhận push "🏆 Kỷ lục mới!", bấm vào mở đúng buổi tập
 
 ## Biến môi trường của server
 
@@ -104,4 +151,6 @@ iOS: cần tài khoản Apple Developer (99 USD/năm) mới build được bản
 | `CORS_ORIGINS` | | Chỉ cần nếu có web app gọi API; app mobile không bị CORS chặn |
 | `GEMINI_API_KEY` | | Bật tính năng AI; thiếu thì /api/ai trả 503 |
 | `GEMINI_MODEL` | | Mặc định `gemini-3.8-flash` |
+| `CRON_SECRET` | | ≥ 32 ký tự; bật `POST /api/internal/weekly-report` (thiếu thì endpoint trả 404) |
+| `EXPO_ACCESS_TOKEN` | | Chỉ cần khi bật "Enhanced push security" trên EAS |
 | `ACCESS_TOKEN_TTL_SECONDS`, `REFRESH_TOKEN_TTL_SECONDS`, `BCRYPT_ROUNDS` | | Có giá trị mặc định |
