@@ -3,6 +3,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { colors } from "@/constants/theme";
 import { useAuthStore } from "@/stores/authStore";
+import "@/stores/resetOnLogout";
 
 // Giữ splash cho đến khi biết user đã đăng nhập hay chưa, tránh nháy màn Login
 SplashScreen.preventAutoHideAsync();
@@ -38,6 +39,7 @@ export default function RootLayout() {
           name="profile/index"
           options={{ headerShown: true, title: "Hồ sơ", headerBackTitle: "Quay lại" }}
         />
+        <Stack.Screen name="food" />
       </Stack.Protected>
 
       <Stack.Protected guard={!isAuthenticated}>

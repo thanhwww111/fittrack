@@ -82,3 +82,39 @@ export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
+
+export type ServingUnit = "g" | "ml" | "piece";
+
+export interface NutritionValues extends Macros {
+  fiber: number;
+}
+
+export interface Food extends NutritionValues {
+  id: string;
+  name: string;
+  servingSize: number;
+  servingUnit: ServingUnit;
+  isCustom: boolean;
+  createdBy: string | null;
+}
+
+export type CreateFoodInput = Omit<Food, "id" | "isCustom" | "createdBy">;
+
+// Snapshot dinh dưỡng tại thời điểm ghi, do server tính
+export interface FoodLog extends NutritionValues {
+  id: string;
+  date: string;
+  mealType: MealType;
+  foodId: string;
+  foodName: string;
+  servingUnit: ServingUnit;
+  quantity: number;
+  createdAt: string;
+}
+
+export interface Paginated<T> {
+  items: T[];
+  page: number;
+  limit: number;
+  total: number;
+}

@@ -1,9 +1,9 @@
 import { Link } from "expo-router";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { MacroBars } from "@/components/nutrition/MacroBars";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { colors, spacing } from "@/constants/theme";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useAuthStore } from "@/stores/authStore";
@@ -68,35 +68,7 @@ export default function HomeScreen() {
       {nutrition ? (
         <Card title="Dinh dưỡng hôm nay">
           {nutrition.target ? (
-            <>
-              <ProgressBar
-                label="Calories"
-                value={nutrition.consumed.calories}
-                target={nutrition.target.calories}
-                unit="kcal"
-              />
-              <ProgressBar
-                label="Protein"
-                value={nutrition.consumed.protein}
-                target={nutrition.target.protein}
-                unit="g"
-                color={colors.protein}
-              />
-              <ProgressBar
-                label="Carbs"
-                value={nutrition.consumed.carbs}
-                target={nutrition.target.carbs}
-                unit="g"
-                color={colors.carbs}
-              />
-              <ProgressBar
-                label="Fat"
-                value={nutrition.consumed.fat}
-                target={nutrition.target.fat}
-                unit="g"
-                color={colors.fat}
-              />
-            </>
+            <MacroBars consumed={nutrition.consumed} target={nutrition.target} />
           ) : (
             <>
               <Text style={styles.muted}>
