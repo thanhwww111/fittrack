@@ -9,7 +9,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx src/scripts/seedFoods.ts"
   },
   "keywords": [],
   "author": "",
