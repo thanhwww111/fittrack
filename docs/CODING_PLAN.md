@@ -14,14 +14,14 @@
 | 5 | Food system + Nutrition | ✅ Backend xong + test (MealTemplate API chưa làm) |
 | 6 | Workout | ✅ Backend xong + test |
 | 7 | Progress | ✅ Backend xong + test |
-| 8 | Mobile foundation | 🟡 Mới có màn check `/health` (`a966f27`) |
-| 9 | State management (Zustand) | ⬜ |
-| 10 | API layer mobile | 🟡 Có `client.ts`, `healthApi.ts` |
-| 11 | UI screens (4 sprint) | ⬜ |
-| 12 | Dashboard | ⬜ |
-| 13 | Validation & error handling | 🟡 Có middleware `validate` + `errorHandler` |
-| 14 | Service layer | ⬜ |
-| 15 | Testing | 🟡 Đã setup Vitest + Supertest, có test auth |
+| 8 | Mobile foundation | ✅ Route `(auth)`, `(tabs)`, `profile` + `Stack.Protected` |
+| 9 | State management (Zustand) | 🟡 Có `authStore`, `profileStore` (nutrition/workout store làm ở Sprint 2–3) |
+| 10 | API layer mobile | 🟡 `client.ts` tự refresh token; có `authApi`, `profileApi`, `nutritionApi`, `progressApi` |
+| 11 | UI screens (4 sprint) | 🟡 Sprint 1 xong (Login, Register, Home, Profile); Sprint 2–4 chưa làm |
+| 12 | Dashboard | 🟡 Home đã có nutrition hôm nay + tổng kết tuần |
+| 13 | Validation & error handling | ✅ Zod ở mọi route + validate form ở mobile, lỗi server map về từng field |
+| 14 | Service layer | ✅ Controller → Service → Model cho mọi module |
+| 15 | Testing | 🟡 117 test backend (unit + API); mobile chưa có test |
 | 16 | Security | 🟡 Có helmet, cors, env validation, bcrypt, JWT + refresh rotation, rate limit auth |
 | 17 | Deployment | ⬜ |
 | 18 | AI (Gemini) | ⬜ |
@@ -91,6 +91,20 @@
       - Trung bình chỉ tính trên các ngày có log.
       - `daysOnCalorieTarget` là số ngày ăn trong khoảng ±10% target calo, `daysProteinGoalMet` là số ngày ăn đủ protein.
     - `GET /api/progress/weekly`: tổng kết tuần hiện tại gồm workout, nutrition, thay đổi cân nặng (so với lần đo gần nhất trước tuần) và số PR mới.
+- **Mobile (Expo SDK 57):**
+  - **Điều hướng:**
+    - Root `_layout.tsx` dùng `Stack.Protected guard={isAuthenticated}`. SDK 57 chưa có `redirectTo` (có từ SDK 58); khi guard là false, Router tự đưa user về route đầu tiên còn truy cập được.
+    - Splash được giữ cho đến khi `authStore.bootstrap()` xong, để không nháy màn Login.
+    - Tabs import từ `expo-router/js-tabs` (import từ `expo-router` đã deprecated). Icon dùng `@expo/vector-icons/Ionicons`.
+  - **Token:**
+    - Refresh token lưu trong `expo-secure-store` (bản web dùng `localStorage`, chỉ để dev). Access token chỉ giữ trong bộ nhớ (Zustand).
+    - `api/client.ts` nhận các hàm xử lý token qua `configureAuth()`, không import store, để tránh vòng import.
+    - Gặp 401 thì refresh một lần rồi gửi lại request. Nhiều request 401 cùng lúc dùng chung một lần refresh.
+    - Không refresh cho `/auth/login`, `/auth/register`, `/auth/refresh`, `/auth/logout`. **`/auth/me` vẫn phải refresh**, vì bootstrap gọi nó khi chưa có access token.
+  - **Đăng xuất:** xoá phiên ở máy trước, gọi server thu hồi token sau, nên mất mạng vẫn đăng xuất được.
+  - **Luồng dữ liệu:** Screen → Hook (`useDashboard` dùng `useFocusEffect` để tải lại khi quay về màn) → API.
+  - **Validate form:** giới hạn ở client khớp với Zod ở server. Lỗi `details` từ server được map về từng field qua `lib/formErrors.ts`.
+  - **Chưa làm:** Profile "Tính lại từ hồ sơ" khi hôm nay đã có target thì gọi `PUT /goals/:id`, và server đánh dấu `source = MANUAL` dù số liệu là AUTO. Cần thêm `mode` cho PUT nếu muốn phân biệt.
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 
 ---
