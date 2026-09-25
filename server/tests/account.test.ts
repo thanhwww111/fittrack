@@ -122,3 +122,25 @@ describe("DELETE /api/auth/me", () => {
     expect(me.status).toBe(401);
   });
 });
+
+describe("avatar", () => {
+  const tinyJpeg = `data:image/jpeg;base64,${Buffer.from("fake-jpeg-bytes").toString("base64")}`;
+
+  it("sets and removes the avatar", async () => {
+    const { auth } = await createAuthedUser();
+    const set = await request(app).patch("/api/auth/me").set(auth).send({ avatar: tinyJpeg });
+    expect(set.status).toBe(200);
+    expect(set.body.data.avatar).toBe(tinyJpeg);
+
+    const removed = await request(app).patch("/api/auth/me").set(auth).send({ avatar: null });
+    expect(removed.body.data.avatar).toBeNull();
+  });
+
+  it("rejects non-image data and oversized images", async () => {
+    const { auth } = await createAuthedUser();
+    for (const avatar of ["https://evil.example/x.png", "data:text/html;base64,PGgxPg==", `data:image/png;base64,${"A".repeat(200_000)}`]) {
+      const res = await request(app).patch("/api/auth/me").set(auth).send({ avatar });
+      expect(res.status).toBe(400);
+    }
+  });
+});

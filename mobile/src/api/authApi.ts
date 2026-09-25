@@ -26,7 +26,8 @@ export const authApi = {
 };
 
 export const accountApi = {
-  updateMe: (input: { name: string }) => unwrap(api.patch<ApiSuccess<User>>("/auth/me", input)),
+  // avatar: data URI JPEG 256px, null = gỡ ảnh
+  updateMe: (input: { name?: string; avatar?: string | null }) => unwrap(api.patch<ApiSuccess<User>>("/auth/me", input)),
 
   // Server thu hồi mọi phiên cũ và trả về token mới cho máy này
   changePassword: (input: { currentPassword: string; newPassword: string }) =>

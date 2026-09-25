@@ -1,11 +1,21 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { accountApi } from "@/api/authApi";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
 import { colors, spacing } from "@/constants/theme";
+import { pickAvatar } from "@/lib/avatar";
 import { confirmAction } from "@/lib/confirm";
 import {
   errorMessage,
@@ -37,6 +47,7 @@ function NameForm() {
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   async function handleSave() {
     if (!name.trim()) {
@@ -56,8 +67,51 @@ function NameForm() {
     }
   }
 
+  async function changeAvatar() {
+    setError(undefined);
+    setNotice(null);
+    try {
+      const avatar = await pickAvatar();
+      if (!avatar) return;
+      setUploading(true);
+      setUser(await accountApi.updateMe({ avatar }));
+      setNotice("Đã đổi ảnh đại diện.");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removeAvatar() {
+    setUploading(true);
+    try {
+      setUser(await accountApi.updateMe({ avatar: null }));
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <Card title="Thông tin tài khoản">
+      <View style={styles.avatarRow}>
+        <Avatar name={user?.name} uri={user?.avatar} size={72} />
+        <View style={styles.avatarActions}>
+          <Button
+            title={user?.avatar ? "Đổi ảnh" : "Chọn ảnh đại diện"}
+            variant="secondary"
+            onPress={changeAvatar}
+            loading={uploading}
+          />
+          {user?.avatar ? (
+            <Pressable accessibilityRole="button" onPress={removeAvatar} disabled={uploading} hitSlop={6}>
+              <Text style={styles.removeText}>Gỡ ảnh</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
       <Text style={styles.muted}>Email: {user?.email}</Text>
       <TextField label="Tên hiển thị" value={name} onChangeText={setName} error={error} maxLength={100} />
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
@@ -216,4 +270,7 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   muted: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
   notice: { fontSize: 14, color: colors.success },
+  avatarRow: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
+  avatarActions: { flex: 1, gap: spacing.sm },
+  removeText: { fontSize: 14, fontWeight: "600", color: colors.danger, textAlign: "center" },
 });

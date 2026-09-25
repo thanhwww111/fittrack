@@ -23,9 +23,22 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1, "refreshToken is required"),
 });
 
-export const updateMeSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(100),
-});
+// Ảnh đại diện nhỏ (app đã thu về 256px) lưu thẳng trong DB dạng data URI, không cần dịch vụ lưu file.
+// ~200 KB base64 là quá đủ cho ảnh 256×256 JPEG.
+const MAX_AVATAR_LENGTH = 200_000;
+const avatar = z
+  .string()
+  .max(MAX_AVATAR_LENGTH, "Avatar image is too large")
+  .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/, "Avatar must be a base64 image");
+
+export const updateMeSchema = z
+  .object({
+    name: z.string().trim().min(1, "Name is required").max(100),
+    // null = gỡ ảnh đại diện
+    avatar: avatar.nullable(),
+  })
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, "At least one field is required");
 
 export const changePasswordSchema = z
   .object({ currentPassword: z.string().min(1, "Current password is required"), newPassword: password })

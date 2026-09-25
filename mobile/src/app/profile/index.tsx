@@ -4,12 +4,14 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { ManualTargetForm } from "@/components/profile/ManualTargetForm";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
@@ -180,10 +182,18 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View>
-          <Text style={styles.name}>{user?.name}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Tài khoản & bảo mật"
+          onPress={() => router.push("/settings/account")}
+          style={styles.userRow}
+        >
+          <Avatar name={user?.name} uri={user?.avatar} size={56} />
+          <View style={styles.flex}>
+            <Text style={styles.name}>{user?.name}</Text>
+            <Text style={styles.email}>{user?.email}</Text>
+          </View>
+        </Pressable>
 
         <ErrorBanner message={formError} />
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
@@ -318,6 +328,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
+  userRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   name: { fontSize: 22, fontWeight: "700", color: colors.text },
   email: { fontSize: 15, color: colors.textMuted },
   notice: { fontSize: 14, color: colors.success },
