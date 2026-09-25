@@ -1,11 +1,12 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, model, type InferSchemaType, type HydratedDocument } from "mongoose";
 import { WORKOUT_STATUSES } from "../constants/enums";
+import { applyToJSON } from "../utils/toJSON";
 
 const workoutSetSchema = new Schema(
   {
     setNumber: { type: Number, required: true, min: 1 },
-    weight: { type: Number, required: true, min: 0 }, // kg, 0 cho bài bodyweight
-    reps: { type: Number, required: true, min: 1 },
+    weight: { type: Number, required: true, min: 0, max: 1000 }, // kg, 0 cho bài bodyweight
+    reps: { type: Number, required: true, min: 1, max: 1000 },
     completed: { type: Boolean, default: true },
   },
   { _id: false }
@@ -14,6 +15,9 @@ const workoutSetSchema = new Schema(
 const sessionExerciseSchema = new Schema(
   {
     exerciseId: { type: Schema.Types.ObjectId, ref: "Exercise", required: true },
+    exerciseName: { type: String, required: true }, // snapshot để lịch sử vẫn đọc được nếu exercise bị xoá
+    targetSets: { type: Number, default: null },
+    targetReps: { type: Number, default: null },
     sets: { type: [workoutSetSchema], default: [] },
   },
   { _id: false }
@@ -36,7 +40,19 @@ const workoutSessionSchema = new Schema(
 
 workoutSessionSchema.index({ userId: 1, startedAt: -1 });
 workoutSessionSchema.index({ userId: 1, status: 1 });
+// Mỗi user chỉ có tối đa một buổi tập đang diễn ra, chặn cả khi 2 request đến cùng lúc
+workoutSessionSchema.index(
+  { userId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: "IN_PROGRESS" },
+    name: "one_active_session_per_user",
+  }
+);
+
+applyToJSON(workoutSessionSchema);
 
 export type WorkoutSession = InferSchemaType<typeof workoutSessionSchema>;
+export type WorkoutSessionDocument = HydratedDocument<WorkoutSession>;
 
 export const WorkoutSessionModel = model("WorkoutSession", workoutSessionSchema);

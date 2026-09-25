@@ -1,5 +1,3 @@
-import mongoose from "mongoose";
-import { connectDB } from "../config/db";
 import { FoodModel } from "../models/food.model";
 import type { CreateFoodInput } from "../schemas/food.schema";
 
@@ -27,17 +25,4 @@ export async function seedFoods() {
     },
   }));
   return FoodModel.bulkWrite(ops);
-}
-
-if (require.main === module) {
-  connectDB()
-    .then(seedFoods)
-    .then((result) => {
-      console.log(`🌱 Seeded foods: ${result.upsertedCount} inserted, ${result.modifiedCount} updated`);
-    })
-    .catch((err) => {
-      console.error("❌ Seed failed:", err);
-      process.exitCode = 1;
-    })
-    .finally(() => mongoose.disconnect());
 }

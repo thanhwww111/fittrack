@@ -1,4 +1,5 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
+import { applyToJSON } from "../utils/toJSON";
 
 const templateExerciseSchema = new Schema(
   {
@@ -24,6 +25,8 @@ const workoutTemplateSchema = new Schema(
 );
 
 workoutTemplateSchema.index({ userId: 1 });
+
+applyToJSON(workoutTemplateSchema);
 
 export type WorkoutTemplate = InferSchemaType<typeof workoutTemplateSchema>;
 

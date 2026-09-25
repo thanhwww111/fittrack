@@ -12,7 +12,7 @@
 | 3 | Authentication | ✅ Backend xong + 12 API test (mobile làm ở Phase 8–11) |
 | 4 | Profile + Goal | ✅ Backend xong + test |
 | 5 | Food system + Nutrition | ✅ Backend xong + test (MealTemplate API chưa làm) |
-| 6 | Workout | ⬜ |
+| 6 | Workout | ✅ Backend xong + test |
 | 7 | Progress | ⬜ |
 | 8 | Mobile foundation | 🟡 Mới có màn check `/health` (`a966f27`) |
 | 9 | State management (Zustand) | ⬜ |
@@ -65,6 +65,21 @@
 - **Nutrition:** `GET /api/nutrition/today` và `GET /api/nutrition/daily?date=` trả `{ date, target, consumed, remaining, meals, logCount }`.
   - Target lấy theo bản đang áp dụng **vào đúng ngày đó**.
   - `remaining` âm nghĩa là ăn vượt target. Chưa có target thì `target` và `remaining` là `null`.
+- **Workout:**
+  - **Exercises:** gồm bài hệ thống (seed 18 bài) và bài custom của user. Lọc bằng `?muscleGroup=&search=&scope=`.
+  - **Templates:** thứ tự bài tập lấy theo vị trí trong mảng (server tự gán `order`). Mọi `exerciseId` phải là bài user được phép dùng, nếu không trả 400 kèm `missingExerciseIds`.
+  - **Sessions:**
+    - Mỗi user tối đa 1 buổi `IN_PROGRESS`, được đảm bảo bằng partial unique index. Nếu đang có buổi khác thì trả 409 kèm `activeSessionId`.
+    - Session copy tên bài tập (`exerciseName`) và target từ template, nên xoá template hay exercise cũng không làm hỏng lịch sử.
+  - **Set:** `POST /:id/sets` với `setNumber` bỏ trống thì thêm set mới, có `setNumber` thì sửa set đó.
+    - Xoá set bằng `DELETE /:id/exercises/:exerciseId/sets/:setNumber`, các set còn lại được đánh số lại.
+    - `totalVolume` được cập nhật ngay. Response có `prCheck` báo set vừa ghi có phá PR hay không.
+  - **Complete:**
+    - Chuyển trạng thái nguyên tử bằng `findOneAndUpdate` với điều kiện `status: IN_PROGRESS`, nên complete 2 lần hoặc 2 request cùng lúc chỉ 1 lần thành công (lần sau 409).
+    - Bỏ các bài không có set nào. Không cho complete buổi trống (400).
+    - Tính `duration` và `totalVolume`, rồi upsert `PersonalRecord`.
+  - **PR:** `maxWeight`, `maxReps` và `estimatedOneRepMax` (công thức Epley, 1 rep thì lấy đúng mức tạ). Mỗi chỉ số so sánh độc lập. Buổi tập bị cancel không tính PR. Xem danh sách bằng `GET /api/personal-records`.
+  - Seed chung bằng `npm run seed` (foods + exercises).
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 
 ---

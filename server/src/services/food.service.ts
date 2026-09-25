@@ -2,14 +2,11 @@ import type { QueryFilter } from "mongoose";
 import { FoodModel, type Food } from "../models/food.model";
 import type { CreateFoodInput, ListFoodsQuery, UpdateFoodInput } from "../schemas/food.schema";
 import { AppError } from "../utils/AppError";
-
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+import { escapeRegex, visibleToUser } from "../utils/ownership";
 
 // Food user được xem: food hệ thống + food của chính user
 function visibleTo(userId: string): QueryFilter<Food> {
-  return { $or: [{ createdBy: null }, { createdBy: userId }] };
+  return visibleToUser(userId);
 }
 
 export async function listFoods(userId: string, query: ListFoodsQuery) {
