@@ -4,6 +4,7 @@ import authRoutes from "./auth.routes";
 import foodRoutes from "./food.routes";
 import foodLogRoutes from "./foodLog.routes";
 import goalRoutes from "./goal.routes";
+import nutritionRoutes from "./nutrition.routes";
 import profileRoutes from "./profile.routes";
 
 const router = Router();
@@ -23,5 +24,6 @@ router.use("/profile", profileRoutes);
 router.use("/goals", goalRoutes);
 router.use("/foods", foodRoutes);
 router.use("/food-logs", foodLogRoutes);
+router.use("/nutrition", nutritionRoutes);
 
 export default router;

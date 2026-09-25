@@ -11,7 +11,7 @@
 | 2 | Backend foundation | ✅ `cedc200` |
 | 3 | Authentication | ✅ Backend xong + 12 API test (mobile làm ở Phase 8–11) |
 | 4 | Profile + Goal | ✅ Backend xong + test |
-| 5 | Food system + Nutrition | ⬜ |
+| 5 | Food system + Nutrition | ✅ Backend xong + test (MealTemplate API chưa làm) |
 | 6 | Workout | ⬜ |
 | 7 | Progress | ⬜ |
 | 8 | Mobile foundation | 🟡 Mới có màn check `/health` (`a966f27`) |
@@ -54,6 +54,17 @@
   - `PUT /api/goals/:id` chỉ sửa được target có `effectiveFrom >= hôm nay`. Target trong quá khứ là bất biến (409).
   - Công thức AUTO (`utils/nutritionCalculator.ts`): BMR Mifflin-St Jeor × hệ số vận động. Giảm cân −500 kcal, tăng cơ +300 kcal, tối thiểu 1200 kcal. Protein 2.0 / 1.6 / 1.8 g/kg, fat 25% calo, carbs lấy phần còn lại.
 - **Profile:** `goalWeight` phải khớp với `goalType` (WEIGHT_LOSS thì nhỏ hơn cân hiện tại, MUSCLE_GAIN thì lớn hơn).
+- **Foods:**
+  - User thấy food hệ thống (`createdBy = null`) và food của chính mình. Sửa/xoá food hệ thống trả 403. Food custom của người khác trả 404.
+  - Tìm kiếm không phân biệt hoa thường, khớp một phần tên, có escape ký tự regex. Có `scope=all|system|custom` và phân trang `page`/`limit` (tối đa 50).
+  - Seed bằng `npm run seed`, dùng upsert theo tên nên chạy lại nhiều lần không bị trùng.
+- **Food logs:**
+  - Snapshot gồm `foodName`, `servingUnit`, `quantity` và các giá trị dinh dưỡng làm tròn 1 chữ số thập phân.
+  - Khi đổi `quantity`, server scale lại **từ snapshot cũ**, không đọc lại Food.
+  - Không cho log vào ngày tương lai, nhưng cho log bù ngày đã qua.
+- **Nutrition:** `GET /api/nutrition/today` và `GET /api/nutrition/daily?date=` trả `{ date, target, consumed, remaining, meals, logCount }`.
+  - Target lấy theo bản đang áp dụng **vào đúng ngày đó**.
+  - `remaining` âm nghĩa là ăn vượt target. Chưa có target thì `target` và `remaining` là `null`.
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 
 ---
