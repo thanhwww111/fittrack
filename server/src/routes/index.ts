@@ -1,6 +1,8 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import authRoutes from "./auth.routes";
+import goalRoutes from "./goal.routes";
+import profileRoutes from "./profile.routes";
 
 const router = Router();
 
@@ -15,7 +17,8 @@ router.get("/health", (_req, res) => {
 });
 
 router.use("/auth", authRoutes);
-// router.use("/profile", profileRoutes); // Phase 4
+router.use("/profile", profileRoutes);
+router.use("/goals", goalRoutes);
 // router.use("/foods", foodRoutes);      // Phase 5
 
 export default router;

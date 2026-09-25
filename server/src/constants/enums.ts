@@ -45,3 +45,7 @@ export type Equipment = (typeof EQUIPMENTS)[number];
 
 export const WORKOUT_STATUSES = ["IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
 export type WorkoutStatus = (typeof WORKOUT_STATUSES)[number];
+
+// AUTO: tính từ profile, MANUAL: user tự nhập
+export const TARGET_SOURCES = ["AUTO", "MANUAL"] as const;
+export type TargetSource = (typeof TARGET_SOURCES)[number];

@@ -1,4 +1,5 @@
 import { Schema, model, type InferSchemaType, type HydratedDocument } from "mongoose";
+import { applyToJSON } from "../utils/toJSON";
 
 const userSchema = new Schema(
   {
@@ -17,15 +18,7 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-userSchema.set("toJSON", {
-  transform: (_doc, ret: Record<string, unknown>) => {
-    ret.id = String(ret._id);
-    delete ret._id;
-    delete ret.__v;
-    delete ret.passwordHash;
-    return ret;
-  },
-});
+applyToJSON(userSchema, ["passwordHash"]);
 
 export type User = InferSchemaType<typeof userSchema>;
 export type UserDocument = HydratedDocument<User>;
