@@ -15,9 +15,9 @@
 | 6 | Workout | ✅ Backend xong + test |
 | 7 | Progress | ✅ Backend xong + test |
 | 8 | Mobile foundation | ✅ Route `(auth)`, `(tabs)`, `profile` + `Stack.Protected` |
-| 9 | State management (Zustand) | 🟡 Có `authStore`, `profileStore` (nutrition/workout store làm ở Sprint 2–3) |
-| 10 | API layer mobile | 🟡 `client.ts` tự refresh token; có `authApi`, `profileApi`, `nutritionApi`, `progressApi` |
-| 11 | UI screens (4 sprint) | 🟡 Sprint 1 xong (Login, Register, Home, Profile); Sprint 2–4 chưa làm |
+| 9 | State management (Zustand) | 🟡 Có `authStore`, `profileStore`, `nutritionStore` (workout store làm ở Sprint 3) |
+| 10 | API layer mobile | 🟡 `client.ts` tự refresh token; có `authApi`, `profileApi`, `foodApi`, `nutritionApi`, `progressApi` |
+| 11 | UI screens (4 sprint) | 🟡 Sprint 1–2 xong (Auth, Home, Profile, Nutrition, Food search/add/detail/create); Sprint 3–4 chưa làm |
 | 12 | Dashboard | 🟡 Home đã có nutrition hôm nay + tổng kết tuần |
 | 13 | Validation & error handling | ✅ Zod ở mọi route + validate form ở mobile, lỗi server map về từng field |
 | 14 | Service layer | ✅ Controller → Service → Model cho mọi module |
@@ -104,6 +104,13 @@
   - **Đăng xuất:** xoá phiên ở máy trước, gọi server thu hồi token sau, nên mất mạng vẫn đăng xuất được.
   - **Luồng dữ liệu:** Screen → Hook (`useDashboard` dùng `useFocusEffect` để tải lại khi quay về màn) → API.
   - **Validate form:** giới hạn ở client khớp với Zod ở server. Lỗi `details` từ server được map về từng field qua `lib/formErrors.ts`.
+  - **Reset khi rời phiên:** `stores/resetOnLogout.ts` subscribe `authStore` và reset mọi store khi user rời phiên, kể cả khi refresh token hết hạn. Store mới phải được thêm vào file này.
+  - **Sprint 2 (Nutrition):**
+    - **Tab Dinh dưỡng** (kiêm Meal History): chuyển ngày ‹ ›, không đi quá hôm nay (ngày "hôm nay" lấy theo server). Có tổng kcal còn lại hoặc vượt, `MacroBars`, và 4 bữa với nút "+ Thêm món".
+    - **Luồng thêm món:** `food/search` (debounce 300 ms, phân trang khi cuộn) → `food/add` (xem trước macro ở client, số chính thức do server tính) → `router.dismissTo("/nutrition")`.
+    - **`food/detail`:** sửa khối lượng hoặc bữa (xem trước bằng cách scale từ snapshot của log), xoá có hộp thoại xác nhận.
+    - **`food/create`:** tạo món custom, xong chuyển thẳng sang `food/add` bằng `router.replace`.
+    - **`nutritionStore`:** sau mỗi lần thêm/sửa/xoá thì tải lại tổng hợp từ server, không tự cộng trừ ở client.
   - **Chưa làm:** Profile "Tính lại từ hồ sơ" khi hôm nay đã có target thì gọi `PUT /goals/:id`, và server đánh dấu `source = MANUAL` dù số liệu là AUTO. Cần thêm `mode` cho PUT nếu muốn phân biệt.
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 

@@ -87,7 +87,6 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
   const updateProfile = useProfileStore((s) => s.updateProfile);
   const recalculateTarget = useProfileStore((s) => s.recalculateTarget);
   const currentTarget = useProfileStore((s) => s.currentTarget);
-  const resetProfile = useProfileStore((s) => s.reset);
 
   const [gender, setGender] = useState(profile.gender);
   const [goalType, setGoalType] = useState(profile.goalType);
@@ -167,11 +166,6 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
     }
   }
 
-  async function handleLogout() {
-    resetProfile();
-    await logout();
-  }
-
   const setNumber = (key: NumberField) => (text: string) =>
     setNumbers((prev) => ({ ...prev, [key]: text }));
 
@@ -247,7 +241,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
           />
         </Card>
 
-        <Button title="Đăng xuất" onPress={handleLogout} variant="danger" />
+        <Button title="Đăng xuất" onPress={logout} variant="danger" />
       </ScrollView>
     </KeyboardAvoidingView>
   );
