@@ -13,6 +13,10 @@ export const foodApi = {
   search: (params: SearchFoodsParams) =>
     unwrap(api.get<ApiSuccess<Paginated<Food>>>("/foods", { params })),
 
+  // Món ghi gần đây nhất, mỗi món một lần
+  recent: (limit = 10) =>
+    unwrap(api.get<ApiSuccess<Food[]>>("/foods/recent", { params: { limit } })),
+
   get: (id: string) => unwrap(api.get<ApiSuccess<Food>>(`/foods/${id}`)),
 
   create: (input: CreateFoodInput) => unwrap(api.post<ApiSuccess<Food>>("/foods", input)),

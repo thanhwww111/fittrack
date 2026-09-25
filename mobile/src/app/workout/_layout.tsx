@@ -15,6 +15,7 @@ export default function WorkoutLayout() {
       <Stack.Screen name="exercises" options={{ title: "Chọn bài tập", presentation: "modal" }} />
       <Stack.Screen name="history" options={{ title: "Lịch sử tập" }} />
       <Stack.Screen name="session" options={{ title: "Chi tiết buổi tập" }} />
+      <Stack.Screen name="exercise" options={{ title: "Bài tập" }} />
     </Stack>
   );
 }

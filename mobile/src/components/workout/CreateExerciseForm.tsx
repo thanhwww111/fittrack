@@ -21,34 +21,39 @@ const EQUIPMENT_OPTIONS: ChipOption<Equipment>[] = (
 ).map((e) => ({ value: e, label: EQUIPMENT_LABELS[e] }));
 
 interface CreateExerciseFormProps {
-  initialName: string;
-  initialMuscle: MuscleGroup | null;
-  onCreated: (exercise: Exercise) => void;
+  // Có `exercise` = sửa bài tự tạo đã có, không có = tạo mới
+  exercise?: Exercise;
+  initialName?: string;
+  initialMuscle?: MuscleGroup | null;
+  onSaved: (exercise: Exercise) => void;
   onCancel: () => void;
 }
 
 // Bài tập tự tạo chỉ hiện với chính user đó, dùng được trong template và buổi tập như bài có sẵn
 export function CreateExerciseForm({
-  initialName,
-  initialMuscle,
-  onCreated,
+  exercise,
+  initialName = "",
+  initialMuscle = null,
+  onSaved,
   onCancel,
 }: CreateExerciseFormProps) {
-  const [name, setName] = useState(initialName);
-  const [muscle, setMuscle] = useState<MuscleGroup | null>(initialMuscle);
-  const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [name, setName] = useState(exercise?.name ?? initialName);
+  const [muscle, setMuscle] = useState<MuscleGroup | null>(exercise?.muscleGroup ?? initialMuscle);
+  const [equipment, setEquipment] = useState<Equipment | null>(exercise?.equipment ?? null);
+  const [description, setDescription] = useState(exercise?.description ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  async function handleCreate() {
+  async function handleSubmit() {
     if (!name.trim()) return setError("Vui lòng nhập tên bài tập");
     if (!muscle) return setError("Chọn nhóm cơ chính");
     if (!equipment) return setError("Chọn dụng cụ");
 
     setError(null);
     setSaving(true);
+    const input = { name: name.trim(), muscleGroup: muscle, equipment, description: description.trim() };
     try {
-      onCreated(await exerciseApi.create({ name: name.trim(), muscleGroup: muscle, equipment }));
+      onSaved(exercise ? await exerciseApi.update(exercise.id, input) : await exerciseApi.create(input));
     } catch (err) {
       setError(errorMessage(err));
       setSaving(false);
@@ -56,14 +61,27 @@ export function CreateExerciseForm({
   }
 
   return (
-    <Card title="Tạo bài tập mới">
+    <Card title={exercise ? "Sửa bài tập" : "Tạo bài tập mới"}>
       <ErrorBanner message={error} />
       <TextField label="Tên bài tập" value={name} onChangeText={setName} maxLength={100} />
       <ChipGroup label="Nhóm cơ" options={MUSCLE_OPTIONS} value={muscle} onChange={setMuscle} />
       <ChipGroup label="Dụng cụ" options={EQUIPMENT_OPTIONS} value={equipment} onChange={setEquipment} />
+      <TextField
+        label="Hướng dẫn / ghi chú (không bắt buộc)"
+        value={description}
+        onChangeText={setDescription}
+        multiline
+        maxLength={1000}
+        style={styles.description}
+      />
       <View style={styles.actions}>
         <Button title="Huỷ" variant="secondary" onPress={onCancel} style={styles.flex} />
-        <Button title="Tạo và chọn" onPress={handleCreate} loading={saving} style={styles.flex} />
+        <Button
+          title={exercise ? "Lưu" : "Tạo và chọn"}
+          onPress={handleSubmit}
+          loading={saving}
+          style={styles.flex}
+        />
       </View>
     </Card>
   );
@@ -72,4 +90,5 @@ export function CreateExerciseForm({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   actions: { flexDirection: "row", gap: spacing.md },
+  description: { minHeight: 64, textAlignVertical: "top" },
 });

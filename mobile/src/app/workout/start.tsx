@@ -12,6 +12,7 @@ import {
 import { ElapsedClock } from "@/components/workout/ElapsedClock";
 import { ExerciseLogger } from "@/components/workout/ExerciseLogger";
 import { RestTimer } from "@/components/workout/RestTimer";
+import { SessionInfoEditor } from "@/components/workout/SessionInfoEditor";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { colors, radius, spacing } from "@/constants/theme";
@@ -26,8 +27,9 @@ export default function ActiveWorkoutScreen() {
   const pending = useWorkoutStore((s) => s.pendingExercises);
   const prAlert = useWorkoutStore((s) => s.prAlert);
   const isLoading = useWorkoutStore((s) => s.isLoading);
-  const { recordSet, removeSet, complete, cancel, addExercise, clearPrAlert } =
+  const { recordSet, removeSet, complete, cancel, addExercise, clearPrAlert, updateInfo } =
     useWorkoutStore.getState();
+  const [editingInfo, setEditingInfo] = useState(false);
   const openPicker = useExercisePickerStore((s) => s.open);
 
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
@@ -157,6 +159,21 @@ export default function ActiveWorkoutScreen() {
         ) : null}
 
         <Button title="+ Thêm bài tập" variant="secondary" onPress={handleAddExercise} />
+
+        {editingInfo ? (
+          <SessionInfoEditor
+            name={session.name}
+            notes={session.notes ?? ""}
+            onSave={updateInfo}
+            onClose={() => setEditingInfo(false)}
+          />
+        ) : (
+          <Button
+            title={session.notes ? `📝 ${session.notes}` : "✎ Đổi tên / thêm ghi chú"}
+            variant="secondary"
+            onPress={() => setEditingInfo(true)}
+          />
+        )}
         <Button
           title="Hoàn thành buổi tập"
           onPress={handleFinish}

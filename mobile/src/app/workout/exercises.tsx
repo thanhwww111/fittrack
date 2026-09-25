@@ -111,7 +111,7 @@ export default function ExercisePickerScreen() {
           <CreateExerciseForm
             initialName={query.trim()}
             initialMuscle={muscle}
-            onCreated={pick}
+            onSaved={pick}
             onCancel={() => setCreating(false)}
           />
         </ScrollView>

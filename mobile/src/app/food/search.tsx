@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { foodApi } from "@/api/foodApi";
 import { MacroChips } from "@/components/nutrition/MacroChips";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { colors, radius, spacing } from "@/constants/theme";
@@ -25,10 +26,13 @@ export default function FoodSearchScreen() {
 
   // Quay lại từ màn khác (có thể vừa sửa / xoá món) thì tải lại; lần focus đầu hook đã tự tải
   const focusedOnce = useRef(false);
+  const [recent, setRecent] = useState<Food[]>([]);
   useFocusEffect(
     useCallback(() => {
       if (focusedOnce.current) refresh();
       focusedOnce.current = true;
+      // Món gần đây chỉ để thêm nhanh, lỗi thì bỏ qua
+      foodApi.recent(8).then(setRecent).catch(() => {});
     }, [refresh])
   );
 
@@ -70,6 +74,29 @@ export default function FoodSearchScreen() {
         onEndReached={loadMore}
         onEndReachedThreshold={0.4}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          !query.trim() && recent.length > 0 ? (
+            <View style={styles.recent}>
+              <Text style={styles.sectionTitle}>Gần đây</Text>
+              <View style={styles.recentChips}>
+                {recent.map((food) => (
+                  <Pressable
+                    key={food.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Thêm ${food.name}`}
+                    onPress={() => openFood(food)}
+                    style={({ pressed }) => [styles.recentChip, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.recentText} numberOfLines={1}>
+                      {food.name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={styles.sectionTitle}>Tất cả món</Text>
+            </View>
+          ) : null
+        }
         renderItem={({ item }) => (
           <Pressable
             accessibilityRole="button"
@@ -122,6 +149,17 @@ export default function FoodSearchScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.lg, gap: spacing.md },
+  recent: { gap: spacing.sm, marginBottom: spacing.xs },
+  sectionTitle: { fontSize: 14, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase" },
+  recentChips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  recentChip: {
+    maxWidth: "100%",
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+  },
+  recentText: { fontSize: 14, fontWeight: "500", color: colors.primary },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",

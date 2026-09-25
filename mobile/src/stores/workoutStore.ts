@@ -41,6 +41,8 @@ interface WorkoutState {
   removeSet: (exerciseId: string, setNumber: number) => Promise<void>;
   complete: () => Promise<{ session: WorkoutSession; newRecords: NewRecord[] }>;
   cancel: () => Promise<void>;
+  // Đổi tên / ghi chú buổi đang tập
+  updateInfo: (input: { name?: string; notes?: string }) => Promise<void>;
   saveTemplate: (id: string | null, input: TemplateInput) => Promise<WorkoutTemplate>;
   deleteTemplate: (id: string) => Promise<void>;
   clearPrAlert: () => void;
@@ -166,6 +168,12 @@ export const useWorkoutStore = create<WorkoutState>()((set, get) => ({
     const session = requireActive(get().activeSession);
     await sessionApi.cancel(session.id);
     set({ activeSession: null, pendingExercises: [], prAlert: null });
+  },
+
+  updateInfo: async (input) => {
+    const session = requireActive(get().activeSession);
+    const updated = await sessionApi.update(session.id, input);
+    set({ activeSession: updated });
   },
 
   saveTemplate: async (id, input) => {

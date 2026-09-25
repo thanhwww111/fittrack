@@ -200,6 +200,7 @@ export interface WorkoutSession {
   totalVolume: number;
   duration: number;
   status: WorkoutStatus;
+  notes?: string;
 }
 
 export type RecordField = "maxWeight" | "maxReps" | "estimatedOneRepMax";
@@ -301,3 +302,41 @@ export type UpdateNotificationSettings = {
   prAlerts?: boolean;
   goalAlerts?: boolean;
 };
+
+export interface MealTemplateItem {
+  foodId: string;
+  quantity: number;
+  // false = món đã bị xoá, không được ghi khi dùng bữa mẫu
+  available: boolean;
+  foodName: string | null;
+  servingUnit: ServingUnit | null;
+  nutrition: NutritionValues | null;
+}
+
+export interface MealTemplate {
+  id: string;
+  name: string;
+  items: MealTemplateItem[];
+  totals: NutritionValues;
+}
+
+export interface WaterDay {
+  date: string;
+  amount: number; // ml
+  target: number; // ml
+}
+
+export interface ExerciseHistoryEntry {
+  sessionId: string;
+  sessionName: string;
+  date: string;
+  sets: { setNumber: number; weight: number; reps: number }[];
+  volume: number;
+  best: RecordValues;
+}
+
+export interface ExerciseHistory {
+  exercise: Exercise;
+  record: (RecordValues & { achievedAt: string }) | null;
+  entries: ExerciseHistoryEntry[];
+}

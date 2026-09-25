@@ -88,6 +88,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   function addExercise() {
     openPicker(
@@ -159,6 +160,20 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
     } catch (err) {
       setFormError(errorMessage(err));
       setSaving(false);
+    }
+  }
+
+  // Tạo bản sao rồi mở luôn bản sao để sửa (vd "Push A" → "Push B")
+  async function handleDuplicate() {
+    if (!template) return;
+    setDuplicating(true);
+    setFormError(null);
+    try {
+      const copy = await templateApi.duplicate(template.id);
+      router.replace({ pathname: "/workout/template", params: { id: copy.id } });
+    } catch (err) {
+      setFormError(errorMessage(err));
+      setDuplicating(false);
     }
   }
 
@@ -245,6 +260,14 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
 
         <Button title="+ Thêm bài tập" variant="secondary" onPress={addExercise} />
         <Button title="Lưu template" onPress={handleSave} loading={saving} />
+        {template ? (
+          <Button
+            title="Nhân bản template"
+            variant="secondary"
+            onPress={handleDuplicate}
+            loading={duplicating}
+          />
+        ) : null}
         {template ? <Button title="Xoá template" variant="danger" onPress={handleDelete} /> : null}
       </ScrollView>
     </KeyboardAvoidingView>

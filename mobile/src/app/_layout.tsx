@@ -54,6 +54,10 @@ export default function RootLayout() {
         <Stack.Screen name="ai" />
         <Stack.Screen name="measurements" />
         <Stack.Screen
+          name="settings/account"
+          options={{ headerShown: true, title: "Tài khoản & bảo mật", headerBackTitle: "Quay lại" }}
+        />
+        <Stack.Screen
           name="settings/notifications"
           options={{ headerShown: true, title: "Thông báo", headerBackTitle: "Quay lại" }}
         />

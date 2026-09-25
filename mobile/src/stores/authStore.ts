@@ -17,6 +17,12 @@ interface AuthState {
   login: (input: LoginInput) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
+  // Sau khi đổi tên
+  setUser: (user: User) => void;
+  // Sau khi đổi mật khẩu: server thu hồi phiên cũ và cấp token mới
+  replaceSession: (result: AuthResult) => Promise<void>;
+  // Tài khoản đã bị xoá trên server: chỉ dọn phiên ở máy
+  clearLocalSession: () => Promise<void>;
 }
 
 const signedOut = {
@@ -85,5 +91,11 @@ export const useAuthStore = create<AuthState>()((set, get) => {
         authApi.logout(refreshToken).catch(() => {});
       }
     },
+
+    setUser: (user) => set({ user }),
+
+    replaceSession: applyAuthResult,
+
+    clearLocalSession: clearSession,
   };
 });

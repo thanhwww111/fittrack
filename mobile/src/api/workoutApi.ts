@@ -2,6 +2,7 @@ import type { ApiSuccess } from "@/types/api";
 import type {
   Equipment,
   Exercise,
+  ExerciseHistory,
   MuscleGroup,
   NewRecord,
   Paginated,
@@ -40,6 +41,17 @@ export const exerciseApi = {
 
   create: (input: { name: string; muscleGroup: MuscleGroup; equipment: Equipment }) =>
     unwrap(api.post<ApiSuccess<Exercise>>("/exercises", input)),
+
+  // Chỉ sửa/xoá được bài tự tạo; xoá bị chặn (409) nếu bài còn nằm trong template
+  update: (id: string, input: Partial<Pick<Exercise, "name" | "muscleGroup" | "equipment" | "description">>) =>
+    unwrap(api.put<ApiSuccess<Exercise>>(`/exercises/${id}`, input)),
+
+  remove: async (id: string) => {
+    await api.delete(`/exercises/${id}`);
+  },
+
+  history: (id: string, limit = 20) =>
+    unwrap(api.get<ApiSuccess<ExerciseHistory>>(`/exercises/${id}/history`, { params: { limit } })),
 };
 
 export const templateApi = {
@@ -56,6 +68,9 @@ export const templateApi = {
   remove: async (id: string) => {
     await api.delete(`/workout-templates/${id}`);
   },
+
+  duplicate: (id: string) =>
+    unwrap(api.post<ApiSuccess<WorkoutTemplate>>(`/workout-templates/${id}/duplicate`)),
 };
 
 export const sessionApi = {
@@ -95,6 +110,15 @@ export const sessionApi = {
 
   cancel: (id: string) =>
     unwrap(api.post<ApiSuccess<WorkoutSession>>(`/workout-sessions/${id}/cancel`)),
+
+  // Đổi tên / ghi chú, dùng được cả khi đang tập và sau khi hoàn thành
+  update: (id: string, input: { name?: string; notes?: string }) =>
+    unwrap(api.patch<ApiSuccess<WorkoutSession>>(`/workout-sessions/${id}`, input)),
+
+  // Chỉ xoá buổi đã hoàn thành / đã huỷ; server tính lại PR
+  remove: async (id: string) => {
+    await api.delete(`/workout-sessions/${id}`);
+  },
 
   personalRecords: () => unwrap(api.get<ApiSuccess<PersonalRecord[]>>("/personal-records")),
 };

@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link, router, useFocusEffect } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,12 +10,17 @@ import {
   Text,
   View,
 } from "react-native";
+import { ApiError } from "@/api/client";
+import { mealCopyApi } from "@/api/nutritionApi";
 import { MacroBars } from "@/components/nutrition/MacroBars";
 import { MacroChips } from "@/components/nutrition/MacroChips";
+import { WaterCard } from "@/components/nutrition/WaterCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { colors, radius, spacing } from "@/constants/theme";
+import { confirmAction } from "@/lib/confirm";
+import { errorMessage } from "@/lib/formErrors";
 import { addDays, formatDayLabel, formatServing, MEAL_LABELS, MEAL_ORDER } from "@/lib/nutrition";
 import { useNutritionStore } from "@/stores/nutritionStore";
 import type { FoodLog, MealType } from "@/types/models";
@@ -23,7 +28,9 @@ import type { FoodLog, MealType } from "@/types/models";
 const fmt = (n: number) => n.toLocaleString("vi-VN", { maximumFractionDigits: 1 });
 
 export default function NutritionScreen() {
-  const { today, selectedDate, summary, logs, isLoading, error, load } = useNutritionStore();
+  const { today, selectedDate, summary, logs, isLoading, error, load, reload } = useNutritionStore();
+  const [copying, setCopying] = useState<MealType | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Tải lại khi quay về tab (vừa thêm / sửa món ở màn khác)
   useFocusEffect(
@@ -45,6 +52,32 @@ export default function NutritionScreen() {
 
   function openAdd(mealType: MealType) {
     router.push({ pathname: "/food/search", params: { mealType, date: selectedDate! } });
+  }
+
+  // Chép nguyên các món của cùng bữa ngày hôm trước vào ngày đang xem
+  async function copyPrevious(mealType: MealType) {
+    const fromDate = addDays(selectedDate!, -1);
+    const ok = await confirmAction({
+      title: `Chép ${MEAL_LABELS[mealType].toLowerCase()} ngày ${formatDayLabel(fromDate, today!).toLowerCase()}?`,
+      message: "Các món của bữa đó sẽ được thêm vào bữa này.",
+      confirmText: "Chép",
+    });
+    if (!ok) return;
+    setCopying(mealType);
+    setNotice(null);
+    try {
+      const res = await mealCopyApi.copy({ fromDate, fromMealType: mealType, toDate: selectedDate! });
+      await reload();
+      setNotice(`Đã chép ${res.items.length} món vào ${MEAL_LABELS[mealType].toLowerCase()}.`);
+    } catch (err) {
+      setNotice(
+        err instanceof ApiError && err.status === 404
+          ? `${MEAL_LABELS[mealType]} ngày ${formatDayLabel(fromDate, today!).toLowerCase()} chưa có món nào.`
+          : errorMessage(err)
+      );
+    } finally {
+      setCopying(null);
+    }
   }
 
   return (
@@ -121,6 +154,10 @@ export default function NutritionScreen() {
         )}
       </Card>
 
+      <WaterCard date={selectedDate} />
+
+      {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+
       {MEAL_ORDER.map((meal) => (
         <MealSection
           key={meal}
@@ -128,6 +165,11 @@ export default function NutritionScreen() {
           calories={summary.meals[meal].calories}
           logs={logs.filter((l) => l.mealType === meal)}
           onAdd={() => openAdd(meal)}
+          onTemplates={() =>
+            router.push({ pathname: "/food/templates", params: { mealType: meal, date: selectedDate } })
+          }
+          onCopyPrevious={() => copyPrevious(meal)}
+          copying={copying === meal}
         />
       ))}
     </ScrollView>
@@ -139,11 +181,17 @@ function MealSection({
   calories,
   logs,
   onAdd,
+  onTemplates,
+  onCopyPrevious,
+  copying,
 }: {
   mealType: MealType;
   calories: number;
   logs: FoodLog[];
   onAdd: () => void;
+  onTemplates: () => void;
+  onCopyPrevious: () => void;
+  copying: boolean;
 }) {
   return (
     <Card>
@@ -179,6 +227,30 @@ function MealSection({
         <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
         <Text style={styles.addText}>Thêm món</Text>
       </Pressable>
+
+      <View style={styles.extraRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Bữa mẫu cho ${MEAL_LABELS[mealType]}`}
+          onPress={onTemplates}
+          hitSlop={6}
+          style={({ pressed }) => [styles.extraButton, pressed && styles.pressed]}
+        >
+          <Ionicons name="bookmark-outline" size={16} color={colors.textMuted} />
+          <Text style={styles.extraText}>Bữa mẫu</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Chép ${MEAL_LABELS[mealType]} ngày trước`}
+          onPress={onCopyPrevious}
+          disabled={copying}
+          hitSlop={6}
+          style={({ pressed }) => [styles.extraButton, (pressed || copying) && styles.pressed]}
+        >
+          <Ionicons name="copy-outline" size={16} color={colors.textMuted} />
+          <Text style={styles.extraText}>{copying ? "Đang chép…" : "Chép ngày trước"}</Text>
+        </Pressable>
+      </View>
     </Card>
   );
 }
@@ -220,4 +292,14 @@ const styles = StyleSheet.create({
   },
   addText: { fontSize: 15, fontWeight: "600", color: colors.primary },
   pressed: { opacity: 0.6 },
+  notice: { fontSize: 14, color: colors.textMuted, textAlign: "center" },
+  extraRow: {
+    flexDirection: "row",
+    gap: spacing.lg,
+    paddingTop: spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  extraButton: { flexDirection: "row", alignItems: "center", gap: spacing.xs, paddingVertical: spacing.xs },
+  extraText: { fontSize: 13, fontWeight: "500", color: colors.textMuted },
 });

@@ -1,12 +1,25 @@
-import { Link } from "expo-router";
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { Link, router } from "expo-router";
+import type { ComponentProps } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { MacroBars } from "@/components/nutrition/MacroBars";
+import { WaterCard } from "@/components/nutrition/WaterCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TodayWorkoutCard } from "@/components/workout/TodayWorkoutCard";
-import { colors, spacing } from "@/constants/theme";
+import { colors, radius, spacing } from "@/constants/theme";
 import { useDashboard } from "@/hooks/useDashboard";
+import { localToday } from "@/hooks/useProgress";
+import { mealTypeForHour } from "@/lib/nutrition";
 import { formatDuration } from "@/lib/workout";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -61,6 +74,25 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
+      <View style={styles.quickRow}>
+        <QuickAction
+          icon="restaurant-outline"
+          label="Ghi món"
+          onPress={() =>
+            router.push({
+              pathname: "/food/search",
+              params: { mealType: mealTypeForHour(new Date().getHours()) },
+            })
+          }
+        />
+        <QuickAction
+          icon="scale-outline"
+          label="Cân nặng"
+          onPress={() => router.push({ pathname: "/measurements/edit", params: { date: localToday() } })}
+        />
+        <QuickAction icon="barbell-outline" label="Tập luyện" onPress={() => router.push("/workout")} />
+      </View>
+
       <ErrorBanner message={error} />
 
       {nutrition ? (
@@ -80,6 +112,8 @@ export default function HomeScreen() {
           )}
         </Card>
       ) : null}
+
+      {nutrition ? <WaterCard date={nutrition.date} /> : null}
 
       {data ? (
         <TodayWorkoutCard
@@ -106,6 +140,27 @@ export default function HomeScreen() {
   );
 }
 
+function QuickAction({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.quick, pressed && styles.pressed]}
+    >
+      <Ionicons name={icon} size={22} color={colors.primary} />
+      <Text style={styles.quickText}>{label}</Text>
+    </Pressable>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.stat}>
@@ -126,4 +181,15 @@ const styles = StyleSheet.create({
   stat: { flex: 1, gap: 2 },
   statValue: { fontSize: 18, fontWeight: "700", color: colors.text, fontVariant: ["tabular-nums"] },
   statLabel: { fontSize: 13, color: colors.textMuted },
+  quickRow: { flexDirection: "row", gap: spacing.md },
+  quick: {
+    flex: 1,
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+  },
+  quickText: { fontSize: 14, fontWeight: "600", color: colors.primary },
+  pressed: { opacity: 0.6 },
 });

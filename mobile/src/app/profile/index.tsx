@@ -280,6 +280,11 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
         </Card>
 
         <Button
+          title="👤 Tài khoản & bảo mật"
+          variant="secondary"
+          onPress={() => router.push("/settings/account")}
+        />
+        <Button
           title="🔔 Cài đặt thông báo"
           variant="secondary"
           onPress={() => router.push("/settings/notifications")}
