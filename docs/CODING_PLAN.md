@@ -11,7 +11,7 @@
 | 2 | Backend foundation | ✅ `cedc200` |
 | 3 | Authentication | ✅ Backend xong + 12 API test (mobile làm ở Phase 8–11) |
 | 4 | Profile + Goal | ✅ Backend xong + test |
-| 5 | Food system + Nutrition | ✅ Backend xong + test (MealTemplate API chưa làm) |
+| 5 | Food system + Nutrition | ✅ Backend xong + test (MealTemplate API làm ở phase 20) |
 | 6 | Workout | ✅ Backend xong + test |
 | 7 | Progress | ✅ Backend xong + test |
 | 8 | Mobile foundation | ✅ Route `(auth)`, `(tabs)`, `profile` + `Stack.Protected` |
