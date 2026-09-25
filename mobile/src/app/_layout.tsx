@@ -40,6 +40,7 @@ export default function RootLayout() {
           options={{ headerShown: true, title: "Hồ sơ", headerBackTitle: "Quay lại" }}
         />
         <Stack.Screen name="food" />
+        <Stack.Screen name="workout" />
       </Stack.Protected>
 
       <Stack.Protected guard={!isAuthenticated}>
