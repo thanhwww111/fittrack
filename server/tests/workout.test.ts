@@ -395,3 +395,38 @@ describe("cancel and history", () => {
     expect(completed.body.data.items.map((s: { id: string }) => s.id)).toEqual([s1]);
   });
 });
+
+describe("GET /api/workout-sessions/today", () => {
+  it("returns the active session and today's completed sessions only", async () => {
+    const { auth, userId } = await createAuthedUser();
+    const other = await createAuthedUser();
+
+    // Buổi hoàn thành hôm qua: không tính
+    const yesterday = new Date(Date.now() - 36 * 60 * 60 * 1000);
+    await WorkoutSessionModel.create({
+      userId,
+      name: "Old",
+      status: "COMPLETED",
+      startedAt: yesterday,
+      completedAt: yesterday,
+    });
+
+    const done = await startFreeWorkout(auth);
+    await addSet(auth, done, { exerciseId: bench, weight: 60, reps: 8 });
+    await request(app).post(`/api/workout-sessions/${done}/complete`).set(auth);
+    const active = await startFreeWorkout(auth);
+    await startFreeWorkout(other.auth);
+
+    const res = await request(app).get("/api/workout-sessions/today").set(auth);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.active.id).toBe(active);
+    expect(res.body.data.completed.map((s: { id: string }) => s.id)).toEqual([done]);
+  });
+
+  it("is empty for a new user", async () => {
+    const { auth } = await createAuthedUser();
+    const res = await request(app).get("/api/workout-sessions/today").set(auth);
+    expect(res.body.data).toMatchObject({ active: null, completed: [] });
+  });
+});

@@ -2,12 +2,14 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { nutritionApi } from "@/api/nutritionApi";
 import { progressApi } from "@/api/progressApi";
+import { sessionApi } from "@/api/workoutApi";
 import { errorMessage } from "@/lib/formErrors";
-import type { DailyNutrition, WeeklySummary } from "@/types/models";
+import type { DailyNutrition, WeeklySummary, WorkoutSession } from "@/types/models";
 
 interface DashboardData {
   nutrition: DailyNutrition;
   weekly: WeeklySummary;
+  workoutToday: { active: WorkoutSession | null; completed: WorkoutSession[] };
 }
 
 export function useDashboard() {
@@ -18,8 +20,13 @@ export function useDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [nutrition, weekly] = await Promise.all([nutritionApi.today(), progressApi.weekly()]);
-      setData({ nutrition, weekly });
+      // Dashboard không tự tính: mỗi phần lấy từ đúng API tổng hợp của server
+      const [nutrition, weekly, workoutToday] = await Promise.all([
+        nutritionApi.today(),
+        progressApi.weekly(),
+        sessionApi.today(),
+      ]);
+      setData({ nutrition, weekly, workoutToday });
       setError(null);
     } catch (err) {
       setError(errorMessage(err));

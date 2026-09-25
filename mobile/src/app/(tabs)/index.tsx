@@ -4,6 +4,7 @@ import { MacroBars } from "@/components/nutrition/MacroBars";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { TodayWorkoutCard } from "@/components/workout/TodayWorkoutCard";
 import { colors, spacing } from "@/constants/theme";
 import { useDashboard } from "@/hooks/useDashboard";
 import { formatDuration } from "@/lib/workout";
@@ -78,6 +79,13 @@ export default function HomeScreen() {
             </>
           )}
         </Card>
+      ) : null}
+
+      {data ? (
+        <TodayWorkoutCard
+          active={data.workoutToday.active}
+          completed={data.workoutToday.completed}
+        />
       ) : null}
 
       {weekly ? (
