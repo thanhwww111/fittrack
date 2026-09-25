@@ -11,6 +11,7 @@ import type {
 import { AppError } from "../utils/AppError";
 import { calculateVolume, detectPR, type RecordValues } from "../utils/workoutMath";
 import { getVisibleExercise, getVisibleExercisesByIds } from "./exercise.service";
+import { notifyNewRecords } from "./notification.service";
 import { getOwnedTemplate } from "./workoutTemplate.service";
 
 
@@ -237,6 +238,9 @@ export async function completeSession(userId: string, sessionId: string) {
       record: result.record,
     });
   }
+
+  // Không chờ gửi push: user nhận response ngay, lỗi push không ảnh hưởng việc lưu buổi tập
+  void notifyNewRecords(userId, completed.id, newRecords);
 
   return { session: completed.toJSON(), newRecords };
 }

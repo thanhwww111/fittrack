@@ -25,7 +25,7 @@
 | 16 | Security | 🟡 Có helmet, cors, env validation, bcrypt, JWT + refresh rotation, rate limit auth |
 | 17 | Deployment | 🟡 Code + `render.yaml` + `eas.json` + `docs/DEPLOY.md` sẵn sàng; chờ tạo Atlas/Render/EAS và build |
 | 18 | AI (Gemini) | ✅ Gợi ý món + phân tích tập luyện (backend + mobile + test); cần `GEMINI_API_KEY` để chạy thật |
-| 19 | Firebase notification | ⬜ |
+| 19 | Firebase notification | ✅ Lịch nhắc cục bộ + push PR/mục tiêu/tổng kết tuần (backend + mobile + test); cần Firebase + FCM key trên EAS để push chạy thật |
 
 ## Điều chỉnh so với plan gốc (theo code thực tế)
 
@@ -149,6 +149,23 @@
   - **Giới hạn và quyền riêng tư:** `aiLimiter` 10 request/giờ/user (theo `req.user.id`). Chỉ gửi số liệu tổng hợp và tên bài/món, không gửi tên hay email.
   - **Test:** không bao giờ gọi Gemini thật. `vitest.config.mts` ép `GEMINI_API_KEY=""`, test API mock `llm.generateJson`, test `llm.test.ts` mock `@google/genai`.
   - **Mobile:** `ai/meal` (mở từ tab Dinh dưỡng, chỉ khi xem hôm nay và đã có target) và `ai/workout` (mở từ tab Tập luyện khi đã có buổi tập). Lỗi 503/429/502 có thông báo tiếng Việt riêng (`lib/aiErrors.ts`).
+- **Thông báo (Phase 19):**
+  - **Lịch nhắc tập (theo thứ + giờ) và nhắc ghi bữa ăn:** là **local notification** do app tự đặt lịch (`lib/notifications.ts`, trigger `WEEKLY`/`DAILY`, id có tiền tố `fittrack-reminder-`).
+    - Chạy được trong Expo Go và không phụ thuộc server Render đang ngủ.
+    - Đặt lại toàn bộ lịch mỗi khi mở app hoặc lưu cài đặt. Huỷ hết khi rời phiên.
+    - Server lưu ngày trong tuần 0 = CN … 6 = T7, Expo dùng 1 = CN … 7 = T7.
+  - **Push từ server:** qua Expo Push Service (`expo-server-sdk`, trên Android đi qua FCM).
+    - App lấy Expo push token rồi gọi `POST /api/notifications/devices`. Bỏ qua khi chạy web, máy ảo, Expo Go trên Android (không nhận remote push từ SDK 53), hoặc chưa có `projectId` của EAS.
+    - Token là của máy: upsert theo token, nên đăng nhập user khác trên cùng máy thì token chuyển chủ.
+    - Đăng xuất gọi `DELETE /api/notifications/devices` **trước** khi xoá phiên.
+    - Token bị báo `DeviceNotRegistered` được xoá khỏi DB.
+  - **Các sự kiện gửi push:**
+    - PR mới sau khi complete buổi tập.
+    - Cân nặng vừa vượt mốc `goalWeight` (`crossedGoal`, chỉ báo đúng một lần).
+    - Tổng kết tuần trước, qua `POST /api/internal/weekly-report` (bảo vệ bằng `CRON_SECRET`, so sánh thời gian hằng số; không cấu hình thì trả 404). GitHub Actions gọi endpoint này mỗi thứ Hai 01:00 UTC; user không có hoạt động thì bỏ qua.
+    - Push là **fire-and-forget và không bao giờ throw**, nên lỗi gửi push không làm hỏng request chính.
+  - **Cài đặt:** `GET/PUT /api/notifications/settings` (gộp từng phần, ngày được khử trùng và sắp xếp). Mặc định bật PR/mục tiêu/tổng kết tuần, tắt lịch nhắc.
+  - **Bấm vào thông báo:** `data.url` là route trong app. `useNotificationNavigation` mở đúng màn, kể cả khi app đang tắt hẳn (`getLastNotificationResponseAsync`).
   - **Chưa làm:** Profile "Tính lại từ hồ sơ" khi hôm nay đã có target thì gọi `PUT /goals/:id`, và server đánh dấu `source = MANUAL` dù số liệu là AUTO. Cần thêm `mode` cho PUT nếu muốn phân biệt.
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 

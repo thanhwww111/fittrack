@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,6 +17,7 @@ import { TextField } from "@/components/ui/TextField";
 import { colors, spacing } from "@/constants/theme";
 import { errorMessage, fieldErrorsFrom, parseNumber, type FieldErrors } from "@/lib/formErrors";
 import { useAuthStore } from "@/stores/authStore";
+import { useNotificationStore } from "@/stores/notificationStore";
 import { useProfileStore } from "@/stores/profileStore";
 import type {
   ActivityLevel,
@@ -241,7 +243,20 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
           />
         </Card>
 
-        <Button title="Đăng xuất" onPress={logout} variant="danger" />
+        <Button
+          title="🔔 Cài đặt thông báo"
+          variant="secondary"
+          onPress={() => router.push("/settings/notifications")}
+        />
+        <Button
+          title="Đăng xuất"
+          onPress={async () => {
+            // Gỡ máy khỏi danh sách nhận push trước, lúc còn access token
+            await useNotificationStore.getState().unregisterDevice();
+            await logout();
+          }}
+          variant="danger"
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );

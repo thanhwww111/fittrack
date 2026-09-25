@@ -2,15 +2,20 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { colors } from "@/constants/theme";
+import { useNotificationNavigation } from "@/hooks/useNotificationNavigation";
+import { configureNotifications } from "@/lib/notifications";
 import { useAuthStore } from "@/stores/authStore";
+import { useNotificationStore } from "@/stores/notificationStore";
 import "@/stores/resetOnLogout";
 
 // Giữ splash cho đến khi biết user đã đăng nhập hay chưa, tránh nháy màn Login
 SplashScreen.preventAutoHideAsync();
+configureNotifications();
 
 export default function RootLayout() {
   const status = useAuthStore((s) => s.status);
   const bootstrap = useAuthStore((s) => s.bootstrap);
+  const isAuthenticated = status === "authenticated";
 
   useEffect(() => {
     bootstrap();
@@ -20,9 +25,14 @@ export default function RootLayout() {
     if (status !== "loading") SplashScreen.hideAsync();
   }, [status]);
 
-  if (status === "loading") return null;
+  // Mỗi lần vào phiên: đồng bộ cài đặt thông báo, lịch nhắc và push token
+  useEffect(() => {
+    if (isAuthenticated) useNotificationStore.getState().syncOnLogin();
+  }, [isAuthenticated]);
 
-  const isAuthenticated = status === "authenticated";
+  useNotificationNavigation(isAuthenticated);
+
+  if (status === "loading") return null;
 
   // guard = false thì Expo Router tự đưa user về route đầu tiên còn truy cập được,
   // nên đăng xuất xong sẽ về (auth)/login, đăng nhập xong sẽ vào (tabs)
@@ -42,6 +52,10 @@ export default function RootLayout() {
         <Stack.Screen name="food" />
         <Stack.Screen name="workout" />
         <Stack.Screen name="ai" />
+        <Stack.Screen
+          name="settings/notifications"
+          options={{ headerShown: true, title: "Thông báo", headerBackTitle: "Quay lại" }}
+        />
       </Stack.Protected>
 
       <Stack.Protected guard={!isAuthenticated}>

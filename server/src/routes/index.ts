@@ -5,6 +5,7 @@ import authRoutes from "./auth.routes";
 import foodRoutes from "./food.routes";
 import foodLogRoutes from "./foodLog.routes";
 import goalRoutes from "./goal.routes";
+import { internalRoutes, notificationRoutes } from "./notification.routes";
 import nutritionRoutes from "./nutrition.routes";
 import profileRoutes from "./profile.routes";
 import { bodyMeasurementRoutes, progressRoutes } from "./progress.routes";
@@ -40,5 +41,7 @@ router.use("/personal-records", personalRecordRoutes);
 router.use("/body-measurements", bodyMeasurementRoutes);
 router.use("/progress", progressRoutes);
 router.use("/ai", aiRoutes);
+router.use("/notifications", notificationRoutes);
+router.use("/internal", internalRoutes);
 
 export default router;

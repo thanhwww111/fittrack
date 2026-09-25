@@ -283,3 +283,19 @@ export interface WorkoutAnalysis {
   highlights: string[];
   suggestions: string[];
 }
+
+export interface NotificationSettings {
+  workoutReminder: { enabled: boolean; days: number[]; time: string }; // days: 0 = CN ... 6 = T7
+  mealReminders: { enabled: boolean; breakfast: string; lunch: string; dinner: string };
+  weeklyReport: boolean;
+  prAlerts: boolean;
+  goalAlerts: boolean;
+}
+
+export type UpdateNotificationSettings = {
+  workoutReminder?: Partial<NotificationSettings["workoutReminder"]>;
+  mealReminders?: Partial<NotificationSettings["mealReminders"]>;
+  weeklyReport?: boolean;
+  prAlerts?: boolean;
+  goalAlerts?: boolean;
+};

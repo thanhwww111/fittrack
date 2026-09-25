@@ -1,0 +1,26 @@
+# Gửi push "Tổng kết tuần" mỗi sáng thứ Hai 08:00 giờ Việt Nam (01:00 UTC).
+# Cần 2 secret trong GitHub repo → Settings → Secrets and variables → Actions:
+#   FITTRACK_API_URL  ví dụ https://fittrack-api.onrender.com/api
+#   CRON_SECRET       giống biến CRON_SECRET trên Render
+name: Weekly report push
+
+on:
+  schedule:
+    - cron: "0 1 * * 1"
+  workflow_dispatch: {} # cho phép bấm chạy tay trong tab Actions
+
+jobs:
+  weekly-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger weekly report
+        env:
+          API_URL: ${{ secrets.FITTRACK_API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          # Server Render gói free có thể đang ngủ: --max-time 120 và retry để chờ server thức
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-delay 20 --retry-all-errors --max-time 120 \
+            -X POST "$API_URL/internal/weekly-report" \
+            -H "Authorization: Bearer $CRON_SECRET"
