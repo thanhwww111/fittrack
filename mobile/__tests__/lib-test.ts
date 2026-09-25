@@ -2,8 +2,9 @@ import { formatTick, niceAxis, shortDate } from "@/components/charts/scale";
 import { fieldErrorsFrom, parseNumber, validateEmail, validatePassword } from "@/lib/formErrors";
 import { ApiError } from "@/api/client";
 import { addDays, formatDayLabel, mealTypeForHour, previewNutrition } from "@/lib/nutrition";
+import { measurementSummary } from "@/lib/measurements";
 import { formatClock, formatDuration, setVolume } from "@/lib/workout";
-import type { Food } from "@/types/models";
+import type { BodyMeasurement, Food } from "@/types/models";
 
 describe("niceAxis", () => {
   it("rounds to clean ticks and starts bars at zero", () => {
@@ -116,5 +117,26 @@ describe("form helpers", () => {
     ]);
     expect(fieldErrorsFrom(err)).toEqual({ email: "Invalid email", password: "Too short" });
     expect(fieldErrorsFrom(new Error("x"))).toEqual({});
+  });
+});
+
+describe("measurementSummary", () => {
+  const base: BodyMeasurement = {
+    id: "m1",
+    date: "2026-09-25",
+    weight: 70,
+    bodyFat: null,
+    chest: null,
+    waist: null,
+    arm: null,
+    thigh: null,
+  };
+
+  it("is empty when only weight was recorded", () => {
+    expect(measurementSummary(base)).toBe("");
+  });
+
+  it("lists the optional measurements that were entered, weight excluded", () => {
+    expect(measurementSummary({ ...base, bodyFat: 18.5, waist: 80 })).toBe("Mỡ 18,5% · Eo 80 cm");
   });
 });

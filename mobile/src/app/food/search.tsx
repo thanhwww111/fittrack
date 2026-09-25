@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -21,7 +21,16 @@ export default function FoodSearchScreen() {
   // mealType + date truyền tiếp sang màn add để biết thêm vào bữa nào, ngày nào
   const { mealType, date } = useLocalSearchParams<{ mealType?: string; date?: string }>();
   const [query, setQuery] = useState("");
-  const { items, isLoading, error, loadMore } = useFoodSearch(query);
+  const { items, isLoading, error, loadMore, refresh } = useFoodSearch(query);
+
+  // Quay lại từ màn khác (có thể vừa sửa / xoá món) thì tải lại; lần focus đầu hook đã tự tải
+  const focusedOnce = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (focusedOnce.current) refresh();
+      focusedOnce.current = true;
+    }, [refresh])
+  );
 
   function openFood(food: Food) {
     router.push({

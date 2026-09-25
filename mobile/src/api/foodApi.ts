@@ -16,4 +16,12 @@ export const foodApi = {
   get: (id: string) => unwrap(api.get<ApiSuccess<Food>>(`/foods/${id}`)),
 
   create: (input: CreateFoodInput) => unwrap(api.post<ApiSuccess<Food>>("/foods", input)),
+
+  // Chỉ sửa/xoá được món do chính user tạo. Log cũ giữ nguyên vì đã lưu snapshot.
+  update: (id: string, input: Partial<CreateFoodInput>) =>
+    unwrap(api.put<ApiSuccess<Food>>(`/foods/${id}`, input)),
+
+  remove: async (id: string) => {
+    await api.delete(`/foods/${id}`);
+  },
 };

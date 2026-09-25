@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { ManualTargetForm } from "@/components/profile/ManualTargetForm";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
@@ -89,6 +90,8 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
   const updateProfile = useProfileStore((s) => s.updateProfile);
   const recalculateTarget = useProfileStore((s) => s.recalculateTarget);
   const currentTarget = useProfileStore((s) => s.currentTarget);
+  const setManualTarget = useProfileStore((s) => s.setManualTarget);
+  const [editingTarget, setEditingTarget] = useState(false);
 
   const [gender, setGender] = useState(profile.gender);
   const [goalType, setGoalType] = useState(profile.goalType);
@@ -225,22 +228,55 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
         <Button title="Lưu hồ sơ" onPress={handleSave} loading={saving} />
 
         <Card title="Mục tiêu dinh dưỡng mỗi ngày">
-          {currentTarget ? (
-            <View style={styles.targetRow}>
-              <Macro label="Calo" value={currentTarget.calories} unit="kcal" />
-              <Macro label="Protein" value={currentTarget.protein} unit="g" />
-              <Macro label="Carbs" value={currentTarget.carbs} unit="g" />
-              <Macro label="Fat" value={currentTarget.fat} unit="g" />
-            </View>
+          {editingTarget ? (
+            <ManualTargetForm
+              initial={currentTarget}
+              onCancel={() => setEditingTarget(false)}
+              onSubmit={async (macros) => {
+                await setManualTarget(macros);
+                setEditingTarget(false);
+                setNotice("Đã lưu mục tiêu dinh dưỡng bạn tự nhập.");
+              }}
+            />
           ) : (
-            <Text style={styles.muted}>Chưa có mục tiêu. Lưu hồ sơ đầy đủ rồi bấm tính tự động.</Text>
+            <>
+              {currentTarget ? (
+                <>
+                  <View style={styles.targetRow}>
+                    <Macro label="Calo" value={currentTarget.calories} unit="kcal" />
+                    <Macro label="Protein" value={currentTarget.protein} unit="g" />
+                    <Macro label="Carbs" value={currentTarget.carbs} unit="g" />
+                    <Macro label="Fat" value={currentTarget.fat} unit="g" />
+                  </View>
+                  <Text style={styles.source}>
+                    {currentTarget.source === "MANUAL" ? "Bạn tự nhập" : "Tự tính từ hồ sơ"}
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.muted}>
+                  Chưa có mục tiêu. Lưu hồ sơ đầy đủ rồi bấm tính tự động, hoặc tự nhập số của bạn.
+                </Text>
+              )}
+              <View style={styles.targetActions}>
+                <Button
+                  title={currentTarget ? "Tính lại từ hồ sơ" : "Tính tự động"}
+                  onPress={handleRecalculate}
+                  loading={calculating}
+                  variant="secondary"
+                  style={styles.flex}
+                />
+                <Button
+                  title="Tự nhập"
+                  onPress={() => {
+                    setNotice(null);
+                    setEditingTarget(true);
+                  }}
+                  variant="secondary"
+                  style={styles.flex}
+                />
+              </View>
+            </>
           )}
-          <Button
-            title={currentTarget ? "Tính lại từ hồ sơ" : "Tính tự động từ hồ sơ"}
-            onPress={handleRecalculate}
-            loading={calculating}
-            variant="secondary"
-          />
         </Card>
 
         <Button
@@ -283,6 +319,8 @@ const styles = StyleSheet.create({
   error: { fontSize: 13, color: colors.danger },
   muted: { fontSize: 15, color: colors.textMuted, lineHeight: 22 },
   targetRow: { flexDirection: "row", gap: spacing.sm },
+  targetActions: { flexDirection: "row", gap: spacing.md },
+  source: { fontSize: 13, color: colors.textMuted },
   macro: { flex: 1, gap: 2 },
   macroValue: { fontSize: 18, fontWeight: "700", color: colors.text, fontVariant: ["tabular-nums"] },
   macroLabel: { fontSize: 12, color: colors.textMuted },

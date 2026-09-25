@@ -52,6 +52,7 @@ export default function RootLayout() {
         <Stack.Screen name="food" />
         <Stack.Screen name="workout" />
         <Stack.Screen name="ai" />
+        <Stack.Screen name="measurements" />
         <Stack.Screen
           name="settings/notifications"
           options={{ headerShown: true, title: "Thông báo", headerBackTitle: "Quay lại" }}

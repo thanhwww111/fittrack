@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { foodApi } from "@/api/foodApi";
 import { MacroChips } from "@/components/nutrition/MacroChips";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { colors, spacing } from "@/constants/theme";
+import { confirmAction } from "@/lib/confirm";
 import { errorMessage, parseNumber } from "@/lib/formErrors";
 import { formatServing, MEAL_ORDER, mealTypeForHour, previewNutrition } from "@/lib/nutrition";
 import { useNutritionStore } from "@/stores/nutritionStore";
@@ -33,15 +34,20 @@ export default function AddFoodScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    foodApi
-      .get(params.foodId)
-      .then((f) => {
-        setFood(f);
-        setQuantity(String(f.servingSize));
-      })
-      .catch((err) => setLoadError(errorMessage(err)));
-  }, [params.foodId]);
+  const [deleting, setDeleting] = useState(false);
+
+  // Tải lại mỗi lần quay về màn này (vừa sửa món ở màn food/create)
+  useFocusEffect(
+    useCallback(() => {
+      foodApi
+        .get(params.foodId)
+        .then((f) => {
+          setFood(f);
+          setQuantity((prev) => prev || String(f.servingSize));
+        })
+        .catch((err) => setLoadError(errorMessage(err)));
+    }, [params.foodId])
+  );
 
   if (!food) {
     return (
@@ -76,6 +82,25 @@ export default function AddFoodScreen() {
     }
   }
 
+  async function handleDelete() {
+    const ok = await confirmAction({
+      title: "Xoá món này?",
+      message: `"${food!.name}" sẽ không còn trong danh sách tìm kiếm. Các lần đã ghi vẫn được giữ.`,
+      confirmText: "Xoá",
+      destructive: true,
+    });
+    if (!ok) return;
+    setDeleting(true);
+    setFormError(null);
+    try {
+      await foodApi.remove(food!.id);
+      router.back();
+    } catch (err) {
+      setFormError(errorMessage(err));
+      setDeleting(false);
+    }
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Card>
@@ -98,6 +123,24 @@ export default function AddFoodScreen() {
       />
 
       <Button title="Thêm vào nhật ký" onPress={handleAdd} loading={saving} />
+
+      {food.isCustom ? (
+        <View style={styles.ownerActions}>
+          <Button
+            title="Sửa món"
+            variant="secondary"
+            style={styles.flex}
+            onPress={() => router.push({ pathname: "/food/create", params: { id: food.id } })}
+          />
+          <Button
+            title="Xoá món"
+            variant="danger"
+            style={styles.flex}
+            loading={deleting}
+            onPress={handleDelete}
+          />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -107,4 +150,6 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg },
   name: { fontSize: 20, fontWeight: "700", color: colors.text },
   muted: { fontSize: 14, color: colors.textMuted },
+  flex: { flex: 1 },
+  ownerActions: { flexDirection: "row", gap: spacing.md },
 });

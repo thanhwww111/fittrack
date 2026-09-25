@@ -20,6 +20,8 @@ export function useFoodSearch(query: string) {
   const [results, setResults] = useState<Results>({ search: null, items: [], page: 0, total: 0 });
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Tăng lên để tải lại trang 1 với cùng từ khoá (vừa sửa / xoá món)
+  const [version, setVersion] = useState(0);
 
   // Tải trang 1 mỗi khi từ khoá đổi. setState chỉ gọi trong callback bất đồng bộ,
   // và bỏ qua kết quả của request cũ nếu người dùng đã gõ từ khoá khác.
@@ -40,7 +42,7 @@ export function useFoodSearch(query: string) {
     return () => {
       cancelled = true;
     };
-  }, [search]);
+  }, [search, version]);
 
   const isLoading = results.search !== search || loadingMore;
 
@@ -65,5 +67,7 @@ export function useFoodSearch(query: string) {
     }
   }, [isLoading, results, search]);
 
-  return { items: results.items, total: results.total, isLoading, error, loadMore };
+  const refresh = useCallback(() => setVersion((v) => v + 1), []);
+
+  return { items: results.items, total: results.total, isLoading, error, loadMore, refresh };
 }
