@@ -13,6 +13,8 @@ export default defineConfig({
       JWT_SECRET: "test-access-secret-at-least-32-characters",
       JWT_REFRESH_SECRET: "test-refresh-secret-at-least-32-characters",
       BCRYPT_ROUNDS: "4",
+      // Rỗng để dotenv không nạp key thật từ .env: test không bao giờ gọi Gemini thật
+      GEMINI_API_KEY: "",
     },
   },
 });
