@@ -23,5 +23,14 @@ export const listFoodLogsQuerySchema = z.object({
   date: date.optional(),
 });
 
+// toDate bỏ trống = hôm nay, toMealType bỏ trống = cùng bữa với nguồn
+export const copyMealSchema = z.object({
+  fromDate: date,
+  fromMealType: z.enum(MEAL_TYPES),
+  toDate: date.optional(),
+  toMealType: z.enum(MEAL_TYPES).optional(),
+});
+
 export type CreateFoodLogInput = z.infer<typeof createFoodLogSchema>;
+export type CopyMealInput = z.infer<typeof copyMealSchema>;
 export type UpdateFoodLogInput = z.infer<typeof updateFoodLogSchema>;

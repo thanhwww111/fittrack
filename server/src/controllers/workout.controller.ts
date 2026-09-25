@@ -1,6 +1,10 @@
 import type { RequestHandler } from "express";
 import { AppError } from "../utils/AppError";
-import { listExercisesQuerySchema, listSessionsQuerySchema } from "../schemas/workout.schema";
+import {
+  exerciseHistoryQuerySchema,
+  listExercisesQuerySchema,
+  listSessionsQuerySchema,
+} from "../schemas/workout.schema";
 import * as exerciseService from "../services/exercise.service";
 import * as templateService from "../services/workoutTemplate.service";
 import * as sessionService from "../services/workoutSession.service";
@@ -23,6 +27,22 @@ export const getExercise: RequestHandler<IdParams> = async (req, res) => {
 export const createExercise: RequestHandler = async (req, res) => {
   const data = await exerciseService.createExercise(req.user!.id, req.body);
   res.status(201).json({ success: true, data });
+};
+
+export const updateExercise: RequestHandler<IdParams> = async (req, res) => {
+  const data = await exerciseService.updateExercise(req.user!.id, req.params.id, req.body);
+  res.json({ success: true, data });
+};
+
+export const deleteExercise: RequestHandler<IdParams> = async (req, res) => {
+  await exerciseService.deleteExercise(req.user!.id, req.params.id);
+  res.status(204).end();
+};
+
+export const getExerciseHistory: RequestHandler<IdParams> = async (req, res) => {
+  const { limit } = exerciseHistoryQuerySchema.parse(req.query);
+  const data = await sessionService.getExerciseHistory(req.user!.id, req.params.id, limit);
+  res.json({ success: true, data });
 };
 
 // ---------- Templates ----------
@@ -52,7 +72,22 @@ export const deleteTemplate: RequestHandler<IdParams> = async (req, res) => {
   res.status(204).end();
 };
 
+export const duplicateTemplate: RequestHandler<IdParams> = async (req, res) => {
+  const data = await templateService.duplicateTemplate(req.user!.id, req.params.id);
+  res.status(201).json({ success: true, data });
+};
+
 // ---------- Sessions ----------
+
+export const updateSession: RequestHandler<IdParams> = async (req, res) => {
+  const data = await sessionService.updateSession(req.user!.id, req.params.id, req.body);
+  res.json({ success: true, data });
+};
+
+export const deleteSession: RequestHandler<IdParams> = async (req, res) => {
+  await sessionService.deleteSession(req.user!.id, req.params.id);
+  res.status(204).end();
+};
 
 export const startSession: RequestHandler = async (req, res) => {
   const data = await sessionService.startSession(req.user!.id, req.body);

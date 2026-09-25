@@ -1,0 +1,124 @@
+import request from "supertest";
+import { describe, expect, it } from "vitest";
+import app from "../src/app";
+import { FoodModel } from "../src/models/food.model";
+import { UserModel } from "../src/models/user.model";
+import { UserProfileModel } from "../src/models/userProfile.model";
+import { WaterLogModel } from "../src/models/waterLog.model";
+import { createAuthedUser } from "./helpers/auth";
+import { useTestDatabase } from "./helpers/db";
+
+useTestDatabase();
+
+async function registerUser() {
+  const res = await request(app)
+    .post("/api/auth/register")
+    .send({ name: "An", email: "an@example.com", password: "password123" });
+  return {
+    auth: { Authorization: `Bearer ${res.body.data.accessToken}` },
+    refreshToken: res.body.data.refreshToken as string,
+    userId: res.body.data.user.id as string,
+  };
+}
+
+describe("PATCH /api/auth/me", () => {
+  it("renames the user", async () => {
+    const { auth } = await createAuthedUser();
+    const res = await request(app).patch("/api/auth/me").set(auth).send({ name: "  Bình  " });
+    expect(res.status).toBe(200);
+    expect(res.body.data.name).toBe("Bình");
+    expect(res.body.data.passwordHash).toBeUndefined();
+  });
+
+  it("rejects an empty name", async () => {
+    const { auth } = await createAuthedUser();
+    const res = await request(app).patch("/api/auth/me").set(auth).send({ name: "  " });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /api/auth/change-password", () => {
+  it("changes the password, revokes old sessions and returns new tokens", async () => {
+    const { auth, refreshToken } = await registerUser();
+
+    const res = await request(app)
+      .post("/api/auth/change-password")
+      .set(auth)
+      .send({ currentPassword: "password123", newPassword: "newpassword456" });
+    expect(res.status).toBe(200);
+    expect(res.body.data.accessToken).toBeTruthy();
+
+    // Refresh token cũ không còn dùng được
+    const oldRefresh = await request(app).post("/api/auth/refresh").send({ refreshToken });
+    expect(oldRefresh.status).toBe(401);
+
+    const oldLogin = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "an@example.com", password: "password123" });
+    expect(oldLogin.status).toBe(401);
+
+    const newLogin = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "an@example.com", password: "newpassword456" });
+    expect(newLogin.status).toBe(200);
+  });
+
+  it("returns a field error when the current password is wrong", async () => {
+    const { auth } = await registerUser();
+    const res = await request(app)
+      .post("/api/auth/change-password")
+      .set(auth)
+      .send({ currentPassword: "wrong-password", newPassword: "newpassword456" });
+    expect(res.status).toBe(400);
+    expect(res.body.error.details[0].path).toBe("currentPassword");
+  });
+
+  it("rejects a new password that is too short or unchanged", async () => {
+    const { auth } = await registerUser();
+    for (const newPassword of ["short", "password123"]) {
+      const res = await request(app)
+        .post("/api/auth/change-password")
+        .set(auth)
+        .send({ currentPassword: "password123", newPassword });
+      expect(res.status).toBe(400);
+    }
+  });
+});
+
+describe("DELETE /api/auth/me", () => {
+  it("requires the correct password", async () => {
+    const { auth, userId } = await registerUser();
+    const res = await request(app).delete("/api/auth/me").set(auth).send({ password: "nope" });
+    expect(res.status).toBe(400);
+    expect(await UserModel.exists({ _id: userId })).toBeTruthy();
+  });
+
+  it("deletes the user and their data but not other users' data", async () => {
+    const { auth, userId } = await registerUser();
+    const other = await createAuthedUser();
+
+    await request(app).post("/api/water/add").set(auth).send({ amount: 250 });
+    await request(app).post("/api/water/add").set(other.auth).send({ amount: 250 });
+    await request(app).post("/api/foods").set(auth).send({
+      name: "Món riêng",
+      servingSize: 100,
+      servingUnit: "g",
+      calories: 100,
+      protein: 1,
+      carbs: 1,
+      fat: 1,
+    });
+
+    const res = await request(app).delete("/api/auth/me").set(auth).send({ password: "password123" });
+    expect(res.status).toBe(204);
+
+    expect(await UserModel.exists({ _id: userId })).toBeNull();
+    expect(await UserProfileModel.exists({ userId })).toBeNull();
+    expect(await FoodModel.exists({ createdBy: userId })).toBeNull();
+    expect(await WaterLogModel.countDocuments()).toBe(1);
+
+    // Access token còn hạn nhưng user đã bị xoá
+    const me = await request(app).get("/api/auth/me").set(auth);
+    expect(me.status).toBe(401);
+  });
+});

@@ -59,7 +59,7 @@ export async function upsertMeasurement(userId: string, input: UpsertMeasurement
         ...values,
       },
     },
-    { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: "after", runValidators: true, setDefaultsOnInsert: true }
   );
 
   await syncCurrentWeight(userId);

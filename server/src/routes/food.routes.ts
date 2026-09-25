@@ -9,6 +9,8 @@ const router = Router();
 router.use(authenticate);
 
 router.get("/", foodController.listFoods);
+// Đặt trước /:id để "recent" không bị hiểu là id
+router.get("/recent", foodController.listRecentFoods);
 router.get("/:id", foodController.getFood);
 router.post("/", validateBody(createFoodSchema), foodController.createFood);
 router.put("/:id", validateBody(updateFoodSchema), foodController.updateFood);

@@ -35,6 +35,7 @@ const workoutSessionSchema = new Schema(
     totalVolume: { type: Number, default: 0, min: 0 }, // tổng weight × reps của các set completed
     duration: { type: Number, default: 0, min: 0 }, // giây
     status: { type: String, enum: WORKOUT_STATUSES, default: "IN_PROGRESS" },
+    notes: { type: String, default: "", trim: true, maxlength: 1000 },
   },
   { timestamps: true }
 );

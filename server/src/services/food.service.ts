@@ -1,5 +1,6 @@
-import type { QueryFilter } from "mongoose";
+import { Types, type QueryFilter } from "mongoose";
 import { FoodModel, type Food } from "../models/food.model";
+import { FoodLogModel } from "../models/foodLog.model";
 import type { CreateFoodInput, ListFoodsQuery, UpdateFoodInput } from "../schemas/food.schema";
 import { AppError } from "../utils/AppError";
 import { escapeRegex, visibleToUser } from "../utils/ownership";
@@ -74,4 +75,26 @@ export async function updateFood(userId: string, foodId: string, input: UpdateFo
 export async function deleteFood(userId: string, foodId: string) {
   const food = await getOwnedFood(userId, foodId);
   await food.deleteOne();
+}
+
+// Món ăn user ghi gần đây nhất (mỗi món một lần), để thêm nhanh không cần tìm
+export async function listRecentFoods(userId: string, limit: number) {
+  const recent = await FoodLogModel.aggregate<{ _id: Types.ObjectId }>([
+    { $match: { userId: new Types.ObjectId(userId) } },
+    { $sort: { createdAt: -1 } },
+    { $group: { _id: "$foodId", lastLoggedAt: { $first: "$createdAt" } } },
+    { $sort: { lastLoggedAt: -1 } },
+    // Lấy dư một chút vì món đã bị xoá sẽ bị lọc ra
+    { $limit: limit * 2 },
+  ]);
+
+  const ids = recent.map((r) => r._id);
+  const foods = await FoodModel.find({ _id: { $in: ids }, ...visibleTo(userId) });
+  const byId = new Map(foods.map((f) => [f.id as string, f]));
+
+  return ids
+    .map((id) => byId.get(String(id)))
+    .filter((f) => f !== undefined)
+    .slice(0, limit)
+    .map((f) => f.toJSON());
 }

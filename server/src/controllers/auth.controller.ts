@@ -25,3 +25,18 @@ export const me: RequestHandler = async (req, res) => {
   const data = await authService.getMe(req.user!.id);
   res.json({ success: true, data });
 };
+
+export const updateMe: RequestHandler = async (req, res) => {
+  const data = await authService.updateMe(req.user!.id, req.body);
+  res.json({ success: true, data });
+};
+
+export const changePassword: RequestHandler = async (req, res) => {
+  const data = await authService.changePassword(req.user!.id, req.body);
+  res.json({ success: true, data });
+};
+
+export const deleteAccount: RequestHandler = async (req, res) => {
+  await authService.deleteAccount(req.user!.id, req.body.password);
+  res.status(204).end();
+};

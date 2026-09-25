@@ -22,6 +22,14 @@ export const createExerciseSchema = z.object({
   description: z.string().trim().max(1000).default(""),
 });
 
+export const updateExerciseSchema = createExerciseSchema
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, "At least one field is required");
+
+export const exerciseHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 // ---------- Workout template ----------
 
 const templateExercise = z.object({
@@ -55,6 +63,15 @@ export const listSessionsQuerySchema = z.object({
   ...pagination,
 });
 
+// Đổi tên / ghi chú cho buổi đang tập hoặc đã hoàn thành
+export const updateSessionSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100),
+    notes: z.string().trim().max(1000),
+  })
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, "At least one field is required");
+
 export const recordSetSchema = z.object({
   exerciseId: objectId,
   // Bỏ trống = set tiếp theo. Truyền số của set đã có = sửa set đó.
@@ -65,6 +82,8 @@ export const recordSetSchema = z.object({
 
 export type ListExercisesQuery = z.infer<typeof listExercisesQuerySchema>;
 export type CreateExerciseInput = z.infer<typeof createExerciseSchema>;
+export type UpdateExerciseInput = z.infer<typeof updateExerciseSchema>;
+export type UpdateSessionInput = z.infer<typeof updateSessionSchema>;
 export type CreateTemplateInput = z.infer<typeof createTemplateSchema>;
 export type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>;
 export type StartSessionInput = z.infer<typeof startSessionSchema>;
