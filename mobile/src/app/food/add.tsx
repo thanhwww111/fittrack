@@ -1,6 +1,7 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { foodApi } from "@/api/foodApi";
 import { MacroChips } from "@/components/nutrition/MacroChips";
 import { QuantityForm } from "@/components/nutrition/QuantityForm";
@@ -35,6 +36,7 @@ export default function AddFoodScreen() {
   const [saving, setSaving] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
+  const [favorite, setFavorite] = useState(false);
 
   // Tải lại mỗi lần quay về màn này (vừa sửa món ở màn food/create)
   useFocusEffect(
@@ -46,8 +48,23 @@ export default function AddFoodScreen() {
           setQuantity((prev) => prev || String(f.servingSize));
         })
         .catch((err) => setLoadError(errorMessage(err)));
+      foodApi
+        .favorites()
+        .then((list) => setFavorite(list.some((f) => f.id === params.foodId)))
+        .catch(() => {});
     }, [params.foodId])
   );
+
+  async function toggleFavorite() {
+    const next = !favorite;
+    setFavorite(next);
+    try {
+      await foodApi.setFavorite(params.foodId, next);
+    } catch (err) {
+      setFavorite(!next);
+      setFormError(errorMessage(err));
+    }
+  }
 
   if (!food) {
     return (
@@ -104,7 +121,18 @@ export default function AddFoodScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Card>
-        <Text style={styles.name}>{food.name}</Text>
+        <View style={styles.nameRow}>
+          <Text style={[styles.name, styles.flex]}>{food.name}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={favorite ? "Bỏ khỏi yêu thích" : "Thêm vào yêu thích"}
+            accessibilityState={{ selected: favorite }}
+            hitSlop={10}
+            onPress={toggleFavorite}
+          >
+            <Ionicons name={favorite ? "star" : "star-outline"} size={24} color={colors.carbs} />
+          </Pressable>
+        </View>
         <Text style={styles.muted}>Mỗi {formatServing(food.servingSize, food.servingUnit)}</Text>
         <MacroChips values={food} />
         {food.fiber > 0 ? <Text style={styles.muted}>Chất xơ: {food.fiber} g</Text> : null}
@@ -149,6 +177,7 @@ const styles = themedStyles(() => ({
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg },
   name: { fontSize: 20, fontWeight: "700", color: colors.text },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   muted: { fontSize: 14, color: colors.textMuted },
   flex: { flex: 1 },
   ownerActions: { flexDirection: "row", gap: spacing.md },

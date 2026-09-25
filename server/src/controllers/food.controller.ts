@@ -33,3 +33,18 @@ export const listRecentFoods: RequestHandler = async (req, res) => {
   const data = await foodService.listRecentFoods(req.user!.id, limit);
   res.json({ success: true, data });
 };
+
+export const listFavoriteFoods: RequestHandler = async (req, res) => {
+  const data = await foodService.listFavoriteFoods(req.user!.id);
+  res.json({ success: true, data });
+};
+
+export const addFavoriteFood: RequestHandler<{ id: string }> = async (req, res) => {
+  await foodService.addFavoriteFood(req.user!.id, req.params.id);
+  res.status(204).end();
+};
+
+export const removeFavoriteFood: RequestHandler<{ id: string }> = async (req, res) => {
+  await foodService.removeFavoriteFood(req.user!.id, req.params.id);
+  res.status(204).end();
+};

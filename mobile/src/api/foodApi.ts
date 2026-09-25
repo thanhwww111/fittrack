@@ -17,6 +17,13 @@ export const foodApi = {
   recent: (limit = 10) =>
     unwrap(api.get<ApiSuccess<Food[]>>("/foods/recent", { params: { limit } })),
 
+  favorites: () => unwrap(api.get<ApiSuccess<Food[]>>("/foods/favorites")),
+
+  setFavorite: async (id: string, favorite: boolean) => {
+    if (favorite) await api.put(`/foods/${id}/favorite`);
+    else await api.delete(`/foods/${id}/favorite`);
+  },
+
   get: (id: string) => unwrap(api.get<ApiSuccess<Food>>(`/foods/${id}`)),
 
   create: (input: CreateFoodInput) => unwrap(api.post<ApiSuccess<Food>>("/foods", input)),

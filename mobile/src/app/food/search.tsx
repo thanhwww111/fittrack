@@ -19,11 +19,13 @@ export default function FoodSearchScreen() {
   // Quay lại từ màn khác (có thể vừa sửa / xoá món) thì tải lại; lần focus đầu hook đã tự tải
   const focusedOnce = useRef(false);
   const [recent, setRecent] = useState<Food[]>([]);
+  const [favorites, setFavorites] = useState<Food[]>([]);
   useFocusEffect(
     useCallback(() => {
       if (focusedOnce.current) refresh();
       focusedOnce.current = true;
-      // Món gần đây chỉ để thêm nhanh, lỗi thì bỏ qua
+      // Món yêu thích / gần đây chỉ để thêm nhanh, lỗi thì bỏ qua
+      foodApi.favorites().then(setFavorites).catch(() => {});
       foodApi.recent(8).then(setRecent).catch(() => {});
     }, [refresh])
   );
@@ -67,24 +69,10 @@ export default function FoodSearchScreen() {
         onEndReachedThreshold={0.4}
         contentContainerStyle={styles.list}
         ListHeaderComponent={
-          !query.trim() && recent.length > 0 ? (
+          !query.trim() && (favorites.length > 0 || recent.length > 0) ? (
             <View style={styles.recent}>
-              <Text style={styles.sectionTitle}>Gần đây</Text>
-              <View style={styles.recentChips}>
-                {recent.map((food) => (
-                  <Pressable
-                    key={food.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Thêm ${food.name}`}
-                    onPress={() => openFood(food)}
-                    style={({ pressed }) => [styles.recentChip, pressed && styles.pressed]}
-                  >
-                    <Text style={styles.recentText} numberOfLines={1}>
-                      {food.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+              <QuickFoods title="⭐ Yêu thích" foods={favorites} onPick={openFood} />
+              <QuickFoods title="Gần đây" foods={recent} onPick={openFood} />
               <Text style={styles.sectionTitle}>Tất cả món</Text>
             </View>
           ) : null
@@ -136,6 +124,31 @@ export default function FoodSearchScreen() {
         }
       />
     </View>
+  );
+}
+
+// Hàng chip để thêm nhanh một món (yêu thích / gần đây)
+function QuickFoods({ title, foods, onPick }: { title: string; foods: Food[]; onPick: (food: Food) => void }) {
+  if (foods.length === 0) return null;
+  return (
+    <>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.recentChips}>
+        {foods.map((food) => (
+          <Pressable
+            key={food.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Thêm ${food.name}`}
+            onPress={() => onPick(food)}
+            style={({ pressed }) => [styles.recentChip, pressed && styles.pressed]}
+          >
+            <Text style={styles.recentText} numberOfLines={1}>
+              {food.name}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </>
   );
 }
 

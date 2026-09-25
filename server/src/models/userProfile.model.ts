@@ -17,11 +17,13 @@ const userProfileSchema = new Schema(
     trainingDaysPerWeek: { type: Number, min: 0, max: 7, default: null },
     // Dùng để xác định "hôm nay" của user (IANA, ví dụ Asia/Ho_Chi_Minh)
     timezone: { type: String, default: DEFAULT_TIMEZONE },
+    // Món ăn yêu thích, mới thêm lên đầu. Đọc qua GET /api/foods/favorites.
+    favoriteFoods: { type: [{ type: Schema.Types.ObjectId, ref: "Food" }], default: [] },
   },
   { timestamps: true }
 );
 
-applyToJSON(userProfileSchema);
+applyToJSON(userProfileSchema, ["favoriteFoods"]);
 
 export type UserProfile = InferSchemaType<typeof userProfileSchema>;
 

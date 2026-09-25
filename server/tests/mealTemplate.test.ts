@@ -232,3 +232,59 @@ describe("water", () => {
     expect(future.status).toBe(400);
   });
 });
+
+describe("favorite foods", () => {
+  it("adds, orders newest first, and removes favorites", async () => {
+    const { auth } = await createAuthedUser();
+    expect((await request(app).put(`/api/foods/${chickenId}/favorite`).set(auth)).status).toBe(204);
+    await request(app).put(`/api/foods/${riceId}/favorite`).set(auth);
+    // Thêm lại món đã có thì đưa lên đầu, không bị trùng
+    await request(app).put(`/api/foods/${chickenId}/favorite`).set(auth);
+
+    const list = await request(app).get("/api/foods/favorites").set(auth);
+    expect(list.body.data.map((f: { name: string }) => f.name)).toEqual([
+      "Chicken Breast",
+      "White Rice (cooked)",
+    ]);
+
+    expect((await request(app).delete(`/api/foods/${chickenId}/favorite`).set(auth)).status).toBe(204);
+    const after = await request(app).get("/api/foods/favorites").set(auth);
+    expect(after.body.data).toHaveLength(1);
+
+    // Profile không lộ danh sách id thô
+    const profile = await request(app).get("/api/profile").set(auth);
+    expect(profile.body.data.favoriteFoods).toBeUndefined();
+  });
+
+  it("rejects foods the user cannot see and bad ids", async () => {
+    const owner = await createAuthedUser();
+    const other = await createAuthedUser();
+    const food = await request(app).post("/api/foods").set(owner.auth).send({
+      name: "Secret",
+      servingSize: 100,
+      servingUnit: "g",
+      calories: 100,
+      protein: 1,
+      carbs: 1,
+      fat: 1,
+    });
+    expect((await request(app).put(`/api/foods/${food.body.data.id}/favorite`).set(other.auth)).status).toBe(404);
+    expect((await request(app).delete("/api/foods/not-an-id/favorite").set(other.auth)).status).toBe(404);
+  });
+
+  it("drops deleted foods from the list", async () => {
+    const { auth } = await createAuthedUser();
+    const food = await request(app).post("/api/foods").set(auth).send({
+      name: "Tạm",
+      servingSize: 100,
+      servingUnit: "g",
+      calories: 100,
+      protein: 1,
+      carbs: 1,
+      fat: 1,
+    });
+    await request(app).put(`/api/foods/${food.body.data.id}/favorite`).set(auth);
+    await request(app).delete(`/api/foods/${food.body.data.id}`).set(auth);
+    expect((await request(app).get("/api/foods/favorites").set(auth)).body.data).toEqual([]);
+  });
+});
