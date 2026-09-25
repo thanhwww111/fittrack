@@ -34,6 +34,14 @@ export const changePasswordSchema = z
     path: ["newPassword"],
   });
 
+export const forgotPasswordSchema = z.object({ email });
+
+export const resetPasswordSchema = z.object({
+  email,
+  code: z.string().trim().regex(/^\d{6}$/, "Code must be 6 digits"),
+  newPassword: password,
+});
+
 export const deleteAccountSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
@@ -43,3 +51,5 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
 export type UpdateMeInput = z.infer<typeof updateMeSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

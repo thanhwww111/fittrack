@@ -6,9 +6,11 @@ import { validateBody } from "../middlewares/validate";
 import {
   changePasswordSchema,
   deleteAccountSchema,
+  forgotPasswordSchema,
   loginSchema,
   refreshSchema,
   registerSchema,
+  resetPasswordSchema,
   updateMeSchema,
 } from "../schemas/auth.schema";
 
@@ -16,6 +18,18 @@ const router = Router();
 
 router.post("/register", authLimiter, validateBody(registerSchema), authController.register);
 router.post("/login", authLimiter, validateBody(loginSchema), authController.login);
+router.post(
+  "/forgot-password",
+  authLimiter,
+  validateBody(forgotPasswordSchema),
+  authController.forgotPassword
+);
+router.post(
+  "/reset-password",
+  authLimiter,
+  validateBody(resetPasswordSchema),
+  authController.resetPassword
+);
 router.post("/refresh", validateBody(refreshSchema), authController.refresh);
 router.post("/logout", validateBody(refreshSchema), authController.logout);
 router.get("/me", authenticate, authController.me);

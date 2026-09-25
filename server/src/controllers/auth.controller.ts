@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import * as authService from "../services/auth.service";
+import * as passwordResetService from "../services/passwordReset.service";
 
 export const register: RequestHandler = async (req, res) => {
   const data = await authService.register(req.body);
@@ -39,4 +40,14 @@ export const changePassword: RequestHandler = async (req, res) => {
 export const deleteAccount: RequestHandler = async (req, res) => {
   await authService.deleteAccount(req.user!.id, req.body.password);
   res.status(204).end();
+};
+
+export const forgotPassword: RequestHandler = async (req, res) => {
+  await passwordResetService.requestPasswordReset(req.body);
+  res.json({ success: true, data: null });
+};
+
+export const resetPassword: RequestHandler = async (req, res) => {
+  const data = await passwordResetService.resetPassword(req.body);
+  res.json({ success: true, data });
 };

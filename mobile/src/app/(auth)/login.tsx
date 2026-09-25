@@ -76,6 +76,12 @@ export default function LoginScreen() {
         onSubmitEditing={handleSubmit}
       />
       <Button title="Đăng nhập" onPress={handleSubmit} loading={submitting} />
+      <Link
+        href={{ pathname: "/forgot-password", params: email.trim() ? { email: email.trim() } : {} }}
+        style={[styles.link, styles.center]}
+      >
+        Quên mật khẩu?
+      </Link>
     </AuthForm>
   );
 }
@@ -83,4 +89,5 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   muted: { color: colors.textMuted, fontSize: 15 },
   link: { color: colors.primary, fontSize: 15, fontWeight: "600" },
+  center: { textAlign: "center" },
 });

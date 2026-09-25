@@ -31,6 +31,12 @@ const envSchema = z.object({
     .optional()
     .transform((v) => v || undefined)
     .refine((v) => !v || v.length >= 32, "CRON_SECRET must be at least 32 characters"),
+  // Email đặt lại mật khẩu gửi qua Resend. Thiếu key: dev in mã ra log, production không gửi được.
+  RESEND_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  MAIL_FROM: z.string().min(1).default("FitTrack <onboarding@resend.dev>"),
   CORS_ORIGINS: z
     .string()
     .optional()

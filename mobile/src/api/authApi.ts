@@ -36,3 +36,13 @@ export const accountApi = {
     await api.delete("/auth/me", { data: { password } });
   },
 };
+
+export const passwordResetApi = {
+  // Luôn thành công (không tiết lộ email nào đã đăng ký); mã 6 số được gửi qua email
+  request: (email: string) =>
+    unwrap(api.post<ApiSuccess<null>>("/auth/forgot-password", { email })),
+
+  // Đúng mã thì server đổi mật khẩu và trả về phiên đăng nhập mới
+  reset: (input: { email: string; code: string; newPassword: string }) =>
+    unwrap(api.post<ApiSuccess<AuthResult>>("/auth/reset-password", input)),
+};

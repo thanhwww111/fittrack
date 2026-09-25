@@ -7,6 +7,7 @@ import { FoodLogModel } from "../models/foodLog.model";
 import { MealTemplateModel } from "../models/mealTemplate.model";
 import { NotificationSettingsModel } from "../models/notificationSettings.model";
 import { NutritionTargetModel } from "../models/nutritionTarget.model";
+import { PasswordResetModel } from "../models/passwordReset.model";
 import { PersonalRecordModel } from "../models/personalRecord.model";
 import { PushDeviceModel } from "../models/pushDevice.model";
 import { RefreshTokenModel } from "../models/refreshToken.model";
@@ -172,6 +173,7 @@ export async function deleteAccount(userId: string, password: string) {
     MealTemplateModel.deleteMany(owned),
     NotificationSettingsModel.deleteMany(owned),
     NutritionTargetModel.deleteMany(owned),
+    PasswordResetModel.deleteMany(owned),
     PersonalRecordModel.deleteMany(owned),
     PushDeviceModel.deleteMany(owned),
     RefreshTokenModel.deleteMany(owned),
@@ -183,4 +185,9 @@ export async function deleteAccount(userId: string, password: string) {
     ExerciseModel.deleteMany({ createdBy: userId }),
   ]);
   await UserModel.deleteOne({ _id: userId });
+}
+
+// Cấp phiên đăng nhập mới cho user (dùng sau khi đặt lại mật khẩu)
+export async function issueSession(user: UserDocument) {
+  return buildAuthResult(user, await issueTokens(user.id));
 }
