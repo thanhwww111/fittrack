@@ -56,6 +56,7 @@ export async function startSession(userId: string, input: StartSessionInput) {
     exerciseName: string;
     targetSets: number;
     targetReps: number;
+    restSeconds: number;
     sets: [];
   }[] = [];
 
@@ -73,6 +74,7 @@ export async function startSession(userId: string, input: StartSessionInput) {
       exerciseName: byId.get(String(e.exerciseId))!.name,
       targetSets: e.targetSets,
       targetReps: e.targetReps,
+      restSeconds: e.restSeconds,
       sets: [],
     }));
   }

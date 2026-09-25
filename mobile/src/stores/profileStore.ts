@@ -42,7 +42,7 @@ export const useProfileStore = create<ProfileState>()((set, get) => ({
 
     let target: NutritionTarget;
     if (currentTarget && currentTarget.effectiveFrom === goals.today) {
-      target = await goalApi.update(currentTarget.id, await goalApi.suggestion());
+      target = await goalApi.update(currentTarget.id, { mode: "AUTO" });
     } else {
       target = await goalApi.createAuto();
     }

@@ -185,6 +185,8 @@ export interface SessionExercise {
   exerciseName: string;
   targetSets: number | null;
   targetReps: number | null;
+  // Thời gian nghỉ copy từ template, null = bài thêm ngoài template (dùng mặc định)
+  restSeconds?: number | null;
   sets: WorkoutSet[];
 }
 

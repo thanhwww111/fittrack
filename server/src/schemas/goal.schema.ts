@@ -19,7 +19,11 @@ export const createGoalSchema = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("MANUAL"), effectiveFrom: effectiveFrom.optional(), ...macros }),
 ]);
 
-export const updateGoalSchema = z.object(macros);
+// { mode: "AUTO" } = tính lại từ profile hiện tại. Gửi macro (mode bỏ trống hoặc "MANUAL") = tự nhập.
+export const updateGoalSchema = z.union([
+  z.object({ mode: z.literal("AUTO") }),
+  z.object({ mode: z.literal("MANUAL").optional(), ...macros }),
+]);
 
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;
 export type UpdateGoalInput = z.infer<typeof updateGoalSchema>;

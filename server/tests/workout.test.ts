@@ -157,6 +157,8 @@ describe("starting a workout", () => {
       "Incline Dumbbell Press",
       "Cable Fly",
     ]);
+    // Bench Press dùng mặc định 90s, Cable Fly đặt 60s trong template
+    expect(res.body.data.exercises.map((e: { restSeconds: number }) => e.restSeconds)).toEqual([90, 90, 60]);
   });
 
   it("allows only one workout in progress", async () => {

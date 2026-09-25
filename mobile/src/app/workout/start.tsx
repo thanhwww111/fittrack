@@ -143,7 +143,10 @@ export default function ActiveWorkoutScreen() {
             onRecord={async (input) => {
               await recordSet({ exerciseId: exercise.exerciseId, ...input });
               // Chỉ hẹn giờ nghỉ khi ghi set mới, sửa set cũ thì không
-              if (!input.setNumber) setRestEndsAt(Date.now() + DEFAULT_REST_SECONDS * 1000);
+              if (!input.setNumber) {
+                const rest = exercise.restSeconds ?? DEFAULT_REST_SECONDS;
+                if (rest > 0) setRestEndsAt(Date.now() + rest * 1000);
+              }
             }}
             onRemoveSet={(setNumber) => removeSet(exercise.exerciseId, setNumber)}
           />
