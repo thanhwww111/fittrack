@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { BarChart } from "@/components/charts/BarChart";
 import { ChartCard } from "@/components/charts/ChartCard";
 import { LineChart } from "@/components/charts/LineChart";
@@ -9,7 +9,7 @@ import { shortDate } from "@/components/charts/scale";
 import { WeightEntry } from "@/components/progress/WeightEntry";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { RANGES, useProgress, type RangeKey } from "@/hooks/useProgress";
 import { formatVolume } from "@/lib/workout";
 
@@ -204,7 +204,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   content: { padding: spacing.lg, gap: spacing.lg },
   segment: {
     flexDirection: "row",
@@ -226,4 +226,4 @@ const styles = StyleSheet.create({
   linkRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingTop: spacing.xs },
   linkText: { flex: 1, fontSize: 15, fontWeight: "600", color: colors.primary },
   pressed: { opacity: 0.6 },
-});
+}));

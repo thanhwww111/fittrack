@@ -6,7 +6,6 @@ import {
   FlatList,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -14,7 +13,7 @@ import {
 import { exerciseApi } from "@/api/workoutApi";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { CreateExerciseForm } from "@/components/workout/CreateExerciseForm";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { errorMessage } from "@/lib/formErrors";
 import { EQUIPMENT_LABELS, MUSCLE_LABELS, MUSCLE_ORDER } from "@/lib/workout";
@@ -166,7 +165,7 @@ export default function ExercisePickerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, padding: spacing.lg, gap: spacing.md },
   flex: { flex: 1 },
   searchBox: {
@@ -192,7 +191,7 @@ const styles = StyleSheet.create({
   },
   filterSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterText: { fontSize: 14, color: colors.text },
-  filterTextSelected: { color: "#fff", fontWeight: "600" },
+  filterTextSelected: { color: colors.onPrimary, fontWeight: "600" },
   loading: { marginTop: spacing.xl },
   list: { gap: spacing.sm, paddingBottom: spacing.xxl },
   row: {
@@ -219,4 +218,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   createText: { fontSize: 15, fontWeight: "600", color: colors.primary },
-});
+}));

@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
-import { colors, radius, spacing } from "@/constants/theme";
+import { Text, View } from "react-native";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import type { Macros } from "@/types/models";
 
 const fmt = (n: number) => n.toLocaleString("vi-VN", { maximumFractionDigits: 1 });
@@ -38,7 +38,7 @@ function Chip({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
   chip: {
     flexDirection: "row",
@@ -53,4 +53,4 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3 },
   text: { fontSize: 12, color: colors.textMuted, fontVariant: ["tabular-nums"] },
   textLarge: { fontSize: 15, color: colors.text, fontWeight: "600" },
-});
+}));

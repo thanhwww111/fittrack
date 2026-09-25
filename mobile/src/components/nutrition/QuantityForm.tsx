@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { Card } from "@/components/ui/Card";
 import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
 import { TextField } from "@/components/ui/TextField";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { MEAL_LABELS, MEAL_ORDER, UNIT_LABELS } from "@/lib/nutrition";
 import type { MealType, NutritionValues, ServingUnit } from "@/types/models";
 import { MacroChips } from "./MacroChips";
@@ -56,8 +56,8 @@ export function QuantityForm({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   preview: { gap: spacing.sm },
   previewLabel: { fontSize: 14, fontWeight: "500", color: colors.text },
   muted: { fontSize: 14, color: colors.textMuted },
-});
+}));

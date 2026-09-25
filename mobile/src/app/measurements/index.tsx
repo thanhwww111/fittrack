@@ -1,11 +1,11 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { measurementApi } from "@/api/progressApi";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { localToday } from "@/hooks/useProgress";
 import { errorMessage } from "@/lib/formErrors";
 import { measurementSummary } from "@/lib/measurements";
@@ -87,7 +87,7 @@ export default function MeasurementsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1 },
   flex: { flex: 1 },
   list: { padding: spacing.lg, gap: spacing.sm },
@@ -107,4 +107,4 @@ const styles = StyleSheet.create({
   loading: { marginTop: spacing.xl },
   empty: { fontSize: 15, color: colors.textMuted, textAlign: "center", marginTop: spacing.xl, lineHeight: 22 },
   footer: { padding: spacing.lg },
-});
+}));

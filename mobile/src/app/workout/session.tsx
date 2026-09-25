@@ -1,13 +1,13 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { sessionApi } from "@/api/workoutApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SessionInfoEditor } from "@/components/workout/SessionInfoEditor";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
 import {
@@ -157,7 +157,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
@@ -178,13 +178,13 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 18, fontWeight: "700", color: colors.text, fontVariant: ["tabular-nums"] },
   statLabel: { fontSize: 13, color: colors.textMuted },
-  prCard: { backgroundColor: "#fef3c7", borderRadius: radius.lg, padding: spacing.lg, gap: spacing.xs },
-  prTitle: { fontSize: 17, fontWeight: "700", color: "#92400e" },
-  prText: { fontSize: 14, color: "#92400e" },
+  prCard: { backgroundColor: colors.highlight, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.xs },
+  prTitle: { fontSize: 17, fontWeight: "700", color: colors.highlightText },
+  prText: { fontSize: 14, color: colors.highlightText },
   exerciseHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   exerciseName: { fontSize: 16, fontWeight: "700", color: colors.text, flex: 1 },
   pressed: { opacity: 0.6 },
   setRow: { flexDirection: "row", gap: spacing.md },
   setNumber: { width: 20, fontSize: 14, fontWeight: "700", color: colors.textMuted },
   setValue: { fontSize: 15, color: colors.text, fontVariant: ["tabular-nums"] },
-});
+}));

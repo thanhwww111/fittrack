@@ -15,7 +15,7 @@ import { RestTimer } from "@/components/workout/RestTimer";
 import { SessionInfoEditor } from "@/components/workout/SessionInfoEditor";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
 import { DEFAULT_REST_SECONDS, formatVolume, RECORD_LABELS } from "@/lib/workout";
@@ -198,7 +198,7 @@ export default function ActiveWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.lg, padding: spacing.lg },
   muted: { fontSize: 15, color: colors.textMuted },
@@ -216,13 +216,13 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 15, color: colors.textMuted, fontVariant: ["tabular-nums"] },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: 120 },
   prBanner: {
-    backgroundColor: "#fef3c7",
+    backgroundColor: colors.highlight,
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: 2,
   },
-  prTitle: { fontSize: 16, fontWeight: "700", color: "#92400e" },
-  prText: { fontSize: 14, color: "#92400e" },
+  prTitle: { fontSize: 16, fontWeight: "700", color: colors.highlightText },
+  prText: { fontSize: 14, color: colors.highlightText },
   empty: { textAlign: "center", color: colors.textMuted, paddingVertical: spacing.lg },
   restWrapper: { position: "absolute", left: spacing.lg, right: spacing.lg, bottom: spacing.xl },
-});
+}));

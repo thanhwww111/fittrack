@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -17,11 +16,12 @@ import { Card } from "@/components/ui/Card";
 import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage, fieldErrorsFrom, parseNumber, type FieldErrors } from "@/lib/formErrors";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { useProfileStore } from "@/stores/profileStore";
+import { useThemeStore, type ThemePreference } from "@/stores/themeStore";
 import type {
   ActivityLevel,
   Gender,
@@ -40,6 +40,12 @@ const GOAL_OPTIONS: ChipOption<GoalType>[] = [
   { value: "WEIGHT_LOSS", label: "Giảm cân" },
   { value: "MAINTENANCE", label: "Giữ cân" },
   { value: "MUSCLE_GAIN", label: "Tăng cơ" },
+];
+
+const THEME_OPTIONS: ChipOption<ThemePreference>[] = [
+  { value: "system", label: "Theo hệ thống" },
+  { value: "light", label: "Sáng" },
+  { value: "dark", label: "Tối" },
 ];
 
 const ACTIVITY_OPTIONS: ChipOption<ActivityLevel>[] = [
@@ -93,6 +99,8 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
   const recalculateTarget = useProfileStore((s) => s.recalculateTarget);
   const currentTarget = useProfileStore((s) => s.currentTarget);
   const setManualTarget = useProfileStore((s) => s.setManualTarget);
+  const themePreference = useThemeStore((s) => s.preference);
+  const setThemePreference = useThemeStore((s) => s.setPreference);
   const [editingTarget, setEditingTarget] = useState(false);
 
   const [gender, setGender] = useState(profile.gender);
@@ -289,6 +297,15 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
           )}
         </Card>
 
+        <Card title="Giao diện">
+          <ChipGroup
+            label="Chế độ màu"
+            options={THEME_OPTIONS}
+            value={themePreference}
+            onChange={setThemePreference}
+          />
+        </Card>
+
         <Button
           title="👤 Tài khoản & bảo mật"
           variant="secondary"
@@ -324,7 +341,7 @@ function Macro({ label, value, unit }: { label: string; value: number; unit: str
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
@@ -340,4 +357,4 @@ const styles = StyleSheet.create({
   macro: { flex: 1, gap: 2 },
   macroValue: { fontSize: 18, fontWeight: "700", color: colors.text, fontVariant: ["tabular-nums"] },
   macroLabel: { fontSize: 12, color: colors.textMuted },
-});
+}));

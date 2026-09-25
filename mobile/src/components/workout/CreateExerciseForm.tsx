@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { exerciseApi } from "@/api/workoutApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { spacing } from "@/constants/theme";
+import { spacing, themedStyles } from "@/constants/theme";
 import { errorMessage } from "@/lib/formErrors";
 import { EQUIPMENT_LABELS, MUSCLE_LABELS, MUSCLE_ORDER } from "@/lib/workout";
 import type { Equipment, Exercise, MuscleGroup } from "@/types/models";
@@ -87,8 +87,8 @@ export function CreateExerciseForm({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   actions: { flexDirection: "row", gap: spacing.md },
   description: { minHeight: 64, textAlignVertical: "top" },
-});
+}));

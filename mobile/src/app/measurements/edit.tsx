@@ -7,7 +7,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -16,7 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { localToday } from "@/hooks/useProgress";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage, fieldErrorsFrom, parseNumber, type FieldErrors } from "@/lib/formErrors";
@@ -179,7 +178,7 @@ function MeasurementForm({ date, measurement }: { date: string; measurement: Bod
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   dateBar: {
@@ -190,4 +189,4 @@ const styles = StyleSheet.create({
   },
   dateText: { fontSize: 17, fontWeight: "600", color: colors.text },
   hint: { fontSize: 13, color: colors.textMuted, lineHeight: 19 },
-});
+}));

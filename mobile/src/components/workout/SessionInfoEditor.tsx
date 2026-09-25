@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { spacing } from "@/constants/theme";
+import { spacing, themedStyles } from "@/constants/theme";
 import { errorMessage } from "@/lib/formErrors";
 
 interface SessionInfoEditorProps {
@@ -60,8 +60,8 @@ export function SessionInfoEditor({ name: initialName, notes: initialNotes, onSa
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   actions: { flexDirection: "row", gap: spacing.md },
   notes: { minHeight: 80, textAlignVertical: "top" },
-});
+}));

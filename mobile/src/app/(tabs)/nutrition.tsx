@@ -18,7 +18,7 @@ import { WaterCard } from "@/components/nutrition/WaterCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
 import { addDays, formatDayLabel, formatServing, MEAL_LABELS, MEAL_ORDER } from "@/lib/nutrition";
@@ -255,7 +255,7 @@ function MealSection({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg },
   flex: { flex: 1 },
@@ -302,4 +302,4 @@ const styles = StyleSheet.create({
   },
   extraButton: { flexDirection: "row", alignItems: "center", gap: spacing.xs, paddingVertical: spacing.xs },
   extraText: { fontSize: 13, fontWeight: "500", color: colors.textMuted },
-});
+}));

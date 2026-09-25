@@ -1,8 +1,8 @@
 import { router } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { formatDuration, formatVolume } from "@/lib/workout";
 import type { WorkoutSession } from "@/types/models";
 
@@ -56,11 +56,11 @@ export function TodayWorkoutCard({ active, completed }: TodayWorkoutCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   activeCard: { borderColor: colors.primary, borderWidth: 2 },
   name: { fontSize: 17, fontWeight: "700", color: colors.text },
   muted: { fontSize: 14, color: colors.textMuted },
   row: { flexDirection: "row", gap: spacing.md, alignItems: "flex-start" },
   check: { fontSize: 18, fontWeight: "700", color: colors.success },
-});
+}));

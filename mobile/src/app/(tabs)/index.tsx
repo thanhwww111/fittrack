@@ -1,22 +1,14 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link, router } from "expo-router";
 import type { ComponentProps } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { MacroBars } from "@/components/nutrition/MacroBars";
 import { WaterCard } from "@/components/nutrition/WaterCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TodayWorkoutCard } from "@/components/workout/TodayWorkoutCard";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useDashboard } from "@/hooks/useDashboard";
 import { localToday } from "@/hooks/useProgress";
 import { mealTypeForHour } from "@/lib/nutrition";
@@ -170,7 +162,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   content: { padding: spacing.lg, gap: spacing.lg },
   greeting: { fontSize: 22, fontWeight: "700", color: colors.text },
@@ -192,4 +184,4 @@ const styles = StyleSheet.create({
   },
   quickText: { fontSize: 14, fontWeight: "600", color: colors.primary },
   pressed: { opacity: 0.6 },
-});
+}));

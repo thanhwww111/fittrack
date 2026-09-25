@@ -1,19 +1,11 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { foodApi } from "@/api/foodApi";
 import { MacroChips } from "@/components/nutrition/MacroChips";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useFoodSearch } from "@/hooks/useFoodSearch";
 import { formatServing } from "@/lib/nutrition";
 import type { Food } from "@/types/models";
@@ -147,7 +139,7 @@ export default function FoodSearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, padding: spacing.lg, gap: spacing.md },
   recent: { gap: spacing.sm, marginBottom: spacing.xs },
   sectionTitle: { fontSize: 14, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase" },
@@ -203,4 +195,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   createText: { fontSize: 15, color: colors.primary, fontWeight: "600" },
-});
+}));

@@ -1,12 +1,12 @@
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { Text } from "react-native";
 import { passwordResetApi } from "@/api/authApi";
 import { AuthForm } from "@/components/AuthForm";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors } from "@/constants/theme";
+import { colors, themedStyles } from "@/constants/theme";
 import { errorMessage, validateEmail } from "@/lib/formErrors";
 
 // Bước 1: nhập email để nhận mã 6 số
@@ -63,7 +63,7 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   muted: { color: colors.textMuted, fontSize: 14, textAlign: "center" },
   link: { color: colors.primary, fontSize: 15, fontWeight: "600" },
-});
+}));

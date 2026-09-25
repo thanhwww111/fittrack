@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
+import { Pressable, Text, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Circle, Line, Path, Text as SvgText } from "react-native-svg";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { formatTick, niceAxis } from "./scale";
 
 export interface LinePoint {
@@ -171,7 +171,7 @@ export function LineChart({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   readout: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.xs },
   readoutValue: { fontWeight: "700", color: colors.text },
-});
+}));

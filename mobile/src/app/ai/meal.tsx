@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -17,7 +16,7 @@ import { Card } from "@/components/ui/Card";
 import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { aiErrorMessage } from "@/lib/aiErrors";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
@@ -183,7 +182,7 @@ function SuggestionCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   loading: { alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xl },
@@ -199,10 +198,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     overflow: "hidden",
   },
-  badgeOk: { color: colors.success, backgroundColor: "#dcfce7" },
+  badgeOk: { color: colors.success, backgroundColor: colors.successSoft },
   badgeOver: { color: colors.danger, backgroundColor: colors.dangerSoft },
   ingredients: { gap: 2 },
   ingredient: { fontSize: 14, color: colors.text },
   amount: { color: colors.textMuted },
   disclaimer: { fontSize: 12, color: colors.textMuted, lineHeight: 18 },
-});
+}));

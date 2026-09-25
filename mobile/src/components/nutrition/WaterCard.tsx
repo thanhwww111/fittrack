@@ -1,14 +1,13 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { waterApi } from "@/api/nutritionApi";
 import { Card } from "@/components/ui/Card";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage } from "@/lib/formErrors";
 import type { WaterDay } from "@/types/models";
 
-const WATER_COLOR = "#0ea5e9";
 const STEPS = [250, 500];
 
 const liters = (ml: number) =>
@@ -58,7 +57,7 @@ export function WaterCard({ date }: { date: string }) {
   return (
     <Card>
       <View style={styles.header}>
-        <Ionicons name="water" size={20} color={WATER_COLOR} />
+        <Ionicons name="water" size={20} color={colors.water} />
         <Text style={styles.title}>Nước uống</Text>
         <Text style={styles.value}>
           {water ? `${liters(water.amount)} / ${liters(water.target)} lít` : "…"}
@@ -80,7 +79,7 @@ export function WaterCard({ date }: { date: string }) {
             (pressed || busy || !water?.amount) && styles.dim,
           ]}
         >
-          <Ionicons name="remove" size={18} color={WATER_COLOR} />
+          <Ionicons name="remove" size={18} color={colors.water} />
         </Pressable>
         {STEPS.map((step) => (
           <Pressable
@@ -100,23 +99,23 @@ export function WaterCard({ date }: { date: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   title: { flex: 1, fontSize: 16, fontWeight: "700", color: colors.text },
   value: { fontSize: 14, color: colors.textMuted, fontVariant: ["tabular-nums"] },
   track: { height: 8, borderRadius: radius.pill, backgroundColor: colors.border, overflow: "hidden" },
-  fill: { height: "100%", borderRadius: radius.pill, backgroundColor: WATER_COLOR },
+  fill: { height: "100%", borderRadius: radius.pill, backgroundColor: colors.water },
   actions: { flexDirection: "row", gap: spacing.sm },
   button: {
     minHeight: 40,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: radius.md,
-    backgroundColor: "#e0f2fe",
+    backgroundColor: colors.waterSoft,
   },
   minus: { width: 48 },
-  buttonText: { fontSize: 15, fontWeight: "600", color: "#0369a1" },
+  buttonText: { fontSize: 15, fontWeight: "600", color: colors.waterText },
   dim: { opacity: 0.5 },
   error: { fontSize: 13, color: colors.danger },
-});
+}));

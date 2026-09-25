@@ -1,20 +1,12 @@
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { accountApi } from "@/api/authApi";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { pickAvatar } from "@/lib/avatar";
 import { confirmAction } from "@/lib/confirm";
 import {
@@ -265,7 +257,7 @@ function DeleteAccount() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   muted: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
@@ -273,4 +265,4 @@ const styles = StyleSheet.create({
   avatarRow: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
   avatarActions: { flex: 1, gap: spacing.sm },
   removeText: { fontSize: 14, fontWeight: "600", color: colors.danger, textAlign: "center" },
-});
+}));

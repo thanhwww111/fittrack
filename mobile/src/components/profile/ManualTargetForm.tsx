@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage, fieldErrorsFrom, parseNumber, type FieldErrors } from "@/lib/formErrors";
 import type { Macros } from "@/types/models";
 
@@ -89,10 +89,10 @@ export function ManualTargetForm({ initial, onSubmit, onCancel }: ManualTargetFo
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { gap: spacing.md },
   flex: { flex: 1 },
   actions: { flexDirection: "row", gap: spacing.md },
   hint: { fontSize: 13, color: colors.textMuted },
   error: { fontSize: 13, color: colors.danger },
-});
+}));

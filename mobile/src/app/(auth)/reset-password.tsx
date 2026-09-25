@@ -1,12 +1,12 @@
 import { Link, Redirect, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, Text } from "react-native";
 import { passwordResetApi } from "@/api/authApi";
 import { AuthForm } from "@/components/AuthForm";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors } from "@/constants/theme";
+import { colors, themedStyles } from "@/constants/theme";
 import { errorMessage, fieldErrorsFrom, validatePassword, type FieldErrors } from "@/lib/formErrors";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -118,8 +118,8 @@ export default function ResetPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   link: { color: colors.primary, fontSize: 15, fontWeight: "600" },
   center: { textAlign: "center" },
   notice: { color: colors.success, fontSize: 14 },
-});
+}));

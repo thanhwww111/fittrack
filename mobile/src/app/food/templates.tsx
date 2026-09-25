@@ -7,7 +7,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -17,7 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
 import { formatServing, MEAL_LABELS, MEAL_ORDER } from "@/lib/nutrition";
@@ -184,7 +183,7 @@ export default function MealTemplatesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
@@ -194,4 +193,4 @@ const styles = StyleSheet.create({
   gone: { color: colors.textMuted, fontStyle: "italic" },
   muted: { fontSize: 13, color: colors.textMuted },
   empty: { fontSize: 15, color: colors.textMuted, lineHeight: 22 },
-});
+}));

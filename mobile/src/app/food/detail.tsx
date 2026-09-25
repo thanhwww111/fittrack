@@ -1,11 +1,11 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { QuantityForm } from "@/components/nutrition/QuantityForm";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage, parseNumber } from "@/lib/formErrors";
 import { formatServing } from "@/lib/nutrition";
@@ -124,9 +124,9 @@ function LogEditor({ log }: { log: FoodLog }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg },
   name: { fontSize: 20, fontWeight: "700", color: colors.text },
   muted: { fontSize: 14, color: colors.textMuted },
-});
+}));
