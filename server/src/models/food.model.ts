@@ -1,5 +1,6 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
 import { SERVING_UNITS } from "../constants/enums";
+import { applyToJSON } from "../utils/toJSON";
 
 // Giá trị dinh dưỡng tính trên 1 khẩu phần (servingSize servingUnit)
 const foodSchema = new Schema(
@@ -16,11 +17,13 @@ const foodSchema = new Schema(
     isCustom: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
+  { timestamps: true }
 );
 
-foodSchema.index({ name: "text" });
-foodSchema.index({ createdBy: 1 });
+// User thấy food hệ thống (createdBy = null) + food của chính mình
+foodSchema.index({ createdBy: 1, name: 1 });
+
+applyToJSON(foodSchema);
 
 export type Food = InferSchemaType<typeof foodSchema>;
 
