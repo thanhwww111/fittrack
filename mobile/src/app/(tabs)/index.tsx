@@ -1,11 +1,18 @@
-import { Link } from "expo-router";
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { Link, router } from "expo-router";
+import type { ComponentProps } from "react";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { MacroBars } from "@/components/nutrition/MacroBars";
+import { WaterCard } from "@/components/nutrition/WaterCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, spacing } from "@/constants/theme";
+import { TodayWorkoutCard } from "@/components/workout/TodayWorkoutCard";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useDashboard } from "@/hooks/useDashboard";
+import { localToday } from "@/hooks/useProgress";
+import { mealTypeForHour } from "@/lib/nutrition";
+import { formatDayAdherence, formatSignedPercent } from "@/lib/weekly";
 import { formatDuration } from "@/lib/workout";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -60,6 +67,25 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
+      <View style={styles.quickRow}>
+        <QuickAction
+          icon="restaurant-outline"
+          label="Ghi món"
+          onPress={() =>
+            router.push({
+              pathname: "/food/search",
+              params: { mealType: mealTypeForHour(new Date().getHours()) },
+            })
+          }
+        />
+        <QuickAction
+          icon="scale-outline"
+          label="Cân nặng"
+          onPress={() => router.push({ pathname: "/measurements/edit", params: { date: localToday() } })}
+        />
+        <QuickAction icon="barbell-outline" label="Tập luyện" onPress={() => router.push("/workout")} />
+      </View>
+
       <ErrorBanner message={error} />
 
       {nutrition ? (
@@ -80,17 +106,46 @@ export default function HomeScreen() {
         </Card>
       ) : null}
 
+      {nutrition ? <WaterCard date={nutrition.date} /> : null}
+
+      {data ? (
+        <TodayWorkoutCard
+          active={data.workoutToday.active}
+          completed={data.workoutToday.completed}
+        />
+      ) : null}
+
       {weekly ? (
         <Card title="Tuần này">
           <View style={styles.statsRow}>
-            <Stat label="Buổi tập" value={String(weekly.workout.sessions)} />
-            <Stat label="Volume" value={`${formatNumber(weekly.workout.totalVolume)} kg`} />
-            <Stat label="Thời gian" value={formatDuration(weekly.workout.duration)} />
+            <Stat
+              label="Buổi tập"
+              value={
+                weekly.adherence.workout.target
+                  ? `${weekly.workout.sessions}/${weekly.adherence.workout.target}`
+                  : String(weekly.workout.sessions)
+              }
+              hint={
+                weekly.adherence.workout.percent !== null
+                  ? `đạt ${weekly.adherence.workout.percent}%`
+                  : undefined
+              }
+            />
+            <Stat
+              label="Volume"
+              value={`${formatNumber(weekly.workout.totalVolume)} kg`}
+              hint={
+                weekly.workout.volumeChange !== null
+                  ? `${formatSignedPercent(weekly.workout.volumeChange)} so tuần trước`
+                  : undefined
+              }
+            />
+            <Stat label="PR mới" value={String(weekly.newPersonalRecords)} />
           </View>
           <View style={styles.statsRow}>
-            <Stat label="PR mới" value={String(weekly.newPersonalRecords)} />
-            <Stat label="Ngày đủ protein" value={String(weekly.nutrition.daysProteinGoalMet)} />
-            <Stat label="Ngày đã log" value={String(weekly.nutrition.loggedDays)} />
+            <Stat label="Đúng calo" {...formatDayAdherence(weekly.adherence.calories)} />
+            <Stat label="Đủ protein" {...formatDayAdherence(weekly.adherence.protein)} />
+            <Stat label="Thời gian tập" value={formatDuration(weekly.workout.duration)} />
           </View>
         </Card>
       ) : null}
@@ -98,16 +153,38 @@ export default function HomeScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function QuickAction({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.quick, pressed && styles.pressed]}
+    >
+      <Ionicons name={icon} size={22} color={colors.primary} />
+      <Text style={styles.quickText}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <View style={styles.stat}>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
+      {hint ? <Text style={styles.statHint}>{hint}</Text> : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   content: { padding: spacing.lg, gap: spacing.lg },
   greeting: { fontSize: 22, fontWeight: "700", color: colors.text },
@@ -118,4 +195,16 @@ const styles = StyleSheet.create({
   stat: { flex: 1, gap: 2 },
   statValue: { fontSize: 18, fontWeight: "700", color: colors.text, fontVariant: ["tabular-nums"] },
   statLabel: { fontSize: 13, color: colors.textMuted },
-});
+  statHint: { fontSize: 12, color: colors.textMuted },
+  quickRow: { flexDirection: "row", gap: spacing.md },
+  quick: {
+    flex: 1,
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+  },
+  quickText: { fontSize: 14, fontWeight: "600", color: colors.primary },
+  pressed: { opacity: 0.6 },
+}));

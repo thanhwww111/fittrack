@@ -7,7 +7,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -17,7 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
 import { DEFAULT_REST_SECONDS } from "@/lib/workout";
@@ -88,6 +87,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   function addExercise() {
     openPicker(
@@ -159,6 +159,20 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
     } catch (err) {
       setFormError(errorMessage(err));
       setSaving(false);
+    }
+  }
+
+  // Tạo bản sao rồi mở luôn bản sao để sửa (vd "Push A" → "Push B")
+  async function handleDuplicate() {
+    if (!template) return;
+    setDuplicating(true);
+    setFormError(null);
+    try {
+      const copy = await templateApi.duplicate(template.id);
+      router.replace({ pathname: "/workout/template", params: { id: copy.id } });
+    } catch (err) {
+      setFormError(errorMessage(err));
+      setDuplicating(false);
     }
   }
 
@@ -245,6 +259,14 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
 
         <Button title="+ Thêm bài tập" variant="secondary" onPress={addExercise} />
         <Button title="Lưu template" onPress={handleSave} loading={saving} />
+        {template ? (
+          <Button
+            title="Nhân bản template"
+            variant="secondary"
+            onPress={handleDuplicate}
+            loading={duplicating}
+          />
+        ) : null}
         {template ? <Button title="Xoá template" variant="danger" onPress={handleDelete} /> : null}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -278,7 +300,7 @@ function IconButton({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
@@ -301,4 +323,4 @@ const styles = StyleSheet.create({
   },
   inputError: { borderColor: colors.danger },
   error: { fontSize: 13, color: colors.danger },
-});
+}));

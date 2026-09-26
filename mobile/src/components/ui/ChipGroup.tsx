@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, radius, spacing } from "@/constants/theme";
+import { Pressable, Text, View } from "react-native";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 
 export interface ChipOption<T extends string> {
   value: T;
@@ -40,7 +40,7 @@ export function ChipGroup<T extends string>({ label, options, value, onChange }:
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { gap: spacing.sm },
   label: { fontSize: 14, fontWeight: "500", color: colors.text },
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
@@ -54,5 +54,5 @@ const styles = StyleSheet.create({
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 14, color: colors.text },
-  chipTextSelected: { color: "#fff", fontWeight: "600" },
-});
+  chipTextSelected: { color: colors.onPrimary, fontWeight: "600" },
+}));

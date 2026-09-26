@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
-import { colors, radius, spacing } from "@/constants/theme";
+import { Text, View } from "react-native";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
@@ -10,11 +10,11 @@ export function ErrorBanner({ message }: { message: string | null }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   banner: {
     backgroundColor: colors.dangerSoft,
     borderRadius: radius.md,
     padding: spacing.md,
   },
   text: { color: colors.danger, fontSize: 14 },
-});
+}));

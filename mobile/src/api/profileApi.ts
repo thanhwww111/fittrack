@@ -3,6 +3,7 @@ import type {
   GoalsOverview,
   Macros,
   NutritionTarget,
+  TargetRecalculation,
   UpdateProfileInput,
   UserProfile,
 } from "@/types/models";
@@ -20,8 +21,15 @@ export const goalApi = {
 
   suggestion: () => unwrap(api.get<ApiSuccess<Macros>>("/goals/suggestion")),
 
+  recalculation: () =>
+    unwrap(api.get<ApiSuccess<TargetRecalculation>>("/goals/recalculation")),
+
   createAuto: () => unwrap(api.post<ApiSuccess<NutritionTarget>>("/goals", { mode: "AUTO" })),
 
-  update: (id: string, macros: Macros) =>
-    unwrap(api.put<ApiSuccess<NutritionTarget>>(`/goals/${id}`, macros)),
+  createManual: (macros: Macros) =>
+    unwrap(api.post<ApiSuccess<NutritionTarget>>("/goals", { mode: "MANUAL", ...macros })),
+
+  // Gửi macro = tự nhập (MANUAL); { mode: "AUTO" } = server tính lại từ profile
+  update: (id: string, input: Macros | { mode: "AUTO" }) =>
+    unwrap(api.put<ApiSuccess<NutritionTarget>>(`/goals/${id}`, input)),
 };

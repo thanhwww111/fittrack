@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 import { progressApi } from "@/api/progressApi";
 import { errorMessage } from "@/lib/formErrors";
 import { addDays } from "@/lib/nutrition";
-import type { NutritionProgress, WeightProgress, WorkoutWeek } from "@/types/models";
+import type { GoalProgress, NutritionProgress, WeightProgress, WorkoutWeek } from "@/types/models";
 
 export const RANGES = [
   { key: "1m", label: "1 tháng", days: 30, weeks: 4 },
@@ -25,6 +25,7 @@ interface ProgressData {
   weight: WeightProgress;
   workoutWeeks: WorkoutWeek[];
   nutrition: NutritionProgress;
+  goal: GoalProgress;
 }
 
 export function useProgress(rangeKey: RangeKey) {
@@ -35,12 +36,13 @@ export function useProgress(rangeKey: RangeKey) {
 
   const load = useCallback(async () => {
     try {
-      const [weight, workout, nutrition] = await Promise.all([
+      const [weight, workout, nutrition, goal] = await Promise.all([
         progressApi.weight({ from: addDays(localToday(), -(range.days - 1)) }),
         progressApi.workout(range.weeks),
         progressApi.nutrition(), // mặc định 7 ngày gần nhất
+        progressApi.goal(),
       ]);
-      setData({ weight, workoutWeeks: workout.weeks, nutrition });
+      setData({ weight, workoutWeeks: workout.weeks, nutrition, goal });
       setError(null);
     } catch (err) {
       setError(errorMessage(err));

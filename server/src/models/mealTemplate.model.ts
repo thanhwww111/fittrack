@@ -1,4 +1,5 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
+import { applyToJSON } from "../utils/toJSON";
 
 const mealTemplateItemSchema = new Schema(
   {
@@ -21,6 +22,8 @@ const mealTemplateSchema = new Schema(
 );
 
 mealTemplateSchema.index({ userId: 1 });
+
+applyToJSON(mealTemplateSchema);
 
 export type MealTemplate = InferSchemaType<typeof mealTemplateSchema>;
 

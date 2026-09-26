@@ -2,15 +2,16 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link, router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { sessionApi } from "@/api/workoutApi";
+import { programApi, sessionApi } from "@/api/workoutApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage } from "@/lib/formErrors";
+import { dayName, programDayFor } from "@/lib/goal";
 import { formatDate, formatDuration, formatVolume, formatWeight } from "@/lib/workout";
 import { useWorkoutStore } from "@/stores/workoutStore";
-import type { PersonalRecord, WorkoutSession } from "@/types/models";
+import type { PersonalRecord, WeeklyProgramList, WorkoutSession } from "@/types/models";
 
 export default function WorkoutDashboardScreen() {
   const activeSession = useWorkoutStore((s) => s.activeSession);
@@ -19,6 +20,7 @@ export default function WorkoutDashboardScreen() {
 
   const [recent, setRecent] = useState<WorkoutSession[]>([]);
   const [records, setRecords] = useState<PersonalRecord[]>([]);
+  const [programs, setPrograms] = useState<WeeklyProgramList | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
@@ -26,14 +28,16 @@ export default function WorkoutDashboardScreen() {
   const load = useCallback(async () => {
     const { loadActive, loadTemplates } = useWorkoutStore.getState();
     try {
-      const [history, prs] = await Promise.all([
+      const [history, prs, programList] = await Promise.all([
         sessionApi.list({ status: "COMPLETED", limit: 3 }),
         sessionApi.personalRecords(),
+        programApi.list(),
         loadActive(),
         loadTemplates(),
       ]);
       setRecent(history.items);
       setRecords(prs);
+      setPrograms(programList);
       setError(null);
     } catch (err) {
       setError(errorMessage(err));
@@ -58,6 +62,9 @@ export default function WorkoutDashboardScreen() {
       setStarting(null);
     }
   }
+
+  const favorites = programs?.items.filter((p) => p.isFavorite) ?? [];
+  const today = programs?.todayDayOfWeek ?? null;
 
   const setCount = activeSession?.exercises.reduce((n, e) => n + e.sets.length, 0) ?? 0;
 
@@ -86,7 +93,43 @@ export default function WorkoutDashboardScreen() {
           </Text>
           <Button title="Tiếp tục buổi tập" onPress={() => router.push("/workout/start")} />
         </Card>
-      ) : (
+      ) : null}
+
+      {!activeSession && favorites.length > 0 && today !== null ? (
+        <Card title={`Lịch tuần · ${dayName(today)}`}>
+          {favorites.map((program) => {
+            const day = programDayFor(program, today);
+            return day ? (
+              <Pressable
+                key={program.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Bắt đầu ${day.templateName} theo lịch ${program.name}`}
+                disabled={starting !== null}
+                onPress={() => handleStart(day.templateId, { templateId: day.templateId })}
+                style={({ pressed }) => [styles.templateRow, pressed && styles.pressed]}
+              >
+                <View style={styles.flex}>
+                  <Text style={styles.templateName}>Hôm nay: {day.templateName}</Text>
+                  <Text style={styles.muted}>
+                    {program.name} · {day.exerciseCount} bài tập
+                  </Text>
+                </View>
+                <Ionicons
+                  name={starting === day.templateId ? "hourglass-outline" : "play-circle"}
+                  size={30}
+                  color={colors.primary}
+                />
+              </Pressable>
+            ) : (
+              <Text key={program.id} style={styles.muted}>
+                {program.name}: hôm nay nghỉ, hồi phục cho buổi sau 💤
+              </Text>
+            );
+          })}
+        </Card>
+      ) : null}
+
+      {activeSession ? null : (
         <Card title="Bắt đầu tập">
           {templates.map((t) => (
             <Pressable
@@ -130,6 +173,12 @@ export default function WorkoutDashboardScreen() {
             <Text style={styles.linkText}>Template</Text>
           </Pressable>
         </Link>
+        <Link href="/workout/programs" asChild>
+          <Pressable style={styles.linkButton}>
+            <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+            <Text style={styles.linkText}>Lịch tuần</Text>
+          </Pressable>
+        </Link>
         <Link href="/workout/history" asChild>
           <Pressable style={styles.linkButton}>
             <Ionicons name="time-outline" size={20} color={colors.primary} />
@@ -137,6 +186,14 @@ export default function WorkoutDashboardScreen() {
           </Pressable>
         </Link>
       </View>
+
+      {recent.length > 0 ? (
+        <Button
+          title="✨ Phân tích 4 tuần bằng AI"
+          variant="secondary"
+          onPress={() => router.push("/ai/workout")}
+        />
+      ) : null}
 
       <Card title="Buổi tập gần đây">
         {recent.length === 0 ? (
@@ -165,7 +222,13 @@ export default function WorkoutDashboardScreen() {
           <Text style={styles.muted}>Hoàn thành buổi tập đầu tiên để ghi nhận PR.</Text>
         ) : (
           records.map((r) => (
-            <View key={r.id} style={styles.prRow}>
+            <Pressable
+              key={r.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Xem tiến bộ ${r.exerciseName}`}
+              onPress={() => router.push({ pathname: "/workout/exercise", params: { id: r.exerciseId } })}
+              style={({ pressed }) => [styles.prRow, pressed && styles.pressed]}
+            >
               <Text style={[styles.templateName, styles.flex]} numberOfLines={1}>
                 {r.exerciseName}
               </Text>
@@ -173,7 +236,8 @@ export default function WorkoutDashboardScreen() {
                 {r.maxWeight > 0 ? formatWeight(r.maxWeight) : `${r.maxReps} rep`}
                 {r.estimatedOneRepMax > 0 ? ` · 1RM ~${formatWeight(r.estimatedOneRepMax)}` : ""}
               </Text>
-            </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </Pressable>
           ))
         )}
       </Card>
@@ -181,7 +245,7 @@ export default function WorkoutDashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   content: { padding: spacing.lg, gap: spacing.lg },
   flex: { flex: 1 },
   pressed: { opacity: 0.6 },
@@ -212,5 +276,5 @@ const styles = StyleSheet.create({
   linkText: { fontSize: 15, fontWeight: "600", color: colors.primary },
   historyRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
   volume: { fontSize: 15, fontWeight: "600", color: colors.text, fontVariant: ["tabular-nums"] },
-  prRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-});
+  prRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
+}));

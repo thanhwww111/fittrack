@@ -38,6 +38,13 @@ describe("calculateNutritionTarget", () => {
     expect(gain.protein).toBe(126);
   });
 
+  it("sizes the surplus / deficit from the weekly goal rate (7700 kcal per kg)", () => {
+    expect(calculateNutritionTarget({ ...male, goalType: "MUSCLE_GAIN", goalRate: 0.5 }).calories).toBe(3144);
+    expect(calculateNutritionTarget({ ...male, goalType: "WEIGHT_LOSS", goalRate: 0.25 }).calories).toBe(2319);
+    // Giữ cân thì tốc độ không có ý nghĩa
+    expect(calculateNutritionTarget({ ...male, goalRate: 0.5 }).calories).toBe(2594);
+  });
+
   it("never goes below the calorie floor", () => {
     const target = calculateNutritionTarget({
       gender: "FEMALE",

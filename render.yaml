@@ -28,3 +28,14 @@ services:
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      # Tuỳ chọn: không có key thì chỉ các tính năng AI bị tắt (API /ai trả 503)
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+      # Secret cho cron báo cáo tuần: copy giá trị Render sinh ra sang GitHub secret CRON_SECRET
+      - key: CRON_SECRET
+        generateValue: true
+      # Tuỳ chọn: chỉ cần khi bật "Enhanced push security" trên EAS
+      - key: EXPO_ACCESS_TOKEN
+        sync: false

@@ -22,3 +22,8 @@ export const deleteFoodLog: RequestHandler<{ id: string }> = async (req, res) =>
   await foodLogService.deleteFoodLog(req.user!.id, req.params.id);
   res.status(204).end();
 };
+
+export const copyMeal: RequestHandler = async (req, res) => {
+  const data = await foodLogService.copyMeal(req.user!.id, req.body);
+  res.status(201).json({ success: true, data });
+};

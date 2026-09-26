@@ -25,10 +25,81 @@ export interface UserProfile {
   goalType: GoalType | null;
   goalWeight: number | null;
   trainingDaysPerWeek: number | null;
+  // Server tự đặt khi đổi mục tiêu: cân nặng + ngày bắt đầu mục tiêu hiện tại
+  startWeight: number | null;
+  goalStartDate: string | null;
+  goalRate: number | null; // kg/tuần, null = mặc định theo mục tiêu
   timezone: string;
 }
 
-export type UpdateProfileInput = Partial<Omit<UserProfile, "id" | "userId">>;
+export type UpdateProfileInput = Partial<
+  Omit<UserProfile, "id" | "userId" | "startWeight" | "goalStartDate">
+>;
+
+export type GoalRateStatus =
+  | "ON_TRACK"
+  | "TOO_SLOW"
+  | "TOO_FAST"
+  | "WRONG_DIRECTION"
+  | "OFF_TRACK"
+  | "NOT_ENOUGH_DATA";
+
+export interface WeeklyWeight {
+  weekStart: string;
+  average: number | null;
+  entries: number;
+  change: number | null;
+}
+
+// Tốc độ (kg/tuần) có dấu: dương = tăng, âm = giảm
+export interface GoalProgress {
+  goalType: GoalType | null;
+  goalWeight: number | null;
+  startWeight: number | null;
+  startDate: string | null;
+  currentWeight: number | null;
+  percent: number | null;
+  remaining: number | null;
+  reached: boolean | null;
+  targetRate: number | null;
+  actualRate: number | null;
+  status: GoalRateStatus | null;
+  estimatedWeeks: number | null;
+  weeks: WeeklyWeight[];
+}
+
+// dayOfWeek: 1 = thứ Hai ... 7 = Chủ nhật
+export interface WeeklyProgramDay {
+  dayOfWeek: number;
+  templateId: string;
+  templateName: string | null;
+  exerciseCount: number;
+}
+
+export interface WeeklyProgram {
+  id: string;
+  name: string;
+  days: WeeklyProgramDay[];
+  isFavorite: boolean;
+  presetKey: string | null;
+}
+
+export interface WeeklyProgramList {
+  todayDayOfWeek: number;
+  items: WeeklyProgram[];
+}
+
+export interface ProgramPreset {
+  key: string;
+  name: string;
+  description: string;
+  daysPerWeek: number;
+  days: {
+    dayOfWeek: number;
+    name: string;
+    exercises: { name: string; sets: number; reps: number; rest: number }[];
+  }[];
+}
 
 export interface Macros {
   calories: number;
@@ -41,6 +112,13 @@ export interface NutritionTarget extends Macros {
   id: string;
   effectiveFrom: string;
   source: "AUTO" | "MANUAL";
+}
+
+// needed = target AUTO đang áp dụng không còn khớp hồ sơ (vừa đổi cân nặng, mức vận động, mục tiêu...)
+export interface TargetRecalculation {
+  needed: boolean;
+  current: NutritionTarget | null;
+  suggested: Macros | null;
 }
 
 export interface GoalsOverview {
@@ -58,10 +136,30 @@ export interface DailyNutrition {
   logCount: number;
 }
 
+export interface DayAdherence {
+  met: number;
+  days: number;
+  percent: number | null;
+}
+
 export interface WeeklySummary {
   weekStart: string;
   today: string;
-  workout: { sessions: number; sets: number; totalVolume: number; duration: number };
+  workout: {
+    sessions: number;
+    sets: number;
+    totalVolume: number;
+    duration: number;
+    // Volume cùng khoảng ngày tuần trước, volumeChange là % (null khi tuần trước không tập)
+    previousVolume: number;
+    volumeChange: number | null;
+  };
+  // percent = null khi chưa có mốc để so (chưa đặt số buổi/tuần, chưa có target...)
+  adherence: {
+    workout: { completed: number; target: number | null; percent: number | null };
+    calories: DayAdherence;
+    protein: DayAdherence;
+  };
   nutrition: {
     loggedDays: number;
     averages: Macros;
@@ -185,6 +283,8 @@ export interface SessionExercise {
   exerciseName: string;
   targetSets: number | null;
   targetReps: number | null;
+  // Thời gian nghỉ copy từ template, null = bài thêm ngoài template (dùng mặc định)
+  restSeconds?: number | null;
   sets: WorkoutSet[];
 }
 
@@ -198,6 +298,7 @@ export interface WorkoutSession {
   totalVolume: number;
   duration: number;
   status: WorkoutStatus;
+  notes?: string;
 }
 
 export type RecordField = "maxWeight" | "maxReps" | "estimatedOneRepMax";
@@ -260,4 +361,80 @@ export interface NutritionProgress {
   to: string;
   days: NutritionDay[];
   summary: WeeklySummary["nutrition"];
+}
+
+export interface MealSuggestion extends Macros {
+  name: string;
+  description: string;
+  ingredients: { name: string; amount: string }[];
+  // Server tự đánh giá món có vừa với calo còn lại không (số của AI chỉ là ước tính)
+  fitsRemaining: boolean;
+}
+
+export interface MealSuggestionResult {
+  date: string;
+  mealType: MealType;
+  remaining: Macros;
+  suggestions: MealSuggestion[];
+}
+
+export interface WorkoutAnalysis {
+  weeks: { weekStart: string; sessions: number; volume: number }[];
+  summary: string;
+  highlights: string[];
+  suggestions: string[];
+}
+
+export interface NotificationSettings {
+  workoutReminder: { enabled: boolean; days: number[]; time: string }; // days: 0 = CN ... 6 = T7
+  mealReminders: { enabled: boolean; breakfast: string; lunch: string; dinner: string };
+  weeklyReport: boolean;
+  prAlerts: boolean;
+  goalAlerts: boolean;
+}
+
+export type UpdateNotificationSettings = {
+  workoutReminder?: Partial<NotificationSettings["workoutReminder"]>;
+  mealReminders?: Partial<NotificationSettings["mealReminders"]>;
+  weeklyReport?: boolean;
+  prAlerts?: boolean;
+  goalAlerts?: boolean;
+};
+
+export interface MealTemplateItem {
+  foodId: string;
+  quantity: number;
+  // false = món đã bị xoá, không được ghi khi dùng bữa mẫu
+  available: boolean;
+  foodName: string | null;
+  servingUnit: ServingUnit | null;
+  nutrition: NutritionValues | null;
+}
+
+export interface MealTemplate {
+  id: string;
+  name: string;
+  items: MealTemplateItem[];
+  totals: NutritionValues;
+}
+
+export interface WaterDay {
+  date: string;
+  amount: number; // ml
+  target: number; // ml
+}
+
+export interface ExerciseHistoryEntry {
+  sessionId: string;
+  sessionName: string;
+  date: string;
+  sets: { setNumber: number; weight: number; reps: number }[];
+  volume: number;
+  best: RecordValues;
+}
+
+export interface ExerciseHistory {
+  exercise: Exercise;
+  record: (RecordValues & { achievedAt: string }) | null;
+  entries: ExerciseHistoryEntry[];
 }

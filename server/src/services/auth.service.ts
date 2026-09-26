@@ -1,9 +1,27 @@
 import bcrypt from "bcrypt";
 import { env } from "../config/env";
+import { BodyMeasurementModel } from "../models/bodyMeasurement.model";
+import { ExerciseModel } from "../models/exercise.model";
+import { FoodModel } from "../models/food.model";
+import { FoodLogModel } from "../models/foodLog.model";
+import { MealTemplateModel } from "../models/mealTemplate.model";
+import { NotificationSettingsModel } from "../models/notificationSettings.model";
+import { NutritionTargetModel } from "../models/nutritionTarget.model";
+import { PasswordResetModel } from "../models/passwordReset.model";
+import { PersonalRecordModel } from "../models/personalRecord.model";
+import { PushDeviceModel } from "../models/pushDevice.model";
+import { RefreshTokenModel } from "../models/refreshToken.model";
 import { UserModel, type UserDocument } from "../models/user.model";
 import { UserProfileModel } from "../models/userProfile.model";
-import { RefreshTokenModel } from "../models/refreshToken.model";
-import type { LoginInput, RegisterInput } from "../schemas/auth.schema";
+import { WaterLogModel } from "../models/waterLog.model";
+import { WorkoutSessionModel } from "../models/workoutSession.model";
+import { WorkoutTemplateModel } from "../models/workoutTemplate.model";
+import type {
+  ChangePasswordInput,
+  LoginInput,
+  RegisterInput,
+  UpdateMeInput,
+} from "../schemas/auth.schema";
 import { AppError } from "../utils/AppError";
 import {
   hashToken,
@@ -109,4 +127,68 @@ export async function getMe(userId: string) {
   }
 
   return { user: user.toJSON(), profile: profile?.toJSON() ?? null };
+}
+
+export async function updateMe(userId: string, input: UpdateMeInput) {
+  const user = await UserModel.findByIdAndUpdate(userId, { $set: input }, { returnDocument: "after", runValidators: true });
+  if (!user) {
+    throw AppError.unauthorized("User no longer exists");
+  }
+  return user.toJSON();
+}
+
+async function getUserWithPassword(userId: string, password: string, field: string) {
+  const user = await UserModel.findById(userId).select("+passwordHash");
+  if (!user) {
+    throw AppError.unauthorized("User no longer exists");
+  }
+  // 400 thay vì 401 để client không hiểu nhầm là phiên đăng nhập hết hạn
+  if (!(await bcrypt.compare(password, user.passwordHash))) {
+    throw AppError.badRequest("Current password is incorrect", [
+      { path: field, message: "Current password is incorrect" },
+    ]);
+  }
+  return user;
+}
+
+// Đổi mật khẩu thì đăng xuất mọi thiết bị khác: thu hồi toàn bộ refresh token rồi cấp phiên mới
+export async function changePassword(userId: string, input: ChangePasswordInput) {
+  const user = await getUserWithPassword(userId, input.currentPassword, "currentPassword");
+  user.passwordHash = await bcrypt.hash(input.newPassword, env.BCRYPT_ROUNDS);
+  user.set("passwordChangedAt", new Date(Math.floor(Date.now() / 1000) * 1000));
+  await user.save();
+
+  await RefreshTokenModel.deleteMany({ userId });
+  const tokens = await issueTokens(user.id);
+  return buildAuthResult(user, tokens);
+}
+
+// Xoá vĩnh viễn tài khoản và mọi dữ liệu của user (cần nhập lại mật khẩu)
+export async function deleteAccount(userId: string, password: string) {
+  await getUserWithPassword(userId, password, "password");
+
+  const owned = { userId };
+  await Promise.all([
+    BodyMeasurementModel.deleteMany(owned),
+    FoodLogModel.deleteMany(owned),
+    MealTemplateModel.deleteMany(owned),
+    NotificationSettingsModel.deleteMany(owned),
+    NutritionTargetModel.deleteMany(owned),
+    PasswordResetModel.deleteMany(owned),
+    PersonalRecordModel.deleteMany(owned),
+    PushDeviceModel.deleteMany(owned),
+    RefreshTokenModel.deleteMany(owned),
+    UserProfileModel.deleteMany(owned),
+    WaterLogModel.deleteMany(owned),
+    WorkoutSessionModel.deleteMany(owned),
+    WorkoutTemplateModel.deleteMany(owned),
+    FoodModel.deleteMany({ createdBy: userId }),
+    ExerciseModel.deleteMany({ createdBy: userId }),
+  ]);
+  await UserModel.deleteOne({ _id: userId });
+}
+
+// Cấp phiên đăng nhập mới cho user (dùng sau khi đặt lại mật khẩu)
+export async function issueSession(user: UserDocument) {
+  return buildAuthResult(user, await issueTokens(user.id));
 }

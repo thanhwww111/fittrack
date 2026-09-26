@@ -11,21 +11,22 @@
 | 2 | Backend foundation | ✅ `cedc200` |
 | 3 | Authentication | ✅ Backend xong + 12 API test (mobile làm ở Phase 8–11) |
 | 4 | Profile + Goal | ✅ Backend xong + test |
-| 5 | Food system + Nutrition | ✅ Backend xong + test (MealTemplate API chưa làm) |
+| 5 | Food system + Nutrition | ✅ Backend xong + test (MealTemplate API làm ở phase 20) |
 | 6 | Workout | ✅ Backend xong + test |
 | 7 | Progress | ✅ Backend xong + test |
 | 8 | Mobile foundation | ✅ Route `(auth)`, `(tabs)`, `profile` + `Stack.Protected` |
 | 9 | State management (Zustand) | ✅ `authStore`, `profileStore`, `nutritionStore`, `workoutStore` (+ `exercisePickerStore`) |
 | 10 | API layer mobile | ✅ `client.ts` tự refresh token; `authApi`, `profileApi`, `foodApi`, `nutritionApi`, `workoutApi`, `progressApi` |
 | 11 | UI screens (4 sprint) | ✅ Sprint 1–4 xong (Auth, Home, Profile, Nutrition, Food, Workout, Progress) |
-| 12 | Dashboard | 🟡 Home đã có nutrition hôm nay + tổng kết tuần |
+| 12 | Dashboard | ✅ Home: nutrition hôm nay + buổi tập hôm nay (`/workout-sessions/today`) + tổng kết tuần |
 | 13 | Validation & error handling | ✅ Zod ở mọi route + validate form ở mobile, lỗi server map về từng field |
 | 14 | Service layer | ✅ Controller → Service → Model cho mọi module |
-| 15 | Testing | 🟡 117 test backend (unit + API); mobile chưa có test |
-| 16 | Security | 🟡 Có helmet, cors, env validation, bcrypt, JWT + refresh rotation, rate limit auth |
+| 15 | Testing | ✅ 194 test backend (Vitest + Supertest) + 26 test mobile (jest-expo + Testing Library) + CI GitHub Actions |
+| 16 | Security | ✅ helmet, CORS theo env, env validation, bcrypt, JWT + refresh rotation, rate limit auth (login/register/đổi & quên mật khẩu/xoá tài khoản); access token bị từ chối khi user đã xoá hoặc cấp trước lần đổi mật khẩu; mã reset 6 số hash SHA-256, 15 phút, tối đa 5 lần thử, 1 email/phút; server `npm audit` sạch |
 | 17 | Deployment | 🟡 Code + `render.yaml` + `eas.json` + `docs/DEPLOY.md` sẵn sàng; chờ tạo Atlas/Render/EAS và build |
-| 18 | AI (Gemini) | ⬜ |
-| 19 | Firebase notification | ⬜ |
+| 18 | AI (Gemini) | ✅ Gợi ý món + phân tích tập luyện (backend + mobile + test); cần `GEMINI_API_KEY` để chạy thật |
+| 19 | Firebase notification | ✅ Lịch nhắc cục bộ + push PR/mục tiêu/tổng kết tuần (backend + mobile + test); cần Firebase + FCM key trên EAS để push chạy thật |
+| 20 | Bổ sung chức năng (`feature/missing-ui`) | ✅ Dark mode (Theo hệ thống / Sáng / Tối), quên mật khẩu qua email, ảnh đại diện, món yêu thích, Sửa/xoá món & bài tập custom, số đo cơ thể, mục tiêu thủ công, bữa mẫu, chép bữa, món gần đây, nước uống, tài khoản (đổi tên / mật khẩu / xoá), sửa/xoá buổi tập + ghi chú, tiến bộ từng bài, nhân bản template, thao tác nhanh trên Home |
 
 ## Điều chỉnh so với plan gốc (theo code thực tế)
 
@@ -123,7 +124,7 @@
     - **Bài vừa thêm chưa có set** nằm trong `pendingExercises` ở client, vì server chỉ thêm bài vào session khi có set đầu tiên.
     - **Bắt đầu khi đang có buổi khác:** server trả 409, store tự mở lại buổi đang tập.
     - **`workout/history` và `workout/session?id=`:** lịch sử có phân trang và chi tiết buổi tập. Ngay sau khi hoàn thành, màn chi tiết hiện danh sách PR mới (`lastCompletion`).
-    - **Thời gian nghỉ:** session không lưu `restSeconds` nên dùng mặc định 90 giây. Muốn dùng `restSeconds` của template thì cần copy thêm field này vào session ở server.
+    - **Thời gian nghỉ:** session copy `restSeconds` từ template. Bài thêm ngoài template dùng mặc định 90 giây; `restSeconds = 0` thì không hẹn giờ.
   - **Sprint 4 (Progress):**
     - **Tab Tiến độ:** chọn khoảng 1 / 3 / 6 tháng (30/90/180 ngày cho cân nặng; 4/12/26 tuần cho volume).
     - Cân nặng: con số lớn + mức thay đổi trong kỳ, kèm biểu đồ đường và ô nhập cân nặng hôm nay (nhập lại trong ngày thì ghi đè).
@@ -135,7 +136,43 @@
       - Lưới mảnh nét liền. Chỉ ghi giá trị ở điểm cuối (biểu đồ đường); nhãn trục x được thưa bớt để không chồng nhau.
       - Chạm vào biểu đồ để xem giá trị ở dòng phía trên. Mỗi biểu đồ có nút chuyển sang **dạng bảng**.
     - Đường mục tiêu calo không có chữ trong biểu đồ (vì dễ đè lên cột); phụ đề giải thích đường kẻ.
-  - **Chưa làm:** Profile "Tính lại từ hồ sơ" khi hôm nay đã có target thì gọi `PUT /goals/:id`, và server đánh dấu `source = MANUAL` dù số liệu là AUTO. Cần thêm `mode` cho PUT nếu muốn phân biệt.
+- **AI (Phase 18, Gemini):**
+  - **SDK:** `@google/genai` 2.x dùng **Interactions API**: `ai.interactions.create({ model, system_instruction, input, response_format: { type: "text", mime_type: "application/json", schema }, store: false })`, đọc kết quả ở `output_text`. Model mặc định `gemini-3.8-flash` (`GEMINI_MODEL`).
+  - **`services/ai/llm.ts`:**
+    - Schema lấy từ `z.toJSONSchema(zodSchema)`, bỏ `$schema` và `additionalProperties` ở mọi cấp. Output **luôn được validate lại bằng Zod**.
+    - Không có key thì trả 503. SDK lỗi hoặc JSON sai dạng thì trả 502.
+  - **`POST /api/ai/meal-suggestions { mealType, preferences? }`:**
+    - Cần có target. Prompt gồm calo/macro **còn lại** hôm nay và mục tiêu. `preferences` (tối đa 200 ký tự) được đặt trong `"""..."""` và prompt nói rõ đó là dữ liệu, không phải chỉ dẫn.
+    - AI trả 3 món. Server tự gắn `fitsRemaining` (≤ còn lại × 1.1 + 50 kcal), không tin số của AI.
+  - **`POST /api/ai/workout-analysis`:**
+    - Cần ≥ 2 buổi COMPLETED trong 4 tuần. `summarizeWorkoutHistory` lấy set tốt nhất (1RM ước tính cao nhất, bài bodyweight thì theo rep) cho mỗi bài mỗi tuần; chỉ giữ 10 bài tập nhiều nhất.
+    - AI trả `{ summary, highlights[], suggestions[] }`.
+  - **Giới hạn và quyền riêng tư:** `aiLimiter` 10 request/giờ/user (theo `req.user.id`). Chỉ gửi số liệu tổng hợp và tên bài/món, không gửi tên hay email.
+  - **Test:** không bao giờ gọi Gemini thật. `vitest.config.mts` ép `GEMINI_API_KEY=""`, test API mock `llm.generateJson`, test `llm.test.ts` mock `@google/genai`.
+  - **Mobile:** `ai/meal` (mở từ tab Dinh dưỡng, chỉ khi xem hôm nay và đã có target) và `ai/workout` (mở từ tab Tập luyện khi đã có buổi tập). Lỗi 503/429/502 có thông báo tiếng Việt riêng (`lib/aiErrors.ts`).
+- **Thông báo (Phase 19):**
+  - **Lịch nhắc tập (theo thứ + giờ) và nhắc ghi bữa ăn:** là **local notification** do app tự đặt lịch (`lib/notifications.ts`, trigger `WEEKLY`/`DAILY`, id có tiền tố `fittrack-reminder-`).
+    - Chạy được trong Expo Go và không phụ thuộc server Render đang ngủ.
+    - Đặt lại toàn bộ lịch mỗi khi mở app hoặc lưu cài đặt. Huỷ hết khi rời phiên.
+    - Server lưu ngày trong tuần 0 = CN … 6 = T7, Expo dùng 1 = CN … 7 = T7.
+  - **Push từ server:** qua Expo Push Service (`expo-server-sdk`, trên Android đi qua FCM).
+    - App lấy Expo push token rồi gọi `POST /api/notifications/devices`. Bỏ qua khi chạy web, máy ảo, Expo Go trên Android (không nhận remote push từ SDK 53), hoặc chưa có `projectId` của EAS.
+    - Token là của máy: upsert theo token, nên đăng nhập user khác trên cùng máy thì token chuyển chủ.
+    - Đăng xuất gọi `DELETE /api/notifications/devices` **trước** khi xoá phiên.
+    - Token bị báo `DeviceNotRegistered` được xoá khỏi DB.
+  - **Các sự kiện gửi push:**
+    - PR mới sau khi complete buổi tập.
+    - Cân nặng vừa vượt mốc `goalWeight` (`crossedGoal`, chỉ báo đúng một lần).
+    - Tổng kết tuần trước, qua `POST /api/internal/weekly-report` (bảo vệ bằng `CRON_SECRET`, so sánh thời gian hằng số; không cấu hình thì trả 404). GitHub Actions gọi endpoint này mỗi thứ Hai 01:00 UTC; user không có hoạt động thì bỏ qua.
+    - Push là **fire-and-forget và không bao giờ throw**, nên lỗi gửi push không làm hỏng request chính.
+  - **Cài đặt:** `GET/PUT /api/notifications/settings` (gộp từng phần, ngày được khử trùng và sắp xếp). Mặc định bật PR/mục tiêu/tổng kết tuần, tắt lịch nhắc.
+  - **Bấm vào thông báo:** `data.url` là route trong app. `useNotificationNavigation` mở đúng màn, kể cả khi app đang tắt hẳn (`getLastNotificationResponseAsync`).
+  - **Tính lại target:** "Tính lại từ hồ sơ" khi hôm nay đã có target thì gọi `PUT /goals/:id { mode: "AUTO" }`; server tính lại từ profile và giữ `source = AUTO`.
+- **Test mobile (Phase 15):** `npm test` trong `mobile/` (jest-expo). Test đặt trong `mobile/__tests__/` (không đặt trong `src/app`), tên file `*-test.ts(x)`.
+  - `lib-test.ts`: trục biểu đồ, dinh dưỡng, workout, validate form.
+  - `api-client-test.ts`: dùng adapter axios giả (gắn vào `axios.defaults.adapter` **trước** khi import client). Kiểm tra refresh 1 lần cho nhiều 401 cùng lúc, `/auth/me` vẫn refresh, sai mật khẩu không refresh, refresh bị từ chối thì hết phiên. Test này đã được xác nhận là fail khi đưa lại bug cũ.
+  - `exercise-logger-test.tsx`: Testing Library **v14 có `render`/`fireEvent` là async**, luôn phải `await`.
+- **CI** (`.github/workflows/ci.yml`): mỗi lần push lên `main`/`develop` hoặc mở PR. Server: typecheck + test (MongoDB service) + build. Mobile: tsc + lint + jest.
 - **Test:** `npm test` chạy trên DB `fittrack_test` (ghi đè bằng `MONGO_URI_TEST`). Helper test từ chối chạy nếu tên DB không kết thúc bằng `_test`.
 
 ---

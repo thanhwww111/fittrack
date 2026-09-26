@@ -1,5 +1,5 @@
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
-import { colors, radius, spacing } from "@/constants/theme";
+import { Text, TextInput, View, type TextInputProps } from "react-native";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 
 interface TextFieldProps extends TextInputProps {
   label: string;
@@ -25,7 +25,7 @@ export function TextField({ label, error, suffix, style, ...inputProps }: TextFi
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { gap: spacing.xs },
   label: { fontSize: 14, fontWeight: "500", color: colors.text },
   inputRow: {
@@ -41,4 +41,4 @@ const styles = StyleSheet.create({
   input: { flex: 1, minHeight: 48, fontSize: 16, color: colors.text },
   suffix: { fontSize: 14, color: colors.textMuted, marginLeft: spacing.sm },
   error: { fontSize: 13, color: colors.danger },
-});
+}));

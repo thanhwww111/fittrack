@@ -1,13 +1,16 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { BarChart } from "@/components/charts/BarChart";
 import { ChartCard } from "@/components/charts/ChartCard";
 import { LineChart } from "@/components/charts/LineChart";
 import { shortDate } from "@/components/charts/scale";
+import { GoalProgressCard } from "@/components/progress/GoalProgressCard";
 import { WeightEntry } from "@/components/progress/WeightEntry";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { RANGES, useProgress, type RangeKey } from "@/hooks/useProgress";
 import { formatVolume } from "@/lib/workout";
 
@@ -67,6 +70,8 @@ export default function ProgressScreen() {
 
       {data ? (
         <>
+          <GoalProgressCard goal={data.goal} />
+
           <ChartCard
             title="Cân nặng"
             subtitle={`${shortDate(weight!.from)} – ${shortDate(weight!.to)}`}
@@ -104,6 +109,15 @@ export default function ProgressScreen() {
               initialWeight={weight!.summary.current}
               onSaved={reload}
             />
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/measurements")}
+              style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
+            >
+              <Ionicons name="body-outline" size={20} color={colors.primary} />
+              <Text style={styles.linkText}>Số đo cơ thể & lịch sử cân nặng</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+            </Pressable>
           </Card>
 
           <ChartCard
@@ -193,7 +207,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   content: { padding: spacing.lg, gap: spacing.lg },
   segment: {
     flexDirection: "row",
@@ -212,4 +226,7 @@ const styles = StyleSheet.create({
   stat: { flex: 1, gap: 2 },
   statValue: { fontSize: 17, fontWeight: "700", color: colors.text },
   statLabel: { fontSize: 12, color: colors.textMuted },
-});
+  linkRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingTop: spacing.xs },
+  linkText: { flex: 1, fontSize: 15, fontWeight: "600", color: colors.primary },
+  pressed: { opacity: 0.6 },
+}));

@@ -2,16 +2,20 @@ import type { ApiSuccess } from "@/types/api";
 import type {
   Equipment,
   Exercise,
+  ExerciseHistory,
   MuscleGroup,
   NewRecord,
   Paginated,
   PersonalRecord,
+  ProgramPreset,
   RecordField,
   TemplateExerciseInput,
   WorkoutSession,
   WorkoutSet,
   WorkoutStatus,
   WorkoutTemplate,
+  WeeklyProgram,
+  WeeklyProgramList,
 } from "@/types/models";
 import { api, unwrap } from "./client";
 
@@ -40,6 +44,17 @@ export const exerciseApi = {
 
   create: (input: { name: string; muscleGroup: MuscleGroup; equipment: Equipment }) =>
     unwrap(api.post<ApiSuccess<Exercise>>("/exercises", input)),
+
+  // Chỉ sửa/xoá được bài tự tạo; xoá bị chặn (409) nếu bài còn nằm trong template
+  update: (id: string, input: Partial<Pick<Exercise, "name" | "muscleGroup" | "equipment" | "description">>) =>
+    unwrap(api.put<ApiSuccess<Exercise>>(`/exercises/${id}`, input)),
+
+  remove: async (id: string) => {
+    await api.delete(`/exercises/${id}`);
+  },
+
+  history: (id: string, limit = 20) =>
+    unwrap(api.get<ApiSuccess<ExerciseHistory>>(`/exercises/${id}/history`, { params: { limit } })),
 };
 
 export const templateApi = {
@@ -56,6 +71,9 @@ export const templateApi = {
   remove: async (id: string) => {
     await api.delete(`/workout-templates/${id}`);
   },
+
+  duplicate: (id: string) =>
+    unwrap(api.post<ApiSuccess<WorkoutTemplate>>(`/workout-templates/${id}/duplicate`)),
 };
 
 export const sessionApi = {
@@ -63,6 +81,13 @@ export const sessionApi = {
     unwrap(api.post<ApiSuccess<WorkoutSession>>("/workout-sessions", input)),
 
   active: () => unwrap(api.get<ApiSuccess<WorkoutSession | null>>("/workout-sessions/active")),
+
+  today: () =>
+    unwrap(
+      api.get<
+        ApiSuccess<{ date: string; active: WorkoutSession | null; completed: WorkoutSession[] }>
+      >("/workout-sessions/today")
+    ),
 
   list: (params: { status?: WorkoutStatus; page?: number; limit?: number }) =>
     unwrap(api.get<ApiSuccess<Paginated<WorkoutSession>>>("/workout-sessions", { params })),
@@ -89,5 +114,49 @@ export const sessionApi = {
   cancel: (id: string) =>
     unwrap(api.post<ApiSuccess<WorkoutSession>>(`/workout-sessions/${id}/cancel`)),
 
+  // Đổi tên / ghi chú, dùng được cả khi đang tập và sau khi hoàn thành
+  update: (id: string, input: { name?: string; notes?: string }) =>
+    unwrap(api.patch<ApiSuccess<WorkoutSession>>(`/workout-sessions/${id}`, input)),
+
+  // Chỉ xoá buổi đã hoàn thành / đã huỷ; server tính lại PR
+  remove: async (id: string) => {
+    await api.delete(`/workout-sessions/${id}`);
+  },
+
   personalRecords: () => unwrap(api.get<ApiSuccess<PersonalRecord[]>>("/personal-records")),
+};
+
+export interface WeeklyProgramInput {
+  name: string;
+  days: { dayOfWeek: number; templateId: string }[];
+}
+
+export const programApi = {
+  list: () => unwrap(api.get<ApiSuccess<WeeklyProgramList>>("/weekly-programs")),
+
+  get: (id: string) => unwrap(api.get<ApiSuccess<WeeklyProgram>>(`/weekly-programs/${id}`)),
+
+  presets: () => unwrap(api.get<ApiSuccess<ProgramPreset[]>>("/weekly-programs/presets")),
+
+  // Tạo sẵn các template của lịch đề xuất + lịch tuần dùng chúng
+  applyPreset: (key: string) =>
+    unwrap(api.post<ApiSuccess<WeeklyProgram>>(`/weekly-programs/presets/${key}/apply`)),
+
+  create: (input: WeeklyProgramInput) =>
+    unwrap(api.post<ApiSuccess<WeeklyProgram>>("/weekly-programs", input)),
+
+  update: (id: string, input: Partial<WeeklyProgramInput>) =>
+    unwrap(api.put<ApiSuccess<WeeklyProgram>>(`/weekly-programs/${id}`, input)),
+
+  setFavorite: (id: string, isFavorite: boolean) =>
+    unwrap(
+      isFavorite
+        ? api.put<ApiSuccess<WeeklyProgram>>(`/weekly-programs/${id}/favorite`)
+        : api.delete<ApiSuccess<WeeklyProgram>>(`/weekly-programs/${id}/favorite`)
+    ),
+
+  // Chỉ xoá lịch, template vẫn giữ
+  remove: async (id: string) => {
+    await api.delete(`/weekly-programs/${id}`);
+  },
 };

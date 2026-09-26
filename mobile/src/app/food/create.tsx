@@ -1,16 +1,23 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { foodApi } from "@/api/foodApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage, fieldErrorsFrom, parseNumber, type FieldErrors } from "@/lib/formErrors";
 import { UNIT_LABELS } from "@/lib/nutrition";
-import type { CreateFoodInput, ServingUnit } from "@/types/models";
+import type { CreateFoodInput, Food, ServingUnit } from "@/types/models";
 
 const UNIT_OPTIONS: ChipOption<ServingUnit>[] = (["g", "ml", "piece"] as const).map((u) => ({
   value: u,
@@ -30,24 +37,53 @@ const NUMBER_FIELDS = [
 type NumberKey = (typeof NUMBER_FIELDS)[number]["key"];
 type Field = NumberKey | "name";
 
+// Có `id` = sửa món custom đã có, không có = tạo món mới
 export default function CreateFoodScreen() {
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const [food, setFood] = useState<Food | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    foodApi
+      .get(id)
+      .then(setFood)
+      .catch((err) => setLoadError(errorMessage(err)));
+  }, [id]);
+
+  if (id && !food) {
+    return (
+      <View style={styles.center}>
+        {loadError ? <ErrorBanner message={loadError} /> : <ActivityIndicator color={colors.primary} />}
+      </View>
+    );
+  }
+
+  return <FoodForm key={food?.id ?? "new"} food={food} />;
+}
+
+function FoodForm({ food }: { food: Food | null }) {
   const params = useLocalSearchParams<{ name?: string; mealType?: string; date?: string }>();
 
-  const [name, setName] = useState(params.name ?? "");
-  const [unit, setUnit] = useState<ServingUnit>("g");
-  const [values, setValues] = useState<Record<NumberKey, string>>({
-    servingSize: "100",
-    calories: "",
-    protein: "",
-    carbs: "",
-    fat: "",
-    fiber: "",
-  });
+  const [name, setName] = useState(food?.name ?? params.name ?? "");
+  const [unit, setUnit] = useState<ServingUnit>(food?.servingUnit ?? "g");
+  const [values, setValues] = useState<Record<NumberKey, string>>(() =>
+    food
+      ? {
+          servingSize: String(food.servingSize),
+          calories: String(food.calories),
+          protein: String(food.protein),
+          carbs: String(food.carbs),
+          fat: String(food.fat),
+          fiber: food.fiber ? String(food.fiber) : "",
+        }
+      : { servingSize: "100", calories: "", protein: "", carbs: "", fat: "", fiber: "" }
+  );
   const [errors, setErrors] = useState<FieldErrors<Field>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  async function handleCreate() {
+  async function handleSubmit() {
     const nextErrors: FieldErrors<Field> = {};
     const numbers = {} as Record<NumberKey, number>;
 
@@ -74,12 +110,18 @@ export default function CreateFoodScreen() {
     const input: CreateFoodInput = { name: name.trim(), servingUnit: unit, ...numbers };
     setSaving(true);
     try {
-      const food = await foodApi.create(input);
+      if (food) {
+        await foodApi.update(food.id, input);
+        // Màn thêm món tự tải lại khi quay về
+        router.back();
+        return;
+      }
+      const created = await foodApi.create(input);
       // Tạo xong đi thẳng tới màn nhập khối lượng của món vừa tạo
       router.replace({
         pathname: "/food/add",
         params: {
-          foodId: food.id,
+          foodId: created.id,
           ...(params.mealType && { mealType: params.mealType }),
           ...(params.date && { date: params.date }),
         },
@@ -96,6 +138,7 @@ export default function CreateFoodScreen() {
       style={styles.flex}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <Stack.Screen options={{ title: food ? "Sửa món" : "Tạo món mới" }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ErrorBanner message={formError} />
 
@@ -121,14 +164,20 @@ export default function CreateFoodScreen() {
           ))}
         </Card>
 
-        <Button title="Tạo món" onPress={handleCreate} loading={saving} />
+        {food ? (
+          <Text style={styles.hint}>
+            Món đã ghi trong nhật ký giữ nguyên số liệu cũ, chỉ lần ghi sau mới dùng số mới.
+          </Text>
+        ) : null}
+        <Button title={food ? "Lưu thay đổi" : "Tạo món"} onPress={handleSubmit} loading={saving} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   hint: { fontSize: 13, color: colors.textMuted, lineHeight: 19 },
-});
+}));

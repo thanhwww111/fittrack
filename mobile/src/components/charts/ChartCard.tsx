@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Card } from "@/components/ui/Card";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 
 export interface TableRow {
   key: string;
@@ -61,7 +61,7 @@ export function ChartCard({ title, subtitle, headline, chart, rows, emptyText }:
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   header: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
   title: { fontSize: 16, fontWeight: "700", color: colors.text },
@@ -77,4 +77,4 @@ const styles = StyleSheet.create({
   },
   rowLabel: { fontSize: 14, color: colors.textMuted },
   rowValue: { fontSize: 14, color: colors.text, fontVariant: ["tabular-nums"] },
-});
+}));

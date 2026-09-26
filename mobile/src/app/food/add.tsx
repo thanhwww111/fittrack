@@ -1,13 +1,15 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { foodApi } from "@/api/foodApi";
 import { MacroChips } from "@/components/nutrition/MacroChips";
 import { QuantityForm } from "@/components/nutrition/QuantityForm";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
+import { confirmAction } from "@/lib/confirm";
 import { errorMessage, parseNumber } from "@/lib/formErrors";
 import { formatServing, MEAL_ORDER, mealTypeForHour, previewNutrition } from "@/lib/nutrition";
 import { useNutritionStore } from "@/stores/nutritionStore";
@@ -33,15 +35,36 @@ export default function AddFoodScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    foodApi
-      .get(params.foodId)
-      .then((f) => {
-        setFood(f);
-        setQuantity(String(f.servingSize));
-      })
-      .catch((err) => setLoadError(errorMessage(err)));
-  }, [params.foodId]);
+  const [deleting, setDeleting] = useState(false);
+  const [favorite, setFavorite] = useState(false);
+
+  // Tải lại mỗi lần quay về màn này (vừa sửa món ở màn food/create)
+  useFocusEffect(
+    useCallback(() => {
+      foodApi
+        .get(params.foodId)
+        .then((f) => {
+          setFood(f);
+          setQuantity((prev) => prev || String(f.servingSize));
+        })
+        .catch((err) => setLoadError(errorMessage(err)));
+      foodApi
+        .favorites()
+        .then((list) => setFavorite(list.some((f) => f.id === params.foodId)))
+        .catch(() => {});
+    }, [params.foodId])
+  );
+
+  async function toggleFavorite() {
+    const next = !favorite;
+    setFavorite(next);
+    try {
+      await foodApi.setFavorite(params.foodId, next);
+    } catch (err) {
+      setFavorite(!next);
+      setFormError(errorMessage(err));
+    }
+  }
 
   if (!food) {
     return (
@@ -76,10 +99,40 @@ export default function AddFoodScreen() {
     }
   }
 
+  async function handleDelete() {
+    const ok = await confirmAction({
+      title: "Xoá món này?",
+      message: `"${food!.name}" sẽ không còn trong danh sách tìm kiếm. Các lần đã ghi vẫn được giữ.`,
+      confirmText: "Xoá",
+      destructive: true,
+    });
+    if (!ok) return;
+    setDeleting(true);
+    setFormError(null);
+    try {
+      await foodApi.remove(food!.id);
+      router.back();
+    } catch (err) {
+      setFormError(errorMessage(err));
+      setDeleting(false);
+    }
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Card>
-        <Text style={styles.name}>{food.name}</Text>
+        <View style={styles.nameRow}>
+          <Text style={[styles.name, styles.flex]}>{food.name}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={favorite ? "Bỏ khỏi yêu thích" : "Thêm vào yêu thích"}
+            accessibilityState={{ selected: favorite }}
+            hitSlop={10}
+            onPress={toggleFavorite}
+          >
+            <Ionicons name={favorite ? "star" : "star-outline"} size={24} color={colors.carbs} />
+          </Pressable>
+        </View>
         <Text style={styles.muted}>Mỗi {formatServing(food.servingSize, food.servingUnit)}</Text>
         <MacroChips values={food} />
         {food.fiber > 0 ? <Text style={styles.muted}>Chất xơ: {food.fiber} g</Text> : null}
@@ -98,13 +151,34 @@ export default function AddFoodScreen() {
       />
 
       <Button title="Thêm vào nhật ký" onPress={handleAdd} loading={saving} />
+
+      {food.isCustom ? (
+        <View style={styles.ownerActions}>
+          <Button
+            title="Sửa món"
+            variant="secondary"
+            style={styles.flex}
+            onPress={() => router.push({ pathname: "/food/create", params: { id: food.id } })}
+          />
+          <Button
+            title="Xoá món"
+            variant="danger"
+            style={styles.flex}
+            loading={deleting}
+            onPress={handleDelete}
+          />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg },
   name: { fontSize: 20, fontWeight: "700", color: colors.text },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   muted: { fontSize: 14, color: colors.textMuted },
-});
+  flex: { flex: 1 },
+  ownerActions: { flexDirection: "row", gap: spacing.md },
+}));

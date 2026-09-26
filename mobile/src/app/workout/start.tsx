@@ -12,9 +12,10 @@ import {
 import { ElapsedClock } from "@/components/workout/ElapsedClock";
 import { ExerciseLogger } from "@/components/workout/ExerciseLogger";
 import { RestTimer } from "@/components/workout/RestTimer";
+import { SessionInfoEditor } from "@/components/workout/SessionInfoEditor";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
 import { DEFAULT_REST_SECONDS, formatVolume, RECORD_LABELS } from "@/lib/workout";
@@ -26,8 +27,9 @@ export default function ActiveWorkoutScreen() {
   const pending = useWorkoutStore((s) => s.pendingExercises);
   const prAlert = useWorkoutStore((s) => s.prAlert);
   const isLoading = useWorkoutStore((s) => s.isLoading);
-  const { recordSet, removeSet, complete, cancel, addExercise, clearPrAlert } =
+  const { recordSet, removeSet, complete, cancel, addExercise, clearPrAlert, updateInfo } =
     useWorkoutStore.getState();
+  const [editingInfo, setEditingInfo] = useState(false);
   const openPicker = useExercisePickerStore((s) => s.open);
 
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
@@ -143,7 +145,10 @@ export default function ActiveWorkoutScreen() {
             onRecord={async (input) => {
               await recordSet({ exerciseId: exercise.exerciseId, ...input });
               // Chỉ hẹn giờ nghỉ khi ghi set mới, sửa set cũ thì không
-              if (!input.setNumber) setRestEndsAt(Date.now() + DEFAULT_REST_SECONDS * 1000);
+              if (!input.setNumber) {
+                const rest = exercise.restSeconds ?? DEFAULT_REST_SECONDS;
+                if (rest > 0) setRestEndsAt(Date.now() + rest * 1000);
+              }
             }}
             onRemoveSet={(setNumber) => removeSet(exercise.exerciseId, setNumber)}
           />
@@ -154,6 +159,21 @@ export default function ActiveWorkoutScreen() {
         ) : null}
 
         <Button title="+ Thêm bài tập" variant="secondary" onPress={handleAddExercise} />
+
+        {editingInfo ? (
+          <SessionInfoEditor
+            name={session.name}
+            notes={session.notes ?? ""}
+            onSave={updateInfo}
+            onClose={() => setEditingInfo(false)}
+          />
+        ) : (
+          <Button
+            title={session.notes ? `📝 ${session.notes}` : "✎ Đổi tên / thêm ghi chú"}
+            variant="secondary"
+            onPress={() => setEditingInfo(true)}
+          />
+        )}
         <Button
           title="Hoàn thành buổi tập"
           onPress={handleFinish}
@@ -178,7 +198,7 @@ export default function ActiveWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.lg, padding: spacing.lg },
   muted: { fontSize: 15, color: colors.textMuted },
@@ -196,13 +216,13 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 15, color: colors.textMuted, fontVariant: ["tabular-nums"] },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: 120 },
   prBanner: {
-    backgroundColor: "#fef3c7",
+    backgroundColor: colors.highlight,
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: 2,
   },
-  prTitle: { fontSize: 16, fontWeight: "700", color: "#92400e" },
-  prText: { fontSize: 14, color: "#92400e" },
+  prTitle: { fontSize: 16, fontWeight: "700", color: colors.highlightText },
+  prText: { fontSize: 14, color: colors.highlightText },
   empty: { textAlign: "center", color: colors.textMuted, paddingVertical: spacing.lg },
   restWrapper: { position: "absolute", left: spacing.lg, right: spacing.lg, bottom: spacing.xl },
-});
+}));

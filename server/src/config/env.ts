@@ -14,6 +14,29 @@ const envSchema = z.object({
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
   // Danh sách origin được gọi API từ trình duyệt, cách nhau bằng dấu phẩy.
   // App mobile không bị CORS chặn nên production có thể để trống.
+  // Không có key thì các API /ai trả 503, phần còn lại của app vẫn chạy bình thường
+  GEMINI_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  GEMINI_MODEL: z.string().min(1).default("gemini-3.8-flash"),
+  // Push notification: token của Expo, chỉ cần khi bật "Enhanced push security" trên EAS
+  EXPO_ACCESS_TOKEN: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  // Secret cho endpoint /api/internal/* (cron gọi báo cáo tuần). Thiếu thì endpoint bị tắt.
+  CRON_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined)
+    .refine((v) => !v || v.length >= 32, "CRON_SECRET must be at least 32 characters"),
+  // Email đặt lại mật khẩu gửi qua Resend. Thiếu key: dev in mã ra log, production không gửi được.
+  RESEND_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  MAIL_FROM: z.string().min(1).default("FitTrack <onboarding@resend.dev>"),
   CORS_ORIGINS: z
     .string()
     .optional()

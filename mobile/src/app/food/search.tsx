@@ -1,18 +1,11 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
+import { foodApi } from "@/api/foodApi";
 import { MacroChips } from "@/components/nutrition/MacroChips";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useFoodSearch } from "@/hooks/useFoodSearch";
 import { formatServing } from "@/lib/nutrition";
 import type { Food } from "@/types/models";
@@ -21,7 +14,21 @@ export default function FoodSearchScreen() {
   // mealType + date truyền tiếp sang màn add để biết thêm vào bữa nào, ngày nào
   const { mealType, date } = useLocalSearchParams<{ mealType?: string; date?: string }>();
   const [query, setQuery] = useState("");
-  const { items, isLoading, error, loadMore } = useFoodSearch(query);
+  const { items, isLoading, error, loadMore, refresh } = useFoodSearch(query);
+
+  // Quay lại từ màn khác (có thể vừa sửa / xoá món) thì tải lại; lần focus đầu hook đã tự tải
+  const focusedOnce = useRef(false);
+  const [recent, setRecent] = useState<Food[]>([]);
+  const [favorites, setFavorites] = useState<Food[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      if (focusedOnce.current) refresh();
+      focusedOnce.current = true;
+      // Món yêu thích / gần đây chỉ để thêm nhanh, lỗi thì bỏ qua
+      foodApi.favorites().then(setFavorites).catch(() => {});
+      foodApi.recent(8).then(setRecent).catch(() => {});
+    }, [refresh])
+  );
 
   function openFood(food: Food) {
     router.push({
@@ -61,6 +68,15 @@ export default function FoodSearchScreen() {
         onEndReached={loadMore}
         onEndReachedThreshold={0.4}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          !query.trim() && (favorites.length > 0 || recent.length > 0) ? (
+            <View style={styles.recent}>
+              <QuickFoods title="⭐ Yêu thích" foods={favorites} onPick={openFood} />
+              <QuickFoods title="Gần đây" foods={recent} onPick={openFood} />
+              <Text style={styles.sectionTitle}>Tất cả món</Text>
+            </View>
+          ) : null
+        }
         renderItem={({ item }) => (
           <Pressable
             accessibilityRole="button"
@@ -111,8 +127,44 @@ export default function FoodSearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+// Hàng chip để thêm nhanh một món (yêu thích / gần đây)
+function QuickFoods({ title, foods, onPick }: { title: string; foods: Food[]; onPick: (food: Food) => void }) {
+  if (foods.length === 0) return null;
+  return (
+    <>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.recentChips}>
+        {foods.map((food) => (
+          <Pressable
+            key={food.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Thêm ${food.name}`}
+            onPress={() => onPick(food)}
+            style={({ pressed }) => [styles.recentChip, pressed && styles.pressed]}
+          >
+            <Text style={styles.recentText} numberOfLines={1}>
+              {food.name}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </>
+  );
+}
+
+const styles = themedStyles(() => ({
   container: { flex: 1, padding: spacing.lg, gap: spacing.md },
+  recent: { gap: spacing.sm, marginBottom: spacing.xs },
+  sectionTitle: { fontSize: 14, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase" },
+  recentChips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  recentChip: {
+    maxWidth: "100%",
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+  },
+  recentText: { fontSize: 14, fontWeight: "500", color: colors.primary },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -156,4 +208,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   createText: { fontSize: 15, color: colors.primary, fontWeight: "600" },
-});
+}));

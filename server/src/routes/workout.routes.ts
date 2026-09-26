@@ -7,6 +7,8 @@ import {
   createTemplateSchema,
   recordSetSchema,
   startSessionSchema,
+  updateExerciseSchema,
+  updateSessionSchema,
   updateTemplateSchema,
 } from "../schemas/workout.schema";
 
@@ -14,7 +16,10 @@ export const exerciseRoutes = Router()
   .use(authenticate)
   .get("/", workout.listExercises)
   .get("/:id", workout.getExercise)
-  .post("/", validateBody(createExerciseSchema), workout.createExercise);
+  .get("/:id/history", workout.getExerciseHistory)
+  .post("/", validateBody(createExerciseSchema), workout.createExercise)
+  .put("/:id", validateBody(updateExerciseSchema), workout.updateExercise)
+  .delete("/:id", workout.deleteExercise);
 
 export const workoutTemplateRoutes = Router()
   .use(authenticate)
@@ -22,18 +27,22 @@ export const workoutTemplateRoutes = Router()
   .get("/:id", workout.getTemplate)
   .post("/", validateBody(createTemplateSchema), workout.createTemplate)
   .put("/:id", validateBody(updateTemplateSchema), workout.updateTemplate)
-  .delete("/:id", workout.deleteTemplate);
+  .delete("/:id", workout.deleteTemplate)
+  .post("/:id/duplicate", workout.duplicateTemplate);
 
 export const workoutSessionRoutes = Router()
   .use(authenticate)
   .get("/", workout.listSessions)
   .get("/active", workout.getActiveSession)
+  .get("/today", workout.getTodayWorkout)
   .get("/:id", workout.getSession)
   .post("/", validateBody(startSessionSchema), workout.startSession)
   .post("/:id/sets", validateBody(recordSetSchema), workout.recordSet)
   .delete("/:id/exercises/:exerciseId/sets/:setNumber", workout.removeSet)
   .post("/:id/complete", workout.completeSession)
-  .post("/:id/cancel", workout.cancelSession);
+  .post("/:id/cancel", workout.cancelSession)
+  .patch("/:id", validateBody(updateSessionSchema), workout.updateSession)
+  .delete("/:id", workout.deleteSession);
 
 export const personalRecordRoutes = Router()
   .use(authenticate)

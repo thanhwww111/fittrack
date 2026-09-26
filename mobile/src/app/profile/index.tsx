@@ -1,22 +1,28 @@
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
+import { ManualTargetForm } from "@/components/profile/ManualTargetForm";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage, fieldErrorsFrom, parseNumber, type FieldErrors } from "@/lib/formErrors";
+import { promptTargetRecalculation } from "@/lib/targetRecalculation";
 import { useAuthStore } from "@/stores/authStore";
+import { useNotificationStore } from "@/stores/notificationStore";
 import { useProfileStore } from "@/stores/profileStore";
+import { useThemeStore, type ThemePreference } from "@/stores/themeStore";
 import type {
   ActivityLevel,
   Gender,
@@ -37,6 +43,12 @@ const GOAL_OPTIONS: ChipOption<GoalType>[] = [
   { value: "MUSCLE_GAIN", label: "Tăng cơ" },
 ];
 
+const THEME_OPTIONS: ChipOption<ThemePreference>[] = [
+  { value: "system", label: "Theo hệ thống" },
+  { value: "light", label: "Sáng" },
+  { value: "dark", label: "Tối" },
+];
+
 const ACTIVITY_OPTIONS: ChipOption<ActivityLevel>[] = [
   { value: "SEDENTARY", label: "Ít vận động" },
   { value: "LIGHT", label: "Nhẹ (1–3 buổi)" },
@@ -52,6 +64,7 @@ const NUMBER_FIELDS = {
   currentWeight: { label: "Cân nặng hiện tại", min: 20, max: 500, integer: false, suffix: "kg" },
   goalWeight: { label: "Cân nặng mục tiêu", min: 20, max: 500, integer: false, suffix: "kg" },
   trainingDaysPerWeek: { label: "Số buổi tập / tuần", min: 0, max: 7, integer: true, suffix: "buổi" },
+  goalRate: { label: "Tốc độ mục tiêu (bỏ trống = mặc định)", min: 0.1, max: 1, integer: false, suffix: "kg/tuần" },
 } as const;
 
 type NumberField = keyof typeof NUMBER_FIELDS;
@@ -87,6 +100,10 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
   const updateProfile = useProfileStore((s) => s.updateProfile);
   const recalculateTarget = useProfileStore((s) => s.recalculateTarget);
   const currentTarget = useProfileStore((s) => s.currentTarget);
+  const setManualTarget = useProfileStore((s) => s.setManualTarget);
+  const themePreference = useThemeStore((s) => s.preference);
+  const setThemePreference = useThemeStore((s) => s.setPreference);
+  const [editingTarget, setEditingTarget] = useState(false);
 
   const [gender, setGender] = useState(profile.gender);
   const [goalType, setGoalType] = useState(profile.goalType);
@@ -97,6 +114,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
     currentWeight: toText(profile.currentWeight),
     goalWeight: toText(profile.goalWeight),
     trainingDaysPerWeek: toText(profile.trainingDaysPerWeek),
+    goalRate: toText(profile.goalRate),
   });
 
   const [errors, setErrors] = useState<FieldErrors<Field>>({});
@@ -122,6 +140,9 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
       }
     }
 
+    // Xoá trắng ô tốc độ = quay về mức mặc định theo mục tiêu
+    if (numbers.goalRate.trim() === "" && profile.goalRate != null) input.goalRate = null;
+
     if (gender) input.gender = gender;
     if (goalType) input.goalType = goalType;
     if (activityLevel) input.activityLevel = activityLevel;
@@ -143,7 +164,8 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
     setSaving(true);
     try {
       await updateProfile(input);
-      setNotice("Đã lưu hồ sơ.");
+      const updated = await promptTargetRecalculation();
+      setNotice(updated ? "Đã lưu hồ sơ và cập nhật mục tiêu dinh dưỡng." : "Đã lưu hồ sơ.");
     } catch (err) {
       setErrors(fieldErrorsFrom(err));
       setFormError(errorMessage(err));
@@ -175,10 +197,18 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View>
-          <Text style={styles.name}>{user?.name}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Tài khoản & bảo mật"
+          onPress={() => router.push("/settings/account")}
+          style={styles.userRow}
+        >
+          <Avatar name={user?.name} uri={user?.avatar} size={56} />
+          <View style={styles.flex}>
+            <Text style={styles.name}>{user?.name}</Text>
+            <Text style={styles.email}>{user?.email}</Text>
+          </View>
+        </Pressable>
 
         <ErrorBanner message={formError} />
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
@@ -207,7 +237,10 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
             value={activityLevel}
             onChange={setActivityLevel}
           />
-          {(["goalWeight", "trainingDaysPerWeek"] as const).map((key) => (
+          {(goalType === "MAINTENANCE"
+            ? (["goalWeight", "trainingDaysPerWeek"] as const)
+            : (["goalWeight", "goalRate", "trainingDaysPerWeek"] as const)
+          ).map((key) => (
             <TextField
               key={key}
               label={NUMBER_FIELDS[key].label}
@@ -223,25 +256,85 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
         <Button title="Lưu hồ sơ" onPress={handleSave} loading={saving} />
 
         <Card title="Mục tiêu dinh dưỡng mỗi ngày">
-          {currentTarget ? (
-            <View style={styles.targetRow}>
-              <Macro label="Calo" value={currentTarget.calories} unit="kcal" />
-              <Macro label="Protein" value={currentTarget.protein} unit="g" />
-              <Macro label="Carbs" value={currentTarget.carbs} unit="g" />
-              <Macro label="Fat" value={currentTarget.fat} unit="g" />
-            </View>
+          {editingTarget ? (
+            <ManualTargetForm
+              initial={currentTarget}
+              onCancel={() => setEditingTarget(false)}
+              onSubmit={async (macros) => {
+                await setManualTarget(macros);
+                setEditingTarget(false);
+                setNotice("Đã lưu mục tiêu dinh dưỡng bạn tự nhập.");
+              }}
+            />
           ) : (
-            <Text style={styles.muted}>Chưa có mục tiêu. Lưu hồ sơ đầy đủ rồi bấm tính tự động.</Text>
+            <>
+              {currentTarget ? (
+                <>
+                  <View style={styles.targetRow}>
+                    <Macro label="Calo" value={currentTarget.calories} unit="kcal" />
+                    <Macro label="Protein" value={currentTarget.protein} unit="g" />
+                    <Macro label="Carbs" value={currentTarget.carbs} unit="g" />
+                    <Macro label="Fat" value={currentTarget.fat} unit="g" />
+                  </View>
+                  <Text style={styles.source}>
+                    {currentTarget.source === "MANUAL" ? "Bạn tự nhập" : "Tự tính từ hồ sơ"}
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.muted}>
+                  Chưa có mục tiêu. Lưu hồ sơ đầy đủ rồi bấm tính tự động, hoặc tự nhập số của bạn.
+                </Text>
+              )}
+              <View style={styles.targetActions}>
+                <Button
+                  title={currentTarget ? "Tính lại từ hồ sơ" : "Tính tự động"}
+                  onPress={handleRecalculate}
+                  loading={calculating}
+                  variant="secondary"
+                  style={styles.flex}
+                />
+                <Button
+                  title="Tự nhập"
+                  onPress={() => {
+                    setNotice(null);
+                    setEditingTarget(true);
+                  }}
+                  variant="secondary"
+                  style={styles.flex}
+                />
+              </View>
+            </>
           )}
-          <Button
-            title={currentTarget ? "Tính lại từ hồ sơ" : "Tính tự động từ hồ sơ"}
-            onPress={handleRecalculate}
-            loading={calculating}
-            variant="secondary"
+        </Card>
+
+        <Card title="Giao diện">
+          <ChipGroup
+            label="Chế độ màu"
+            options={THEME_OPTIONS}
+            value={themePreference}
+            onChange={setThemePreference}
           />
         </Card>
 
-        <Button title="Đăng xuất" onPress={logout} variant="danger" />
+        <Button
+          title="👤 Tài khoản & bảo mật"
+          variant="secondary"
+          onPress={() => router.push("/settings/account")}
+        />
+        <Button
+          title="🔔 Cài đặt thông báo"
+          variant="secondary"
+          onPress={() => router.push("/settings/notifications")}
+        />
+        <Button
+          title="Đăng xuất"
+          onPress={async () => {
+            // Gỡ máy khỏi danh sách nhận push trước, lúc còn access token
+            await useNotificationStore.getState().unregisterDevice();
+            await logout();
+          }}
+          variant="danger"
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -258,17 +351,20 @@ function Macro({ label, value, unit }: { label: string; value: number; unit: str
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
+  userRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   name: { fontSize: 22, fontWeight: "700", color: colors.text },
   email: { fontSize: 15, color: colors.textMuted },
   notice: { fontSize: 14, color: colors.success },
   error: { fontSize: 13, color: colors.danger },
   muted: { fontSize: 15, color: colors.textMuted, lineHeight: 22 },
   targetRow: { flexDirection: "row", gap: spacing.sm },
+  targetActions: { flexDirection: "row", gap: spacing.md },
+  source: { fontSize: 13, color: colors.textMuted },
   macro: { flex: 1, gap: 2 },
   macroValue: { fontSize: 18, fontWeight: "700", color: colors.text, fontVariant: ["tabular-nums"] },
   macroLabel: { fontSize: 12, color: colors.textMuted },
-});
+}));

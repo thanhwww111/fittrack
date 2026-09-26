@@ -1,6 +1,7 @@
 import type { ApiSuccess } from "@/types/api";
 import type {
   BodyMeasurement,
+  GoalProgress,
   NutritionProgress,
   WeeklySummary,
   WeightProgress,
@@ -16,6 +17,8 @@ interface DateRange {
 export const progressApi = {
   weekly: () => unwrap(api.get<ApiSuccess<WeeklySummary>>("/progress/weekly")),
 
+  goal: () => unwrap(api.get<ApiSuccess<GoalProgress>>("/progress/goal")),
+
   weight: (range: DateRange = {}) =>
     unwrap(api.get<ApiSuccess<WeightProgress>>("/progress/weight", { params: range })),
 
@@ -28,8 +31,22 @@ export const progressApi = {
     unwrap(api.get<ApiSuccess<NutritionProgress>>("/progress/nutrition", { params: range })),
 };
 
+export type MeasurementInput = Partial<Omit<BodyMeasurement, "id" | "weight" | "date">> & {
+  weight: number;
+  date?: string;
+};
+
 export const measurementApi = {
-  // Mỗi ngày một bản ghi: gửi lại cùng ngày thì server ghi đè
-  save: (input: { weight: number; date?: string }) =>
+  // Sắp xếp theo ngày tăng dần
+  list: (range: DateRange = {}) =>
+    unwrap(api.get<ApiSuccess<BodyMeasurement[]>>("/body-measurements", { params: range })),
+
+  // Mỗi ngày một bản ghi: gửi lại cùng ngày thì server ghi đè,
+  // field không gửi (bodyFat, vòng eo...) bị reset về null
+  save: (input: MeasurementInput) =>
     unwrap(api.post<ApiSuccess<BodyMeasurement>>("/body-measurements", input)),
+
+  remove: async (id: string) => {
+    await api.delete(`/body-measurements/${id}`);
+  },
 };

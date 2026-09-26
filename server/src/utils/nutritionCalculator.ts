@@ -7,6 +7,7 @@ export interface TargetInput {
   currentWeight: number; // kg
   activityLevel: ActivityLevel;
   goalType: GoalType;
+  goalRate?: number | null; // kg/tuần user tự đặt, bỏ trống = dùng mức dư/thâm hụt mặc định
 }
 
 export interface MacroTarget {
@@ -54,10 +55,19 @@ export function calculateTDEE(input: TargetInput) {
   return calculateBMR(input) * ACTIVITY_MULTIPLIER[input.activityLevel];
 }
 
+// ~7700 kcal cho mỗi kg cân nặng tăng/giảm
+const KCAL_PER_KG = 7700;
+
+function dailyCalorieDelta({ goalType, goalRate }: TargetInput) {
+  if (goalType === "MAINTENANCE" || goalRate == null) return GOAL_CALORIE_DELTA[goalType];
+  const delta = (goalRate * KCAL_PER_KG) / 7;
+  return goalType === "WEIGHT_LOSS" ? -delta : delta;
+}
+
 export function calculateNutritionTarget(input: TargetInput): MacroTarget {
   const calories = Math.max(
     MIN_CALORIES,
-    Math.round(calculateTDEE(input) + GOAL_CALORIE_DELTA[input.goalType])
+    Math.round(calculateTDEE(input) + dailyCalorieDelta(input))
   );
 
   const protein = Math.round(input.currentWeight * PROTEIN_PER_KG[input.goalType]);

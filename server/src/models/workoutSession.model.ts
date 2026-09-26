@@ -18,6 +18,7 @@ const sessionExerciseSchema = new Schema(
     exerciseName: { type: String, required: true }, // snapshot để lịch sử vẫn đọc được nếu exercise bị xoá
     targetSets: { type: Number, default: null },
     targetReps: { type: Number, default: null },
+    restSeconds: { type: Number, default: null }, // copy từ template, app dùng cho hẹn giờ nghỉ
     sets: { type: [workoutSetSchema], default: [] },
   },
   { _id: false }
@@ -34,6 +35,7 @@ const workoutSessionSchema = new Schema(
     totalVolume: { type: Number, default: 0, min: 0 }, // tổng weight × reps của các set completed
     duration: { type: Number, default: 0, min: 0 }, // giây
     status: { type: String, enum: WORKOUT_STATUSES, default: "IN_PROGRESS" },
+    notes: { type: String, default: "", trim: true, maxlength: 1000 },
   },
   { timestamps: true }
 );

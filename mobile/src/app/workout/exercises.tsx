@@ -6,14 +6,14 @@ import {
   FlatList,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { exerciseApi } from "@/api/workoutApi";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { CreateExerciseForm } from "@/components/workout/CreateExerciseForm";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { errorMessage } from "@/lib/formErrors";
 import { EQUIPMENT_LABELS, MUSCLE_LABELS, MUSCLE_ORDER } from "@/lib/workout";
@@ -36,6 +36,7 @@ export default function ExercisePickerScreen() {
 
   const [results, setResults] = useState<Results>({ key: null, items: [] });
   const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,7 +105,16 @@ export default function ExercisePickerScreen() {
 
       <ErrorBanner message={error} />
 
-      {results.key !== key ? (
+      {creating ? (
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list}>
+          <CreateExerciseForm
+            initialName={query.trim()}
+            initialMuscle={muscle}
+            onSaved={pick}
+            onCancel={() => setCreating(false)}
+          />
+        </ScrollView>
+      ) : results.key !== key ? (
         <ActivityIndicator color={colors.primary} style={styles.loading} />
       ) : (
         <FlatList
@@ -122,7 +132,10 @@ export default function ExercisePickerScreen() {
                 style={({ pressed }) => [styles.row, pressed && styles.pressed, already && styles.disabled]}
               >
                 <View style={styles.flex}>
-                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.name}>
+                    {item.name}
+                    {item.isCustom ? <Text style={styles.badge}>  · Của bạn</Text> : null}
+                  </Text>
                   <Text style={styles.muted}>
                     {MUSCLE_LABELS[item.muscleGroup]} · {EQUIPMENT_LABELS[item.equipment]}
                   </Text>
@@ -136,13 +149,23 @@ export default function ExercisePickerScreen() {
             );
           }}
           ListEmptyComponent={<Text style={styles.empty}>Không tìm thấy bài tập nào.</Text>}
+          ListFooterComponent={
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setCreating(true)}
+              style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}
+            >
+              <Ionicons name="add" size={18} color={colors.primary} />
+              <Text style={styles.createText}>Không có bài bạn cần? Tạo bài tập mới</Text>
+            </Pressable>
+          }
         />
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, padding: spacing.lg, gap: spacing.md },
   flex: { flex: 1 },
   searchBox: {
@@ -168,7 +191,7 @@ const styles = StyleSheet.create({
   },
   filterSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterText: { fontSize: 14, color: colors.text },
-  filterTextSelected: { color: "#fff", fontWeight: "600" },
+  filterTextSelected: { color: colors.onPrimary, fontWeight: "600" },
   loading: { marginTop: spacing.xl },
   list: { gap: spacing.sm, paddingBottom: spacing.xxl },
   row: {
@@ -186,4 +209,13 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: "600", color: colors.text },
   muted: { fontSize: 13, color: colors.textMuted },
   empty: { textAlign: "center", color: colors.textMuted, paddingVertical: spacing.xl },
-});
+  badge: { fontSize: 13, fontWeight: "500", color: colors.primary },
+  createButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+  },
+  createText: { fontSize: 15, fontWeight: "600", color: colors.primary },
+}));

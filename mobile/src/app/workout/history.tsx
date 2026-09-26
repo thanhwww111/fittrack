@@ -1,9 +1,9 @@
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { sessionApi } from "@/api/workoutApi";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { colors, radius, spacing } from "@/constants/theme";
+import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage } from "@/lib/formErrors";
 import { formatDate, formatDuration, formatVolume } from "@/lib/workout";
 import type { WorkoutSession } from "@/types/models";
@@ -93,7 +93,7 @@ export default function WorkoutHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, padding: spacing.lg, gap: spacing.md },
   list: { gap: spacing.sm, paddingBottom: spacing.xxl },
   row: {
@@ -112,4 +112,4 @@ const styles = StyleSheet.create({
   exerciseList: { fontSize: 13, color: colors.textMuted },
   loading: { marginTop: spacing.xl },
   empty: { textAlign: "center", color: colors.textMuted, paddingVertical: spacing.xl },
-});
+}));

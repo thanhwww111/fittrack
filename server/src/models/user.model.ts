@@ -14,11 +14,13 @@ const userSchema = new Schema(
     // Không bao giờ trả về passwordHash trừ khi query gọi .select("+passwordHash")
     passwordHash: { type: String, required: true, select: false },
     avatar: { type: String, default: null },
+    // Access token cấp trước mốc này bị từ chối (đổi / đặt lại mật khẩu thì mọi phiên cũ mất hiệu lực ngay)
+    passwordChangedAt: { type: Date, default: null, select: false },
   },
   { timestamps: true }
 );
 
-applyToJSON(userSchema, ["passwordHash"]);
+applyToJSON(userSchema, ["passwordHash", "passwordChangedAt"]);
 
 export type User = InferSchemaType<typeof userSchema>;
 export type UserDocument = HydratedDocument<User>;

@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { measurementApi } from "@/api/progressApi";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
+import { localToday } from "@/hooks/useProgress";
 import { errorMessage, parseNumber } from "@/lib/formErrors";
+import { promptTargetRecalculation } from "@/lib/targetRecalculation";
 
 interface WeightEntryProps {
   initialWeight: number | null;
@@ -27,8 +29,16 @@ export function WeightEntry({ initialWeight, onSaved }: WeightEntryProps) {
     setError(undefined);
     setSaving(true);
     try {
-      await measurementApi.save({ weight });
+      // Server reset các số đo không gửi lên, nên giữ lại vòng eo / % mỡ... đã ghi hôm nay
+      const today = localToday();
+      const [existing] = await measurementApi.list({ from: today, to: today });
+      const { bodyFat, chest, waist, arm, thigh } = existing ?? {};
+      const extras = Object.fromEntries(
+        Object.entries({ bodyFat, chest, waist, arm, thigh }).filter(([, v]) => v != null)
+      );
+      await measurementApi.save({ ...extras, weight, date: today });
       setSaved(true);
+      await promptTargetRecalculation();
       onSaved();
     } catch (err) {
       setError(errorMessage(err));
@@ -61,11 +71,11 @@ export function WeightEntry({ initialWeight, onSaved }: WeightEntryProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { gap: spacing.xs },
   row: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
   flex: { flex: 1 },
   // Căn nút ngang với ô nhập (bỏ qua chiều cao nhãn phía trên)
   button: { marginTop: 22 },
   saved: { fontSize: 13, color: colors.success },
-});
+}));

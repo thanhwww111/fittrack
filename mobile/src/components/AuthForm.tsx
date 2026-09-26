@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, spacing } from "@/constants/theme";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 
 interface AuthFormProps {
   title: string;
@@ -32,7 +32,7 @@ export function AuthForm({ title, subtitle, children, footer }: AuthFormProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   safe: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
   content: { flexGrow: 1, justifyContent: "center", padding: spacing.xl, gap: spacing.xl },
@@ -42,4 +42,4 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 15, color: colors.textMuted },
   form: { gap: spacing.lg },
   footer: { flexDirection: "row", justifyContent: "center", gap: spacing.xs },
-});
+}));

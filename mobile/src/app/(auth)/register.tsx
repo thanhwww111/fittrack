@@ -1,12 +1,12 @@
 import { Link } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { Text } from "react-native";
 import { ApiError } from "@/api/client";
 import { AuthForm } from "@/components/AuthForm";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
-import { colors } from "@/constants/theme";
+import { colors, themedStyles } from "@/constants/theme";
 import {
   errorMessage,
   fieldErrorsFrom,
@@ -112,7 +112,7 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   muted: { color: colors.textMuted, fontSize: 15 },
   link: { color: colors.primary, fontSize: 15, fontWeight: "600" },
-});
+}));

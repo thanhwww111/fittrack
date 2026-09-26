@@ -1,6 +1,6 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
 import { ACTIVITY_LEVELS, GENDERS, GOAL_TYPES } from "../constants/enums";
-import { DEFAULT_TIMEZONE } from "../utils/date";
+import { DATE_REGEX, DEFAULT_TIMEZONE } from "../utils/date";
 import { applyToJSON } from "../utils/toJSON";
 
 // Profile được tạo rỗng lúc register, user điền dần ở màn onboarding
@@ -15,13 +15,19 @@ const userProfileSchema = new Schema(
     goalType: { type: String, enum: GOAL_TYPES, default: null },
     goalWeight: { type: Number, min: 20, max: 500, default: null }, // kg
     trainingDaysPerWeek: { type: Number, min: 0, max: 7, default: null },
+    // Điểm xuất phát của mục tiêu hiện tại, server tự đặt lại khi đổi goalType / goalWeight
+    startWeight: { type: Number, min: 20, max: 500, default: null }, // kg
+    goalStartDate: { type: String, match: DATE_REGEX, default: null }, // YYYY-MM-DD
+    goalRate: { type: Number, min: 0.1, max: 1, default: null }, // kg/tuần, null = mặc định theo goalType
     // Dùng để xác định "hôm nay" của user (IANA, ví dụ Asia/Ho_Chi_Minh)
     timezone: { type: String, default: DEFAULT_TIMEZONE },
+    // Món ăn yêu thích, mới thêm lên đầu. Đọc qua GET /api/foods/favorites.
+    favoriteFoods: { type: [{ type: Schema.Types.ObjectId, ref: "Food" }], default: [] },
   },
   { timestamps: true }
 );
 
-applyToJSON(userProfileSchema);
+applyToJSON(userProfileSchema, ["favoriteFoods"]);
 
 export type UserProfile = InferSchemaType<typeof userProfileSchema>;
 
