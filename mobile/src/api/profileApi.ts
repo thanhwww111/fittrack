@@ -3,6 +3,7 @@ import type {
   GoalsOverview,
   Macros,
   NutritionTarget,
+  TargetRecalculation,
   UpdateProfileInput,
   UserProfile,
 } from "@/types/models";
@@ -19,6 +20,9 @@ export const goalApi = {
   list: () => unwrap(api.get<ApiSuccess<GoalsOverview>>("/goals")),
 
   suggestion: () => unwrap(api.get<ApiSuccess<Macros>>("/goals/suggestion")),
+
+  recalculation: () =>
+    unwrap(api.get<ApiSuccess<TargetRecalculation>>("/goals/recalculation")),
 
   createAuto: () => unwrap(api.post<ApiSuccess<NutritionTarget>>("/goals", { mode: "AUTO" })),
 

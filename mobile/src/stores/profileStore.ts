@@ -21,12 +21,12 @@ const initialState = { profile: null, currentTarget: null, isLoading: false, err
 
 // Target của ngày đã qua không sửa được (giữ đúng lịch sử), nên chỉ PUT khi target bắt đầu từ hôm nay
 async function saveTarget(
-  get: () => ProfileState,
-  set: (partial: Partial<ProfileState>) => void,
+  set:(partial: Partial<ProfileState>) => void,
   input: Macros | { mode: "AUTO" }
 ) {
-  const { currentTarget } = get();
+  // Lấy target từ server thay vì store: có thể gọi từ màn chưa tải hồ sơ (ví dụ ghi cân nặng)
   const goals = await goalApi.list();
+  const currentTarget = goals.current;
 
   let target: NutritionTarget;
   if (currentTarget && currentTarget.effectiveFrom === goals.today) {
@@ -41,7 +41,7 @@ async function saveTarget(
   return target;
 }
 
-export const useProfileStore = create<ProfileState>()((set, get) => ({
+export const useProfileStore = create<ProfileState>()((set) => ({
   ...initialState,
 
   fetchProfile: async () => {
@@ -60,9 +60,9 @@ export const useProfileStore = create<ProfileState>()((set, get) => ({
     return profile;
   },
 
-  recalculateTarget: () => saveTarget(get, set, { mode: "AUTO" }),
+  recalculateTarget: () => saveTarget(set, { mode: "AUTO" }),
 
-  setManualTarget: (macros) => saveTarget(get, set, macros),
+  setManualTarget: (macros) => saveTarget(set, macros),
 
   reset: () => set(initialState),
 }));

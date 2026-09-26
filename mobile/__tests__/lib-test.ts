@@ -3,6 +3,9 @@ import { fieldErrorsFrom, parseNumber, validateEmail, validatePassword } from "@
 import { ApiError } from "@/api/client";
 import { addDays, formatDayLabel, mealTypeForHour, previewNutrition } from "@/lib/nutrition";
 import { measurementSummary } from "@/lib/measurements";
+import { describeTargetChange } from "@/lib/targetRecalculation";
+import { formatDayAdherence, formatSignedPercent } from "@/lib/weekly";
+import { dayName, formatRate, programDayFor } from "@/lib/goal";
 import { formatClock, formatDuration, setVolume } from "@/lib/workout";
 import type { BodyMeasurement, Food } from "@/types/models";
 
@@ -138,5 +141,57 @@ describe("measurementSummary", () => {
 
   it("lists the optional measurements that were entered, weight excluded", () => {
     expect(measurementSummary({ ...base, bodyFat: 18.5, waist: 80 })).toBe("Mỡ 18,5% · Eo 80 cm");
+  });
+});
+
+describe("describeTargetChange", () => {
+  const current = { calories: 2594, protein: 112, carbs: 375, fat: 72 };
+
+  it("lists only the macros that changed, old → new", () => {
+    expect(describeTargetChange(current, { ...current, calories: 2894, protein: 120 })).toBe(
+      "Calo: 2594 → 2894 kcal\nProtein: 112 → 120 g"
+    );
+  });
+
+  it("is empty when nothing changed", () => {
+    expect(describeTargetChange(current, { ...current })).toBe("");
+  });
+});
+
+describe("weekly formatting", () => {
+  it("signs percent changes", () => {
+    expect(formatSignedPercent(8.2)).toBe("+8,2%");
+    expect(formatSignedPercent(-3)).toBe("-3%");
+    expect(formatSignedPercent(0)).toBe("0%");
+  });
+
+  it("shows adherence as percent with the day count", () => {
+    expect(formatDayAdherence({ met: 4, days: 5, percent: 80 })).toEqual({ value: "80%", hint: "4/5 ngày" });
+    expect(formatDayAdherence({ met: 0, days: 0, percent: null })).toEqual({
+      value: "—",
+      hint: "chưa có dữ liệu",
+    });
+  });
+});
+
+describe("goal helpers", () => {
+  it("formats signed weekly rates", () => {
+    expect(formatRate(0.25)).toBe("+0,25 kg/tuần");
+    expect(formatRate(-0.5)).toBe("-0,5 kg/tuần");
+    expect(formatRate(0)).toBe("0 kg/tuần");
+  });
+
+  it("maps weekdays and finds the session of a day", () => {
+    expect(dayName(1)).toBe("Thứ 2");
+    expect(dayName(7)).toBe("Chủ nhật");
+    const program = {
+      id: "p",
+      name: "PPL",
+      isFavorite: true,
+      presetKey: null,
+      days: [{ dayOfWeek: 3, templateId: "t", templateName: "Pull", exerciseCount: 6 }],
+    };
+    expect(programDayFor(program, 3)?.templateName).toBe("Pull");
+    expect(programDayFor(program, 4)).toBeNull();
   });
 });

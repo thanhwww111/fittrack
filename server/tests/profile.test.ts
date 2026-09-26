@@ -1,6 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import app from "../src/app";
+import { todayInTimezone } from "../src/utils/date";
 import { createAuthedUser } from "./helpers/auth";
 import { useTestDatabase } from "./helpers/db";
 
@@ -82,5 +83,33 @@ describe("PUT /api/profile", () => {
     await request(app).put("/api/profile").set(auth).send({ currentWeight: 54, goalType: "MUSCLE_GAIN" });
     const gain = await request(app).put("/api/profile").set(auth).send({ goalWeight: 50 });
     expect(gain.status).toBe(400);
+  });
+});
+
+describe("goal starting point", () => {
+  it("records the start weight and date when a goal is set, and resets it when the goal changes", async () => {
+    const { auth } = await createAuthedUser();
+    const first = await request(app)
+      .put("/api/profile")
+      .set(auth)
+      .send({ currentWeight: 54, goalType: "MUSCLE_GAIN", goalWeight: 60, goalRate: 0.25 });
+    expect(first.body.data).toMatchObject({
+      startWeight: 54,
+      goalStartDate: todayInTimezone("Asia/Ho_Chi_Minh"),
+      goalRate: 0.25,
+    });
+
+    // Chỉ đổi cân hiện tại: vẫn giữ điểm xuất phát cũ
+    const same = await request(app).put("/api/profile").set(auth).send({ currentWeight: 55 });
+    expect(same.body.data.startWeight).toBe(54);
+
+    const changed = await request(app).put("/api/profile").set(auth).send({ goalWeight: 62 });
+    expect(changed.body.data.startWeight).toBe(55);
+  });
+
+  it("rejects an unrealistic weekly rate", async () => {
+    const { auth } = await createAuthedUser();
+    const res = await request(app).put("/api/profile").set(auth).send({ goalRate: 3 });
+    expect(res.status).toBe(400);
   });
 });

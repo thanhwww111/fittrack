@@ -2,6 +2,7 @@ import { WorkoutTemplateModel } from "../models/workoutTemplate.model";
 import type { CreateTemplateInput, UpdateTemplateInput } from "../schemas/workout.schema";
 import { AppError } from "../utils/AppError";
 import { getVisibleExercisesByIds } from "./exercise.service";
+import { removeTemplateFromPrograms } from "./weeklyProgram.service";
 
 async function buildExercises(userId: string, exercises: CreateTemplateInput["exercises"]) {
   await getVisibleExercisesByIds(
@@ -61,8 +62,10 @@ export async function duplicateTemplate(userId: string, templateId: string) {
   return copy.toJSON();
 }
 
-// Session cũ tạo từ template vẫn giữ nguyên vì đã copy bài tập + tên vào session
+// Session cũ tạo từ template vẫn giữ nguyên vì đã copy bài tập + tên vào session.
+// Lịch tuần đang dùng template này thì ngày đó thành ngày nghỉ.
 export async function deleteTemplate(userId: string, templateId: string) {
   const template = await getOwnedTemplate(userId, templateId);
   await template.deleteOne();
+  await removeTemplateFromPrograms(userId, templateId);
 }

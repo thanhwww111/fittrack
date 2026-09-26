@@ -1,7 +1,7 @@
 import { UserProfileModel } from "../models/userProfile.model";
 import type { UpdateProfileInput } from "../schemas/profile.schema";
 import { AppError } from "../utils/AppError";
-import { DEFAULT_TIMEZONE } from "../utils/date";
+import { DEFAULT_TIMEZONE, todayInTimezone } from "../utils/date";
 
 export async function getProfileDocument(userId: string) {
   const profile = await UserProfileModel.findOne({ userId });
@@ -47,7 +47,18 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
     goalWeight: input.goalWeight ?? profile.goalWeight,
   });
 
+  // Đặt mục tiêu mới (hoặc lần đầu) thì lấy cân hiện tại làm điểm xuất phát để tính % tiến độ
+  const goalChanged =
+    (input.goalType !== undefined && input.goalType !== profile.goalType) ||
+    (input.goalWeight !== undefined && input.goalWeight !== profile.goalWeight);
+  const goalWeight = input.goalWeight ?? profile.goalWeight;
+  const weight = input.currentWeight ?? profile.currentWeight;
+
   profile.set(input);
+  if (weight != null && goalWeight != null && (goalChanged || profile.startWeight == null)) {
+    profile.startWeight = weight;
+    profile.goalStartDate = todayInTimezone(profile.timezone);
+  }
   await profile.save();
   return profile.toJSON();
 }

@@ -129,7 +129,7 @@ export async function sendWeeklyReports() {
   for (const id of userIds) {
     const userId = String(id);
     const summary = await getWeeklySummary(userId, { previousWeek: true });
-    const { workout, nutrition, weight } = summary;
+    const { workout, nutrition, weight, adherence } = summary;
 
     // Tuần không có hoạt động nào thì không làm phiền
     if (workout.sessions === 0 && nutrition.loggedDays === 0) {
@@ -137,9 +137,18 @@ export async function sendWeeklyReports() {
       continue;
     }
 
-    const parts = [`${workout.sessions} buổi tập, ${Math.round(workout.totalVolume)} kg volume`];
-    if (nutrition.loggedDays > 0) {
-      parts.push(`đủ protein ${nutrition.daysProteinGoalMet}/${nutrition.loggedDays} ngày`);
+    const sessions = adherence.workout.target
+      ? `${workout.sessions}/${adherence.workout.target}`
+      : String(workout.sessions);
+    let workoutPart = `${sessions} buổi tập, ${Math.round(workout.totalVolume)} kg volume`;
+    if (workout.volumeChange !== null) {
+      const sign = workout.volumeChange > 0 ? "+" : "";
+      workoutPart += ` (${sign}${workout.volumeChange}% so tuần trước)`;
+    }
+    const parts = [workoutPart];
+    // Ngày không log cũng tính là chưa đủ protein
+    if (adherence.protein.days > 0) {
+      parts.push(`đủ protein ${adherence.protein.met}/${adherence.protein.days} ngày`);
     }
     if (weight.change !== null) {
       parts.push(`cân nặng ${weight.change > 0 ? "+" : ""}${round1(weight.change)} kg`);

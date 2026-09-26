@@ -6,6 +6,7 @@ import { BarChart } from "@/components/charts/BarChart";
 import { ChartCard } from "@/components/charts/ChartCard";
 import { LineChart } from "@/components/charts/LineChart";
 import { shortDate } from "@/components/charts/scale";
+import { GoalProgressCard } from "@/components/progress/GoalProgressCard";
 import { WeightEntry } from "@/components/progress/WeightEntry";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -69,6 +70,8 @@ export default function ProgressScreen() {
 
       {data ? (
         <>
+          <GoalProgressCard goal={data.goal} />
+
           <ChartCard
             title="Cân nặng"
             subtitle={`${shortDate(weight!.from)} – ${shortDate(weight!.to)}`}

@@ -48,3 +48,8 @@ export const getWeekly: RequestHandler = async (req, res) => {
   const data = await progressService.getWeeklySummary(req.user!.id);
   res.json({ success: true, data });
 };
+
+export const getGoal: RequestHandler = async (req, res) => {
+  const data = await progressService.getGoalProgress(req.user!.id);
+  res.json({ success: true, data });
+};

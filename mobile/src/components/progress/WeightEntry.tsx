@@ -6,6 +6,7 @@ import { TextField } from "@/components/ui/TextField";
 import { colors, spacing, themedStyles } from "@/constants/theme";
 import { localToday } from "@/hooks/useProgress";
 import { errorMessage, parseNumber } from "@/lib/formErrors";
+import { promptTargetRecalculation } from "@/lib/targetRecalculation";
 
 interface WeightEntryProps {
   initialWeight: number | null;
@@ -37,6 +38,7 @@ export function WeightEntry({ initialWeight, onSaved }: WeightEntryProps) {
       );
       await measurementApi.save({ ...extras, weight, date: today });
       setSaved(true);
+      await promptTargetRecalculation();
       onSaved();
     } catch (err) {
       setError(errorMessage(err));
