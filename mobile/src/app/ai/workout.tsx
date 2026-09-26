@@ -52,7 +52,7 @@ export default function AiWorkoutScreen() {
 
       {analysis && !loading ? (
         <>
-          <Card title="Tổng quan">
+          <Card title="Tổng quan" icon="sparkles">
             <Text style={styles.body}>{analysis.summary}</Text>
             <View style={styles.weeks}>
               {analysis.weeks.map((w) => (
@@ -66,7 +66,7 @@ export default function AiWorkoutScreen() {
           </Card>
 
           {analysis.highlights.length > 0 ? (
-            <Card title="Điểm nổi bật">
+            <Card title="Điểm nổi bật" icon="star">
               {analysis.highlights.map((h, i) => (
                 <Text key={i} style={styles.body}>
                   🏅 {h}
@@ -76,7 +76,7 @@ export default function AiWorkoutScreen() {
           ) : null}
 
           {analysis.suggestions.length > 0 ? (
-            <Card title="Gợi ý cho tuần tới">
+            <Card title="Gợi ý cho tuần tới" icon="bulb">
               {analysis.suggestions.map((s, i) => (
                 <Text key={i} style={styles.body}>
                   → {s}

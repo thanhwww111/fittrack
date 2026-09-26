@@ -72,7 +72,7 @@ export default function ProgramsScreen() {
       <ErrorBanner message={error} />
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-      <Card title="Lịch tuần của bạn">
+      <Card title="Lịch tuần của bạn" icon="calendar">
         {programs.length === 0 ? (
           <Text style={styles.muted}>
             Chưa có lịch nào. Chọn một lịch đề xuất bên dưới hoặc tự xếp template vào từng ngày.

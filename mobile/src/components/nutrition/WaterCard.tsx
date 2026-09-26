@@ -14,8 +14,17 @@ const liters = (ml: number) =>
   (ml / 1000).toLocaleString("vi-VN", { minimumFractionDigits: 1, maximumFractionDigits: 2 });
 
 // Theo dõi nước uống của ngày đang xem. Bấm +250 / +500 ml, "−" để bớt khi bấm nhầm.
-export function WaterCard({ date }: { date: string }) {
-  const [water, setWater] = useState<WaterDay | null>(null);
+// onChange: báo số nước mới cho màn cha (ô thống kê trang chủ) mỗi lần tải / cập nhật
+export function WaterCard({ date, onChange }: { date: string; onChange?: (water: WaterDay) => void }) {
+  const [water, setWaterState] = useState<WaterDay | null>(null);
+  // onChange nên ổn định (setter của useState) để không tải lại nước mỗi lần render
+  const setWater = useCallback(
+    (w: WaterDay) => {
+      setWaterState(w);
+      onChange?.(w);
+    },
+    [onChange]
+  );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -36,7 +45,7 @@ export function WaterCard({ date }: { date: string }) {
       return () => {
         cancelled = true;
       };
-    }, [date])
+    }, [date, setWater])
   );
 
   async function add(amount: number) {

@@ -230,12 +230,34 @@ function dayAdherence(days: NutritionDay[], today: string, isMet: (d: NutritionD
   return { met, days: counted.length, percent: percent(met, counted.length) };
 }
 
+// Chuỗi dài nhất tính được, đủ cho 1 năm tập đều
+const MAX_STREAK_DAYS = 366;
+
+// Số ngày liên tiếp có ghi món hoặc hoàn thành buổi tập, đếm lùi từ hôm nay.
+// Hôm nay chưa có gì thì đếm từ hôm qua: chuỗi chưa đứt khi ngày còn chưa kết thúc.
+async function activityStreak(userId: string, timezone: string, today: string) {
+  const from = addDays(today, -MAX_STREAK_DAYS);
+  const [foodDays, sessions] = await Promise.all([
+    FoodLogModel.distinct("date", { userId, date: { $gte: from, $lte: today } }),
+    completedSessionsBetween(userId, timezone, from, today),
+  ]);
+  const active = new Set<string>([...foodDays, ...sessions.map((s) => s.date)]);
+
+  let day = active.has(today) ? today : addDays(today, -1);
+  let streak = 0;
+  while (active.has(day)) {
+    streak += 1;
+    day = addDays(day, -1);
+  }
+  return streak;
+}
+
 export async function getWeeklySummary(userId: string, { previousWeek = false } = {}) {
   const { timezone, today } = await userContext(userId);
   const weekStart = previousWeek ? addDays(startOfWeek(today), -7) : startOfWeek(today);
   const weekEnd = previousWeek ? addDays(weekStart, 6) : today;
 
-  const [sessions, previousSessions, days, current, baseline, records, profile] = await Promise.all([
+  const [sessions, previousSessions, days, current, baseline, records, profile, streak] = await Promise.all([
     completedSessionsBetween(userId, timezone, weekStart, weekEnd),
     // Cùng khoảng ngày của tuần trước (thứ Hai → cùng thứ), để tuần đang dở không bị so với cả tuần
     completedSessionsBetween(userId, timezone, addDays(weekStart, -7), addDays(weekEnd, -7)),
@@ -247,6 +269,7 @@ export async function getWeeklySummary(userId: string, { previousWeek = false } 
       .select("achievedAt")
       .lean(),
     UserProfileModel.findOne({ userId }).select("trainingDaysPerWeek").lean(),
+    activityStreak(userId, timezone, today),
   ]);
 
   const totalVolume = round1(sessions.reduce((n, s) => n + s.totalVolume, 0));
@@ -286,6 +309,8 @@ export async function getWeeklySummary(userId: string, { previousWeek = false } 
       const day = todayInTimezone(timezone, r.achievedAt);
       return day >= weekStart && day <= weekEnd;
     }).length,
+    // Luôn tính đến hôm nay, kể cả khi xem báo cáo tuần trước
+    streak,
   };
 }
 

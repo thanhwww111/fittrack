@@ -30,10 +30,11 @@ export interface UserProfile {
   goalStartDate: string | null;
   goalRate: number | null; // kg/tuần, null = mặc định theo mục tiêu
   timezone: string;
+  updatedAt: string;
 }
 
 export type UpdateProfileInput = Partial<
-  Omit<UserProfile, "id" | "userId" | "startWeight" | "goalStartDate">
+  Omit<UserProfile, "id" | "userId" | "startWeight" | "goalStartDate" | "updatedAt">
 >;
 
 export type GoalRateStatus =
@@ -168,6 +169,8 @@ export interface WeeklySummary {
   };
   weight: { current: number | null; baseline: number | null; change: number | null };
   newPersonalRecords: number;
+  // Số ngày liên tiếp có ghi món hoặc tập (hôm nay chưa có gì thì tính đến hôm qua)
+  streak: number;
 }
 
 export interface AuthResult {
@@ -385,9 +388,15 @@ export interface WorkoutAnalysis {
   suggestions: string[];
 }
 
+export interface MealReminder {
+  time: string; // HH:mm
+  label: string;
+}
+
 export interface NotificationSettings {
   workoutReminder: { enabled: boolean; days: number[]; time: string }; // days: 0 = CN ... 6 = T7
-  mealReminders: { enabled: boolean; breakfast: string; lunch: string; dinner: string };
+  // Nhắc nạp dinh dưỡng user tự thêm / sửa / xoá, server sắp theo giờ
+  mealReminders: { enabled: boolean; items: MealReminder[] };
   weeklyReport: boolean;
   prAlerts: boolean;
   goalAlerts: boolean;
