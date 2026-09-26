@@ -7,12 +7,15 @@ import type {
   NewRecord,
   Paginated,
   PersonalRecord,
+  ProgramPreset,
   RecordField,
   TemplateExerciseInput,
   WorkoutSession,
   WorkoutSet,
   WorkoutStatus,
   WorkoutTemplate,
+  WeeklyProgram,
+  WeeklyProgramList,
 } from "@/types/models";
 import { api, unwrap } from "./client";
 
@@ -121,4 +124,39 @@ export const sessionApi = {
   },
 
   personalRecords: () => unwrap(api.get<ApiSuccess<PersonalRecord[]>>("/personal-records")),
+};
+
+export interface WeeklyProgramInput {
+  name: string;
+  days: { dayOfWeek: number; templateId: string }[];
+}
+
+export const programApi = {
+  list: () => unwrap(api.get<ApiSuccess<WeeklyProgramList>>("/weekly-programs")),
+
+  get: (id: string) => unwrap(api.get<ApiSuccess<WeeklyProgram>>(`/weekly-programs/${id}`)),
+
+  presets: () => unwrap(api.get<ApiSuccess<ProgramPreset[]>>("/weekly-programs/presets")),
+
+  // Tạo sẵn các template của lịch đề xuất + lịch tuần dùng chúng
+  applyPreset: (key: string) =>
+    unwrap(api.post<ApiSuccess<WeeklyProgram>>(`/weekly-programs/presets/${key}/apply`)),
+
+  create: (input: WeeklyProgramInput) =>
+    unwrap(api.post<ApiSuccess<WeeklyProgram>>("/weekly-programs", input)),
+
+  update: (id: string, input: Partial<WeeklyProgramInput>) =>
+    unwrap(api.put<ApiSuccess<WeeklyProgram>>(`/weekly-programs/${id}`, input)),
+
+  setFavorite: (id: string, isFavorite: boolean) =>
+    unwrap(
+      isFavorite
+        ? api.put<ApiSuccess<WeeklyProgram>>(`/weekly-programs/${id}/favorite`)
+        : api.delete<ApiSuccess<WeeklyProgram>>(`/weekly-programs/${id}/favorite`)
+    ),
+
+  // Chỉ xoá lịch, template vẫn giữ
+  remove: async (id: string) => {
+    await api.delete(`/weekly-programs/${id}`);
+  },
 };

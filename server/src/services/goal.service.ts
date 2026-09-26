@@ -35,6 +35,31 @@ export async function getActiveTarget(userId: string, date?: string) {
   });
 }
 
+const MACRO_KEYS = ["calories", "protein", "carbs", "fat"] as const;
+
+// Sau khi đổi cân nặng / mức vận động / mục tiêu: target AUTO đang áp dụng có còn khớp profile không.
+// Target MANUAL là số user tự nhập nên không bao giờ gợi ý ghi đè.
+export async function getRecalculation(userId: string) {
+  const current = await getActiveTarget(userId);
+  if (!current || current.source !== "AUTO") {
+    return { needed: false, current: current?.toJSON() ?? null, suggested: null };
+  }
+
+  let suggested;
+  try {
+    suggested = await getSuggestedTarget(userId);
+  } catch (err) {
+    // Profile thiếu trường thì chưa tính lại được, không phải lỗi của request này
+    if (err instanceof AppError && err.statusCode === 400) {
+      return { needed: false, current: current.toJSON(), suggested: null };
+    }
+    throw err;
+  }
+
+  const needed = MACRO_KEYS.some((key) => current[key] !== suggested[key]);
+  return { needed, current: current.toJSON(), suggested };
+}
+
 export async function listGoals(userId: string) {
   const today = todayInTimezone(await getUserTimezone(userId));
   const targets = await NutritionTargetModel.find({ userId }).sort({ effectiveFrom: -1 });

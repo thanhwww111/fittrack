@@ -21,6 +21,7 @@ import { confirmAction } from "@/lib/confirm";
 import { errorMessage, fieldErrorsFrom, parseNumber, type FieldErrors } from "@/lib/formErrors";
 import { MEASUREMENT_FIELDS, type MeasurementField } from "@/lib/measurements";
 import { addDays, formatDayLabel } from "@/lib/nutrition";
+import { promptTargetRecalculation } from "@/lib/targetRecalculation";
 import type { BodyMeasurement } from "@/types/models";
 
 interface Loaded {
@@ -127,6 +128,7 @@ function MeasurementForm({ date, measurement }: { date: string; measurement: Bod
     setSaving(true);
     try {
       await measurementApi.save({ ...(input as MeasurementInput), date });
+      await promptTargetRecalculation();
       router.back();
     } catch (err) {
       setErrors(fieldErrorsFrom(err));

@@ -12,6 +12,7 @@ import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useDashboard } from "@/hooks/useDashboard";
 import { localToday } from "@/hooks/useProgress";
 import { mealTypeForHour } from "@/lib/nutrition";
+import { formatDayAdherence, formatSignedPercent } from "@/lib/weekly";
 import { formatDuration } from "@/lib/workout";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -117,14 +118,34 @@ export default function HomeScreen() {
       {weekly ? (
         <Card title="Tuần này">
           <View style={styles.statsRow}>
-            <Stat label="Buổi tập" value={String(weekly.workout.sessions)} />
-            <Stat label="Volume" value={`${formatNumber(weekly.workout.totalVolume)} kg`} />
-            <Stat label="Thời gian" value={formatDuration(weekly.workout.duration)} />
+            <Stat
+              label="Buổi tập"
+              value={
+                weekly.adherence.workout.target
+                  ? `${weekly.workout.sessions}/${weekly.adherence.workout.target}`
+                  : String(weekly.workout.sessions)
+              }
+              hint={
+                weekly.adherence.workout.percent !== null
+                  ? `đạt ${weekly.adherence.workout.percent}%`
+                  : undefined
+              }
+            />
+            <Stat
+              label="Volume"
+              value={`${formatNumber(weekly.workout.totalVolume)} kg`}
+              hint={
+                weekly.workout.volumeChange !== null
+                  ? `${formatSignedPercent(weekly.workout.volumeChange)} so tuần trước`
+                  : undefined
+              }
+            />
+            <Stat label="PR mới" value={String(weekly.newPersonalRecords)} />
           </View>
           <View style={styles.statsRow}>
-            <Stat label="PR mới" value={String(weekly.newPersonalRecords)} />
-            <Stat label="Ngày đủ protein" value={String(weekly.nutrition.daysProteinGoalMet)} />
-            <Stat label="Ngày đã log" value={String(weekly.nutrition.loggedDays)} />
+            <Stat label="Đúng calo" {...formatDayAdherence(weekly.adherence.calories)} />
+            <Stat label="Đủ protein" {...formatDayAdherence(weekly.adherence.protein)} />
+            <Stat label="Thời gian tập" value={formatDuration(weekly.workout.duration)} />
           </View>
         </Card>
       ) : null}
@@ -153,11 +174,12 @@ function QuickAction({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <View style={styles.stat}>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
+      {hint ? <Text style={styles.statHint}>{hint}</Text> : null}
     </View>
   );
 }
@@ -173,6 +195,7 @@ const styles = themedStyles(() => ({
   stat: { flex: 1, gap: 2 },
   statValue: { fontSize: 18, fontWeight: "700", color: colors.text, fontVariant: ["tabular-nums"] },
   statLabel: { fontSize: 13, color: colors.textMuted },
+  statHint: { fontSize: 12, color: colors.textMuted },
   quickRow: { flexDirection: "row", gap: spacing.md },
   quick: {
     flex: 1,

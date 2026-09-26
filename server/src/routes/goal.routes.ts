@@ -10,6 +10,7 @@ router.use(authenticate);
 
 router.get("/", goalController.listGoals);
 router.get("/suggestion", goalController.getSuggestion);
+router.get("/recalculation", goalController.getRecalculation);
 router.post("/", validateBody(createGoalSchema), goalController.createGoal);
 router.put("/:id", validateBody(updateGoalSchema), goalController.updateGoal);
 

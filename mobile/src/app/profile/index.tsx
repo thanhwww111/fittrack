@@ -18,6 +18,7 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
 import { colors, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage, fieldErrorsFrom, parseNumber, type FieldErrors } from "@/lib/formErrors";
+import { promptTargetRecalculation } from "@/lib/targetRecalculation";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { useProfileStore } from "@/stores/profileStore";
@@ -63,6 +64,7 @@ const NUMBER_FIELDS = {
   currentWeight: { label: "Cân nặng hiện tại", min: 20, max: 500, integer: false, suffix: "kg" },
   goalWeight: { label: "Cân nặng mục tiêu", min: 20, max: 500, integer: false, suffix: "kg" },
   trainingDaysPerWeek: { label: "Số buổi tập / tuần", min: 0, max: 7, integer: true, suffix: "buổi" },
+  goalRate: { label: "Tốc độ mục tiêu (bỏ trống = mặc định)", min: 0.1, max: 1, integer: false, suffix: "kg/tuần" },
 } as const;
 
 type NumberField = keyof typeof NUMBER_FIELDS;
@@ -112,6 +114,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
     currentWeight: toText(profile.currentWeight),
     goalWeight: toText(profile.goalWeight),
     trainingDaysPerWeek: toText(profile.trainingDaysPerWeek),
+    goalRate: toText(profile.goalRate),
   });
 
   const [errors, setErrors] = useState<FieldErrors<Field>>({});
@@ -137,6 +140,9 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
       }
     }
 
+    // Xoá trắng ô tốc độ = quay về mức mặc định theo mục tiêu
+    if (numbers.goalRate.trim() === "" && profile.goalRate != null) input.goalRate = null;
+
     if (gender) input.gender = gender;
     if (goalType) input.goalType = goalType;
     if (activityLevel) input.activityLevel = activityLevel;
@@ -158,7 +164,8 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
     setSaving(true);
     try {
       await updateProfile(input);
-      setNotice("Đã lưu hồ sơ.");
+      const updated = await promptTargetRecalculation();
+      setNotice(updated ? "Đã lưu hồ sơ và cập nhật mục tiêu dinh dưỡng." : "Đã lưu hồ sơ.");
     } catch (err) {
       setErrors(fieldErrorsFrom(err));
       setFormError(errorMessage(err));
@@ -230,7 +237,10 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
             value={activityLevel}
             onChange={setActivityLevel}
           />
-          {(["goalWeight", "trainingDaysPerWeek"] as const).map((key) => (
+          {(goalType === "MAINTENANCE"
+            ? (["goalWeight", "trainingDaysPerWeek"] as const)
+            : (["goalWeight", "goalRate", "trainingDaysPerWeek"] as const)
+          ).map((key) => (
             <TextField
               key={key}
               label={NUMBER_FIELDS[key].label}

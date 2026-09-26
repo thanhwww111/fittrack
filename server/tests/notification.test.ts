@@ -4,6 +4,7 @@ import app from "../src/app";
 import { env } from "../src/config/env";
 import { ExerciseModel } from "../src/models/exercise.model";
 import { PushDeviceModel } from "../src/models/pushDevice.model";
+import { UserProfileModel } from "../src/models/userProfile.model";
 import { WorkoutSessionModel } from "../src/models/workoutSession.model";
 import { seedExercises } from "../src/scripts/seedExercises";
 import { crossedGoal } from "../src/services/bodyMeasurement.service";
@@ -241,5 +242,39 @@ describe("POST /api/internal/weekly-report", () => {
     const [tokens, payload] = sendSpy.mock.calls[0];
     expect(tokens).toEqual([TOKEN_A]);
     expect(payload.body).toContain("1 buổi tập, 4820 kg volume");
+  });
+
+  it("reports sessions against the weekly plan and the volume change", async () => {
+    env.CRON_SECRET = CRON_SECRET;
+    const active = await userWithDevice(TOKEN_A);
+    await UserProfileModel.updateOne({ userId: active.userId }, { trainingDaysPerWeek: 4 });
+
+    const weekStart = startOfWeek(todayInTimezone("Asia/Ho_Chi_Minh"));
+    const bench = await ExerciseModel.findOne({ name: "Bench Press" });
+    // Thứ Tư tuần trước và thứ Tư hai tuần trước
+    for (const [date, totalVolume] of [
+      [addDays(weekStart, -5), 4820],
+      [addDays(weekStart, -12), 2410],
+    ] as const) {
+      const at = new Date(`${date}T05:00:00Z`);
+      await WorkoutSessionModel.create({
+        userId: active.userId,
+        name: "Push",
+        status: "COMPLETED",
+        startedAt: at,
+        completedAt: at,
+        totalVolume,
+        exercises: [
+          { exerciseId: bench!._id, exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 60, reps: 8 }] },
+        ],
+      });
+    }
+
+    await request(app)
+      .post("/api/internal/weekly-report")
+      .set("Authorization", `Bearer ${CRON_SECRET}`);
+
+    const [, payload] = sendSpy.mock.calls[0];
+    expect(payload.body).toContain("1/4 buổi tập, 4820 kg volume (+100% so tuần trước)");
   });
 });

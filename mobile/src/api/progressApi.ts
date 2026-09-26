@@ -1,6 +1,7 @@
 import type { ApiSuccess } from "@/types/api";
 import type {
   BodyMeasurement,
+  GoalProgress,
   NutritionProgress,
   WeeklySummary,
   WeightProgress,
@@ -15,6 +16,8 @@ interface DateRange {
 
 export const progressApi = {
   weekly: () => unwrap(api.get<ApiSuccess<WeeklySummary>>("/progress/weekly")),
+
+  goal: () => unwrap(api.get<ApiSuccess<GoalProgress>>("/progress/goal")),
 
   weight: (range: DateRange = {}) =>
     unwrap(api.get<ApiSuccess<WeightProgress>>("/progress/weight", { params: range })),

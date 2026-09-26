@@ -11,6 +11,11 @@ export const getSuggestion: RequestHandler = async (req, res) => {
   res.json({ success: true, data });
 };
 
+export const getRecalculation: RequestHandler = async (req, res) => {
+  const data = await goalService.getRecalculation(req.user!.id);
+  res.json({ success: true, data });
+};
+
 export const createGoal: RequestHandler = async (req, res) => {
   const data = await goalService.createGoal(req.user!.id, req.body);
   res.status(201).json({ success: true, data });

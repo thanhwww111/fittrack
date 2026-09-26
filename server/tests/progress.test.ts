@@ -279,8 +279,106 @@ describe("GET /api/progress/weekly", () => {
     expect(res.body.data.nutrition.averages.calories).toBe(330);
   });
 
+  it("compares volume with the same span of last week and scores workout adherence", async () => {
+    const { auth, userId } = await createAuthedUser();
+    const weekStart = startOfWeek(today());
+    await request(app).put("/api/profile").set(auth).send({ trainingDaysPerWeek: 4 });
+    await completedSession(userId, today(), 1200);
+    await completedSession(userId, addDays(weekStart, -7), 1000); // thứ Hai tuần trước
+
+    const res = await request(app).get("/api/progress/weekly").set(auth);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.workout).toMatchObject({ previousVolume: 1000, volumeChange: 20 });
+    expect(res.body.data.adherence.workout).toEqual({ completed: 1, target: 4, percent: 25 });
+  });
+
+  it("has no volume change or workout adherence without a baseline", async () => {
+    const { auth, userId } = await createAuthedUser();
+    await completedSession(userId, today(), 1200);
+
+    const res = await request(app).get("/api/progress/weekly").set(auth);
+
+    expect(res.body.data.workout).toMatchObject({ previousVolume: 0, volumeChange: null });
+    expect(res.body.data.adherence.workout).toEqual({ completed: 1, target: null, percent: null });
+  });
+
+  it("counts days without logs as missed, except today while it is still open", async () => {
+    const { auth, userId } = await createAuthedUser();
+    const weekStart = startOfWeek(today());
+    const elapsed = daysBetween(weekStart, today()) + 1;
+    await NutritionTargetModel.create({
+      userId,
+      effectiveFrom: addDays(weekStart, -7),
+      source: "MANUAL",
+      calories: 330,
+      protein: 60,
+      carbs: 100,
+      fat: 30,
+    });
+
+    const before = await request(app).get("/api/progress/weekly").set(auth);
+    expect(before.body.data.adherence.calories).toEqual({
+      met: 0,
+      days: elapsed - 1,
+      percent: elapsed > 1 ? 0 : null,
+    });
+
+    // 200 g ức gà = 330 kcal, 62 g protein: đạt cả hai target hôm nay
+    await request(app)
+      .post("/api/food-logs")
+      .set(auth)
+      .send({ mealType: "LUNCH", foodId: chickenId, quantity: 200 });
+
+    const after = await request(app).get("/api/progress/weekly").set(auth);
+    const expected = { met: 1, days: elapsed, percent: Math.round(100 / elapsed) };
+    expect(after.body.data.adherence.calories).toEqual(expected);
+    expect(after.body.data.adherence.protein).toEqual(expected);
+  });
+
   it("requires authentication", async () => {
     const res = await request(app).get("/api/progress/weekly");
     expect(res.status).toBe(401);
+  });
+});
+
+describe("GET /api/progress/goal", () => {
+  it("tracks progress toward the goal from weekly weight averages", async () => {
+    const { auth } = await createAuthedUser();
+    const weekStart = startOfWeek(today());
+    await request(app)
+      .put("/api/profile")
+      .set(auth)
+      .send({ currentWeight: 54, goalType: "MUSCLE_GAIN", goalWeight: 60, goalRate: 0.25 });
+    await request(app).post("/api/body-measurements").set(auth).send({ date: addDays(weekStart, -14), weight: 54 });
+    await request(app).post("/api/body-measurements").set(auth).send({ date: addDays(weekStart, -7), weight: 54.3 });
+    await request(app).post("/api/body-measurements").set(auth).send({ date: today(), weight: 54.6 });
+
+    const res = await request(app).get("/api/progress/goal").set(auth);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({
+      goalType: "MUSCLE_GAIN",
+      startWeight: 54,
+      currentWeight: 54.6,
+      goalWeight: 60,
+      percent: 10,
+      remaining: 5.4,
+      reached: false,
+      targetRate: 0.25,
+      actualRate: 0.3,
+      status: "ON_TRACK",
+      estimatedWeeks: 18,
+    });
+    expect(res.body.data.weeks).toHaveLength(8);
+    expect(res.body.data.weeks.at(-1)).toMatchObject({ weekStart, average: 54.6, change: 0.3 });
+  });
+
+  it("returns an empty state before a goal is set", async () => {
+    const { auth } = await createAuthedUser();
+    const res = await request(app).get("/api/progress/goal").set(auth);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ goalType: null, percent: null, status: null });
   });
 });

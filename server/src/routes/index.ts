@@ -10,6 +10,7 @@ import { internalRoutes, notificationRoutes } from "./notification.routes";
 import nutritionRoutes from "./nutrition.routes";
 import profileRoutes from "./profile.routes";
 import waterRoutes from "./water.routes";
+import weeklyProgramRoutes from "./weeklyProgram.routes";
 import { bodyMeasurementRoutes, progressRoutes } from "./progress.routes";
 import {
   exerciseRoutes,
@@ -42,6 +43,7 @@ router.use("/exercises", exerciseRoutes);
 router.use("/workout-templates", workoutTemplateRoutes);
 router.use("/workout-sessions", workoutSessionRoutes);
 router.use("/personal-records", personalRecordRoutes);
+router.use("/weekly-programs", weeklyProgramRoutes);
 router.use("/body-measurements", bodyMeasurementRoutes);
 router.use("/progress", progressRoutes);
 router.use("/ai", aiRoutes);

@@ -196,3 +196,67 @@ describe("PUT /api/goals/:id", () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe("GET /api/goals/recalculation", () => {
+  it("suggests new macros when the profile changed under an AUTO target", async () => {
+    const { auth } = await createAuthedUser();
+    await request(app).put("/api/profile").set(auth).send(completeProfile);
+    await request(app).post("/api/goals").set(auth).send({ mode: "AUTO" });
+    await request(app).put("/api/profile").set(auth).send({ goalType: "MUSCLE_GAIN" });
+
+    const res = await request(app).get("/api/goals/recalculation").set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body.data.needed).toBe(true);
+    expect(res.body.data.current).toMatchObject({ source: "AUTO", calories: 2594 });
+    expect(res.body.data.suggested.calories).toBeGreaterThan(2594);
+  });
+
+  it("is not needed when the AUTO target already matches the profile", async () => {
+    const { auth } = await createAuthedUser();
+    await request(app).put("/api/profile").set(auth).send(completeProfile);
+    await request(app).post("/api/goals").set(auth).send({ mode: "AUTO" });
+
+    const res = await request(app).get("/api/goals/recalculation").set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ needed: false });
+  });
+
+  it("never overrides a MANUAL target", async () => {
+    const { auth } = await createAuthedUser();
+    await request(app).put("/api/profile").set(auth).send(completeProfile);
+    await request(app).post("/api/goals").set(auth).send(manual);
+    await request(app).put("/api/profile").set(auth).send({ currentWeight: 80 });
+
+    const res = await request(app).get("/api/goals/recalculation").set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body.data.needed).toBe(false);
+  });
+
+  it("is not needed without a target or a complete profile", async () => {
+    const { auth } = await createAuthedUser();
+
+    const res = await request(app).get("/api/goals/recalculation").set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ needed: false, current: null, suggested: null });
+  });
+
+  it("picks up a new weight logged after an older AUTO target", async () => {
+    const { auth, userId } = await createAuthedUser();
+    await request(app).put("/api/profile").set(auth).send(completeProfile);
+    await NutritionTargetModel.create({
+      userId,
+      effectiveFrom: shiftDate(today(), -7),
+      source: "AUTO",
+      calories: 2594,
+      protein: 112,
+      carbs: 375,
+      fat: 72,
+    });
+    await request(app).post("/api/body-measurements").set(auth).send({ date: today(), weight: 75 });
+
+    const res = await request(app).get("/api/goals/recalculation").set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body.data.needed).toBe(true);
+    expect(res.body.data.suggested.protein).toBeGreaterThan(112);
+  });
+});

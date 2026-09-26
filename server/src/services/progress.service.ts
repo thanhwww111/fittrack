@@ -3,6 +3,7 @@ import { BodyMeasurementModel } from "../models/bodyMeasurement.model";
 import { FoodLogModel } from "../models/foodLog.model";
 import { NutritionTargetModel } from "../models/nutritionTarget.model";
 import { PersonalRecordModel } from "../models/personalRecord.model";
+import { UserProfileModel } from "../models/userProfile.model";
 import { WorkoutSessionModel } from "../models/workoutSession.model";
 import { MAX_RANGE_DAYS, type DateRangeQuery } from "../schemas/progress.schema";
 import { AppError } from "../utils/AppError";
@@ -14,6 +15,13 @@ import {
   todayInTimezone,
 } from "../utils/date";
 import { round1 } from "../utils/foodNutrition";
+import {
+  actualWeeklyRate,
+  goalProgressPercent,
+  rateStatus,
+  targetWeeklyRate,
+  weeklyAverages,
+} from "../utils/goalProgress";
 import { getUserTimezone } from "./profile.service";
 
 interface Macros {
@@ -166,6 +174,12 @@ async function nutritionByDay(userId: string, from: string, to: string) {
 
 type NutritionDay = Awaited<ReturnType<typeof nutritionByDay>>[number];
 
+const onCalorieTarget = (d: NutritionDay) =>
+  d.logged &&
+  Math.abs(d.consumed.calories - d.target!.calories) <= d.target!.calories * CALORIE_TOLERANCE;
+
+const proteinGoalMet = (d: NutritionDay) => d.logged && d.consumed.protein >= d.target!.protein;
+
 // Trung bình chỉ tính trên các ngày có log, ngày quên log không kéo trung bình xuống
 function summarizeNutrition(days: NutritionDay[]) {
   const logged = days.filter((d) => d.logged);
@@ -181,11 +195,8 @@ function summarizeNutrition(days: NutritionDay[]) {
       carbs: avg("carbs"),
       fat: avg("fat"),
     },
-    daysOnCalorieTarget: withTarget.filter(
-      (d) =>
-        Math.abs(d.consumed.calories - d.target!.calories) <= d.target!.calories * CALORIE_TOLERANCE
-    ).length,
-    daysProteinGoalMet: withTarget.filter((d) => d.consumed.protein >= d.target!.protein).length,
+    daysOnCalorieTarget: withTarget.filter(onCalorieTarget).length,
+    daysProteinGoalMet: withTarget.filter(proteinGoalMet).length,
   };
 }
 
@@ -207,13 +218,27 @@ async function latestWeightOnOrBefore(userId: string, date: string) {
 
 // Mặc định là tuần hiện tại (thứ Hai → hôm nay). `previousWeek` = tuần trước trọn vẹn,
 // dùng cho báo cáo gửi sáng thứ Hai.
+function percent(part: number, whole: number | null) {
+  return whole ? Math.round((part / whole) * 100) : null;
+}
+
+// Tỷ lệ ngày đạt target trên các ngày có target. Ngày không log tính là trượt,
+// riêng hôm nay chưa đạt thì chưa tính (ngày còn chưa kết thúc).
+function dayAdherence(days: NutritionDay[], today: string, isMet: (d: NutritionDay) => boolean) {
+  const counted = days.filter((d) => d.target && (d.date !== today || isMet(d)));
+  const met = counted.filter(isMet).length;
+  return { met, days: counted.length, percent: percent(met, counted.length) };
+}
+
 export async function getWeeklySummary(userId: string, { previousWeek = false } = {}) {
   const { timezone, today } = await userContext(userId);
   const weekStart = previousWeek ? addDays(startOfWeek(today), -7) : startOfWeek(today);
   const weekEnd = previousWeek ? addDays(weekStart, 6) : today;
 
-  const [sessions, days, current, baseline, records] = await Promise.all([
+  const [sessions, previousSessions, days, current, baseline, records, profile] = await Promise.all([
     completedSessionsBetween(userId, timezone, weekStart, weekEnd),
+    // Cùng khoảng ngày của tuần trước (thứ Hai → cùng thứ), để tuần đang dở không bị so với cả tuần
+    completedSessionsBetween(userId, timezone, addDays(weekStart, -7), addDays(weekEnd, -7)),
     nutritionByDay(userId, weekStart, weekEnd),
     latestWeightOnOrBefore(userId, weekEnd),
     // So với lần đo gần nhất trước khi tuần bắt đầu
@@ -221,7 +246,12 @@ export async function getWeeklySummary(userId: string, { previousWeek = false } 
     PersonalRecordModel.find({ userId, achievedAt: { $gte: utcLowerBound(weekStart) } })
       .select("achievedAt")
       .lean(),
+    UserProfileModel.findOne({ userId }).select("trainingDaysPerWeek").lean(),
   ]);
+
+  const totalVolume = round1(sessions.reduce((n, s) => n + s.totalVolume, 0));
+  const previousVolume = round1(previousSessions.reduce((n, s) => n + s.totalVolume, 0));
+  const targetSessions = profile?.trainingDaysPerWeek || null;
 
   return {
     weekStart,
@@ -230,8 +260,21 @@ export async function getWeeklySummary(userId: string, { previousWeek = false } 
     workout: {
       sessions: sessions.length,
       sets: sessions.reduce((n, s) => n + s.sets, 0),
-      totalVolume: round1(sessions.reduce((n, s) => n + s.totalVolume, 0)),
+      totalVolume,
       duration: sessions.reduce((n, s) => n + s.duration, 0),
+      previousVolume,
+      // % thay đổi so với cùng khoảng ngày tuần trước, null khi tuần trước không tập
+      volumeChange: previousVolume > 0 ? round1(((totalVolume - previousVolume) / previousVolume) * 100) : null,
+    },
+    adherence: {
+      // So với số buổi/tuần trong hồ sơ, tập dư vẫn tính tối đa 100%
+      workout: {
+        completed: sessions.length,
+        target: targetSessions,
+        percent: targetSessions ? Math.min(100, percent(sessions.length, targetSessions)!) : null,
+      },
+      calories: dayAdherence(days, today, onCalorieTarget),
+      protein: dayAdherence(days, today, proteinGoalMet),
     },
     nutrition: summarizeNutrition(days),
     weight: {
@@ -243,5 +286,85 @@ export async function getWeeklySummary(userId: string, { previousWeek = false } 
       const day = todayInTimezone(timezone, r.achievedAt);
       return day >= weekStart && day <= weekEnd;
     }).length,
+  };
+}
+
+// ---------- Goal ----------
+
+const TREND_WEEKS = 8;
+// Tốc độ thực tế lấy từ ~1 tháng gần nhất (tuần này + 4 tuần trước)
+const RATE_WEEKS = 5;
+
+export async function getGoalProgress(userId: string) {
+  const { today } = await userContext(userId);
+  const currentWeek = startOfWeek(today);
+  const weekStarts = Array.from({ length: TREND_WEEKS }, (_, i) =>
+    addDays(currentWeek, -7 * (TREND_WEEKS - 1 - i))
+  );
+
+  const [profile, points, firstMeasurement] = await Promise.all([
+    UserProfileModel.findOne({ userId }).lean(),
+    weightBetween(userId, weekStarts[0], today),
+    BodyMeasurementModel.findOne({ userId }).sort({ date: 1 }).select("weight").lean(),
+  ]);
+
+  const weeks = weeklyAverages(points, weekStarts);
+  const currentWeight = (await latestWeightOnOrBefore(userId, today)) ?? profile?.currentWeight ?? null;
+  const goalType = profile?.goalType ?? null;
+  const goalWeight = profile?.goalWeight ?? null;
+  // Profile cũ chưa có startWeight: lấy lần cân đầu tiên
+  const startWeight = profile?.startWeight ?? firstMeasurement?.weight ?? currentWeight;
+
+  const base = {
+    goalType,
+    goalWeight,
+    startWeight,
+    startDate: profile?.goalStartDate ?? null,
+    currentWeight,
+    weeks,
+  };
+  if (!goalType) {
+    return {
+      ...base,
+      percent: null,
+      remaining: null,
+      reached: null,
+      targetRate: null,
+      actualRate: null,
+      status: null,
+      estimatedWeeks: null,
+    };
+  }
+
+  const targetRate = targetWeeklyRate(goalType, profile?.goalRate);
+  const actualRate = actualWeeklyRate(weeks.slice(-RATE_WEEKS));
+  const hasDistance = goalType !== "MAINTENANCE" && goalWeight !== null && currentWeight !== null;
+
+  const remaining = hasDistance ? round1(Math.abs(goalWeight - currentWeight)) : null;
+  const reached = hasDistance
+    ? goalType === "MUSCLE_GAIN"
+      ? currentWeight >= goalWeight
+      : currentWeight <= goalWeight
+    : null;
+  // Ước tính theo tốc độ thực tế, chỉ khi đang đi đúng hướng
+  const along = actualRate !== null ? actualRate * Math.sign(targetRate) : 0;
+  const estimatedWeeks =
+    // Làm tròn trước khi ceil: 5.4 / 0.3 = 18.000000000000004 trong số thực
+    remaining !== null && !reached && along > 0
+      ? Math.ceil(Math.round((remaining / along) * 100) / 100)
+      : null;
+
+  return {
+    ...base,
+    percent:
+      hasDistance && startWeight !== null
+        ? goalProgressPercent(startWeight, currentWeight, goalWeight)
+        : null,
+    remaining,
+    reached,
+    targetRate,
+    actualRate,
+    status: rateStatus(targetRate, actualRate),
+    estimatedWeeks,
   };
 }
