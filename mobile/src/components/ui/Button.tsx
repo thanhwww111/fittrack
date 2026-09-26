@@ -1,10 +1,11 @@
 import { ActivityIndicator, Pressable, Text, type ViewStyle } from "react-native";
-import { colors, radius, spacing, themedStyles } from "@/constants/theme";
+import { colors, radius, shadow, spacing, themedStyles } from "@/constants/theme";
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: "primary" | "secondary" | "danger";
+  // light: nút trắng đặt trên nền gradient
+  variant?: "primary" | "secondary" | "danger" | "light";
   loading?: boolean;
   disabled?: boolean;
   style?: ViewStyle;
@@ -19,7 +20,12 @@ export function Button({
   style,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
-  const textColor = variant === "secondary" ? colors.primary : colors.onPrimary;
+  const textColor =
+    variant === "secondary"
+      ? colors.primaryText
+      : variant === "light"
+        ? colors.gradientEnd
+        : colors.onPrimary;
 
   return (
     <Pressable
@@ -30,6 +36,7 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         styles[variant],
+        variant === "primary" && !isDisabled && shadow(1),
         pressed && styles.pressed,
         isDisabled && styles.disabled,
         style,
@@ -46,8 +53,8 @@ export function Button({
 
 const styles = themedStyles(() => ({
   base: {
-    minHeight: 48,
-    borderRadius: radius.md,
+    minHeight: 50,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.xl,
     alignItems: "center",
     justifyContent: "center",
@@ -55,7 +62,8 @@ const styles = themedStyles(() => ({
   primary: { backgroundColor: colors.primary },
   secondary: { backgroundColor: colors.primarySoft },
   danger: { backgroundColor: colors.danger },
+  light: { backgroundColor: colors.onGradient },
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.5 },
-  text: { fontSize: 16, fontWeight: "600" },
+  text: { fontSize: 16, fontWeight: "700", letterSpacing: 0.2 },
 }));

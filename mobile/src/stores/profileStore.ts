@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { goalApi, profileApi } from "@/api/profileApi";
+import { useNotificationStore } from "@/stores/notificationStore";
 import type { Macros, NutritionTarget, UpdateProfileInput, UserProfile } from "@/types/models";
 
 interface ProfileState {
@@ -7,6 +8,8 @@ interface ProfileState {
   currentTarget: NutritionTarget | null;
   isLoading: boolean;
   error: string | null;
+  // Đang ở màn thiết lập lần đầu: giữ user ở đó tới bước kết quả dù hồ sơ đã đủ sau khi lưu
+  onboardingActive: boolean;
 
   fetchProfile: () => Promise<void>;
   updateProfile: (input: UpdateProfileInput) => Promise<UserProfile>;
@@ -14,10 +17,17 @@ interface ProfileState {
   recalculateTarget: () => Promise<NutritionTarget>;
   // Tự nhập macro (MANUAL), cùng quy tắc: hôm nay đã có target thì sửa, chưa có thì tạo mới
   setManualTarget: (macros: Macros) => Promise<NutritionTarget>;
+  setOnboardingActive: (active: boolean) => void;
   reset: () => void;
 }
 
-const initialState = { profile: null, currentTarget: null, isLoading: false, error: null };
+const initialState = {
+  profile: null,
+  currentTarget: null,
+  isLoading: false,
+  error: null,
+  onboardingActive: false,
+};
 
 // Target của ngày đã qua không sửa được (giữ đúng lịch sử), nên chỉ PUT khi target bắt đầu từ hôm nay
 async function saveTarget(
@@ -38,6 +48,8 @@ async function saveTarget(
   }
 
   set({ currentTarget: target });
+  // Mục tiêu đổi → số "còn thiếu" trong nhắc nạp dinh dưỡng cũng đổi
+  void useNotificationStore.getState().refreshNutritionReminders();
   return target;
 }
 
@@ -63,6 +75,8 @@ export const useProfileStore = create<ProfileState>()((set) => ({
   recalculateTarget: () => saveTarget(set, { mode: "AUTO" }),
 
   setManualTarget: (macros) => saveTarget(set, macros),
+
+  setOnboardingActive: (active) => set({ onboardingActive: active }),
 
   reset: () => set(initialState),
 }));

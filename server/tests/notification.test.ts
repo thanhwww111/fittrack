@@ -48,7 +48,14 @@ describe("notification settings", () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({
       workoutReminder: { enabled: false, days: [1, 3, 5], time: "18:00" },
-      mealReminders: { enabled: false, breakfast: "07:30" },
+      mealReminders: {
+        enabled: false,
+        items: [
+          { time: "07:00", label: "Bữa sáng" },
+          { time: "12:00", label: "Bữa trưa" },
+          { time: "19:00", label: "Bữa tối" },
+        ],
+      },
       weeklyReport: true,
       prAlerts: true,
     });
@@ -67,6 +74,48 @@ describe("notification settings", () => {
 
     expect(res.body.data.workoutReminder).toEqual({ enabled: true, days: [1, 3, 5], time: "06:30" });
     expect(res.body.data.prAlerts).toBe(false);
+  });
+
+  it("replaces the list of meal reminders, sorted by time, keeping the switch", async () => {
+    const { auth } = await createAuthedUser();
+    await request(app).put("/api/notifications/settings").set(auth).send({ mealReminders: { enabled: true } });
+    const res = await request(app)
+      .put("/api/notifications/settings")
+      .set(auth)
+      .send({
+        mealReminders: {
+          items: [
+            { time: "15:30", label: "Bữa phụ" },
+            { time: "06:45", label: " Sáng sớm " },
+          ],
+        },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.mealReminders).toEqual({
+      enabled: true,
+      items: [
+        { time: "06:45", label: "Sáng sớm" },
+        { time: "15:30", label: "Bữa phụ" },
+      ],
+    });
+  });
+
+  it("rejects duplicate times, empty labels and too many meal reminders", async () => {
+    const { auth } = await createAuthedUser();
+    const send = (items: unknown) =>
+      request(app).put("/api/notifications/settings").set(auth).send({ mealReminders: { items } });
+
+    const duplicate = await send([
+      { time: "12:00", label: "Trưa" },
+      { time: "12:00", label: "Trưa 2" },
+    ]);
+    const empty = await send([{ time: "12:00", label: "  " }]);
+    const tooMany = await send(
+      Array.from({ length: 9 }, (_, i) => ({ time: `${String(10 + i)}:00`, label: `Nhắc ${i}` }))
+    );
+
+    expect([duplicate.status, empty.status, tooMany.status]).toEqual([400, 400, 400]);
   });
 
   it("rejects invalid times and days", async () => {

@@ -6,6 +6,7 @@ import { programApi, sessionApi } from "@/api/workoutApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { GradientView } from "@/components/ui/GradientView";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage } from "@/lib/formErrors";
 import { dayName, programDayFor } from "@/lib/goal";
@@ -85,18 +86,22 @@ export default function WorkoutDashboardScreen() {
       <ErrorBanner message={error} />
 
       {activeSession ? (
-        <Card style={styles.activeCard}>
-          <Text style={styles.activeLabel}>Đang tập</Text>
-          <Text style={styles.activeName}>{activeSession.name}</Text>
-          <Text style={styles.muted}>
-            {setCount} set · {formatVolume(activeSession.totalVolume)}
+        <GradientView style={styles.hero}>
+          <View style={styles.liveRow}>
+            <View style={styles.liveDot} />
+            <Text style={styles.heroLabel}>Đang tập</Text>
+          </View>
+          <Text style={styles.heroName}>{activeSession.name}</Text>
+          <Text style={styles.heroMuted}>
+            {activeSession.exercises.length} bài · {setCount} set · {formatVolume(activeSession.totalVolume)}
           </Text>
-          <Button title="Tiếp tục buổi tập" onPress={() => router.push("/workout/start")} />
-        </Card>
+          <Button title="Tiếp tục buổi tập" variant="light" onPress={() => router.push("/workout/start")} />
+        </GradientView>
       ) : null}
 
       {!activeSession && favorites.length > 0 && today !== null ? (
-        <Card title={`Lịch tuần · ${dayName(today)}`}>
+        <GradientView style={styles.hero}>
+          <Text style={styles.heroLabel}>Lịch tuần · {dayName(today)}</Text>
           {favorites.map((program) => {
             const day = programDayFor(program, today);
             return day ? (
@@ -106,31 +111,31 @@ export default function WorkoutDashboardScreen() {
                 accessibilityLabel={`Bắt đầu ${day.templateName} theo lịch ${program.name}`}
                 disabled={starting !== null}
                 onPress={() => handleStart(day.templateId, { templateId: day.templateId })}
-                style={({ pressed }) => [styles.templateRow, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.programRow, pressed && styles.pressed]}
               >
                 <View style={styles.flex}>
-                  <Text style={styles.templateName}>Hôm nay: {day.templateName}</Text>
-                  <Text style={styles.muted}>
+                  <Text style={styles.heroName}>{day.templateName}</Text>
+                  <Text style={styles.heroMuted}>
                     {program.name} · {day.exerciseCount} bài tập
                   </Text>
                 </View>
                 <Ionicons
                   name={starting === day.templateId ? "hourglass-outline" : "play-circle"}
-                  size={30}
-                  color={colors.primary}
+                  size={48}
+                  color={colors.onGradient}
                 />
               </Pressable>
             ) : (
-              <Text key={program.id} style={styles.muted}>
+              <Text key={program.id} style={styles.heroMuted}>
                 {program.name}: hôm nay nghỉ, hồi phục cho buổi sau 💤
               </Text>
             );
           })}
-        </Card>
+        </GradientView>
       ) : null}
 
       {activeSession ? null : (
-        <Card title="Bắt đầu tập">
+        <Card title="Bắt đầu tập" icon="play">
           {templates.map((t) => (
             <Pressable
               key={t.id}
@@ -169,19 +174,19 @@ export default function WorkoutDashboardScreen() {
       <View style={styles.linkRow}>
         <Link href="/workout/templates" asChild>
           <Pressable style={styles.linkButton}>
-            <Ionicons name="list-outline" size={20} color={colors.primary} />
+            <Ionicons name="list-outline" size={20} color={colors.primaryText} />
             <Text style={styles.linkText}>Template</Text>
           </Pressable>
         </Link>
         <Link href="/workout/programs" asChild>
           <Pressable style={styles.linkButton}>
-            <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+            <Ionicons name="calendar-outline" size={20} color={colors.primaryText} />
             <Text style={styles.linkText}>Lịch tuần</Text>
           </Pressable>
         </Link>
         <Link href="/workout/history" asChild>
           <Pressable style={styles.linkButton}>
-            <Ionicons name="time-outline" size={20} color={colors.primary} />
+            <Ionicons name="time-outline" size={20} color={colors.primaryText} />
             <Text style={styles.linkText}>Lịch sử</Text>
           </Pressable>
         </Link>
@@ -195,7 +200,7 @@ export default function WorkoutDashboardScreen() {
         />
       ) : null}
 
-      <Card title="Buổi tập gần đây">
+      <Card title="Buổi tập gần đây" icon="time">
         {recent.length === 0 ? (
           <Text style={styles.muted}>Chưa có buổi tập nào hoàn thành.</Text>
         ) : (
@@ -217,7 +222,7 @@ export default function WorkoutDashboardScreen() {
         )}
       </Card>
 
-      <Card title="Kỷ lục cá nhân">
+      <Card title="Kỷ lục cá nhân" icon="trophy">
         {records.length === 0 ? (
           <Text style={styles.muted}>Hoàn thành buổi tập đầu tiên để ghi nhận PR.</Text>
         ) : (
@@ -229,6 +234,9 @@ export default function WorkoutDashboardScreen() {
               onPress={() => router.push({ pathname: "/workout/exercise", params: { id: r.exerciseId } })}
               style={({ pressed }) => [styles.prRow, pressed && styles.pressed]}
             >
+              <View style={styles.prBadge}>
+                <Ionicons name="trophy" size={16} color={colors.highlightText} />
+              </View>
               <Text style={[styles.templateName, styles.flex]} numberOfLines={1}>
                 {r.exerciseName}
               </Text>
@@ -250,9 +258,27 @@ const styles = themedStyles(() => ({
   flex: { flex: 1 },
   pressed: { opacity: 0.6 },
   muted: { fontSize: 14, color: colors.textMuted },
-  activeCard: { borderColor: colors.primary, borderWidth: 2 },
-  activeLabel: { fontSize: 13, fontWeight: "700", color: colors.primary, textTransform: "uppercase" },
-  activeName: { fontSize: 22, fontWeight: "700", color: colors.text },
+  hero: { padding: spacing.xl, gap: spacing.sm },
+  heroLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: colors.onGradientMuted,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  heroName: { fontSize: 22, fontWeight: "800", color: colors.onGradient, letterSpacing: -0.3 },
+  heroMuted: { fontSize: 14, color: colors.onGradientMuted },
+  liveRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  liveDot: { width: 8, height: 8, borderRadius: radius.pill, backgroundColor: colors.onGradient },
+  programRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
+  prBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.highlight,
+  },
   templateRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -270,10 +296,10 @@ const styles = themedStyles(() => ({
     justifyContent: "center",
     gap: spacing.xs,
     paddingVertical: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.primarySoft,
   },
-  linkText: { fontSize: 15, fontWeight: "600", color: colors.primary },
+  linkText: { fontSize: 15, fontWeight: "700", color: colors.primaryText },
   historyRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
   volume: { fontSize: 15, fontWeight: "600", color: colors.text, fontVariant: ["tabular-nums"] },
   prRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },

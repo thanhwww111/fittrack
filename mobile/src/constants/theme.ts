@@ -2,60 +2,85 @@ import { StyleSheet } from "react-native";
 
 export type ColorScheme = "light" | "dark";
 
+// Phong cách năng động cam → đỏ. Primary cam đậm để chữ trắng trên nút vẫn đọc rõ;
+// gradient dùng cho thẻ hero / thẻ nổi bật.
 const light = {
-  primary: "#2563eb",
-  primaryPressed: "#1d4ed8",
-  primarySoft: "#dbeafe",
-  background: "#f8fafc",
-  surface: "#ffffff",
-  border: "#e2e8f0",
-  text: "#0f172a",
-  textMuted: "#64748b",
-  danger: "#dc2626",
-  dangerSoft: "#fee2e2",
-  success: "#16a34a",
-  successSoft: "#dcfce7",
+  primary: "#EA580C",
+  primaryPressed: "#C2410C",
+  primarySoft: "#FFEDD5",
+  // Chữ màu primary trên nền primarySoft (nút phụ, chip)
+  primaryText: "#C2410C",
+  gradientStart: "#FF7A3D",
+  gradientEnd: "#F43F5E",
+  // Chữ / vòng trên nền gradient
+  onGradient: "#FFFFFF",
+  onGradientMuted: "rgba(255, 255, 255, 0.82)",
+  onGradientTrack: "rgba(255, 255, 255, 0.28)",
+  background: "#FAF7F5",
+  surface: "#FFFFFF",
+  // Ô số liệu nhỏ, nền phụ bên trong thẻ
+  surfaceMuted: "#F6F0EC",
+  border: "#EFE6E0",
+  shadow: "#7C2D12",
+  text: "#1C1917",
+  textMuted: "#78716C",
+  danger: "#DC2626",
+  dangerSoft: "#FEE2E2",
+  success: "#16A34A",
+  successSoft: "#DCFCE7",
   // Chữ trên nền primary / danger
-  onPrimary: "#ffffff",
+  onPrimary: "#FFFFFF",
   // Nền đậm tương phản (thanh đếm giờ nghỉ)
-  inverse: "#0f172a",
+  inverse: "#1C1917",
   // Thẻ kỷ lục cá nhân
-  highlight: "#fef3c7",
-  highlightText: "#92400e",
-  water: "#0ea5e9",
-  waterSoft: "#e0f2fe",
-  waterText: "#0369a1",
-  protein: "#ef4444",
-  carbs: "#f59e0b",
-  fat: "#8b5cf6",
+  highlight: "#FEF3C7",
+  highlightText: "#92400E",
+  water: "#0EA5E9",
+  waterSoft: "#E0F2FE",
+  waterText: "#0369A1",
+  protein: "#EF4444",
+  carbs: "#F59E0B",
+  fat: "#8B5CF6",
+  streak: "#F97316",
+  streakSoft: "#FFEDD5",
 };
 
 export type Palette = typeof light;
 
 const dark: Palette = {
-  primary: "#3b82f6",
-  primaryPressed: "#2563eb",
-  primarySoft: "#1e3a5f",
-  background: "#0b1220",
-  surface: "#141d2f",
-  border: "#27344b",
-  text: "#e2e8f0",
-  textMuted: "#94a3b8",
-  danger: "#f87171",
-  dangerSoft: "#3f1d1d",
-  success: "#4ade80",
-  successSoft: "#14351f",
-  onPrimary: "#ffffff",
-  // Nền đậm tương phản (thanh đếm giờ nghỉ)
-  inverse: "#1e293b",
-  highlight: "#3d2f0b",
-  highlightText: "#fcd34d",
-  water: "#38bdf8",
-  waterSoft: "#0c2d42",
-  waterText: "#7dd3fc",
-  protein: "#f87171",
-  carbs: "#fbbf24",
-  fat: "#a78bfa",
+  primary: "#FB923C",
+  primaryPressed: "#F97316",
+  primarySoft: "#3A2215",
+  primaryText: "#FDBA74",
+  gradientStart: "#F97316",
+  gradientEnd: "#E11D48",
+  onGradient: "#FFFFFF",
+  onGradientMuted: "rgba(255, 255, 255, 0.82)",
+  onGradientTrack: "rgba(255, 255, 255, 0.25)",
+  background: "#110D0B",
+  surface: "#1C1613",
+  surfaceMuted: "#271F1B",
+  border: "#312721",
+  shadow: "#000000",
+  text: "#F5F0EB",
+  textMuted: "#A8A29E",
+  danger: "#F87171",
+  dangerSoft: "#3F1D1D",
+  success: "#4ADE80",
+  successSoft: "#14351F",
+  // Primary / danger bản tối là màu sáng → chữ tối mới đủ tương phản
+  onPrimary: "#1C1917",
+  inverse: "#292019",
+  highlight: "#3D2F0B",
+  highlightText: "#FCD34D",
+  water: "#38BDF8",
+  waterSoft: "#0C2D42",
+  waterText: "#7DD3FC",
+  protein: "#F87171",
+  carbs: "#FBBF24",
+  fat: "#A78BFA",
+  streak: "#FB923C",
+  streakSoft: "#3A2215",
 };
 
 const palettes: Record<ColorScheme, Palette> = { light, dark };
@@ -101,5 +126,17 @@ export const radius = {
   sm: 8,
   md: 12,
   lg: 16,
+  xl: 20,
   pill: 999,
 } as const;
+
+// Bóng đổ tạo chiều sâu cho thẻ. Android dùng elevation, iOS/web dùng shadow*.
+export function shadow(level: 1 | 2 = 1) {
+  return {
+    shadowColor: colors.shadow,
+    shadowOpacity: level === 1 ? 0.06 : 0.14,
+    shadowRadius: level === 1 ? 10 : 18,
+    shadowOffset: { width: 0, height: level === 1 ? 3 : 8 },
+    elevation: level === 1 ? 2 : 6,
+  };
+}

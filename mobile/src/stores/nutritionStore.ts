@@ -7,6 +7,7 @@ import {
 } from "@/api/nutritionApi";
 import { errorMessage } from "@/lib/formErrors";
 import type { DailyNutrition, FoodLog } from "@/types/models";
+import { useNotificationStore } from "@/stores/notificationStore";
 
 interface NutritionState {
   // Hôm nay theo server (timezone trong profile), dùng làm mốc chuyển ngày
@@ -51,6 +52,10 @@ export const useNutritionStore = create<NutritionState>()((set, get) => ({
         today: date ? state.today : summary.date,
         isLoading: false,
       }));
+      // Số liệu hôm nay đổi → cập nhật nội dung nhắc "còn thiếu bao nhiêu"
+      if (summary.date === get().today) {
+        void useNotificationStore.getState().refreshNutritionReminders(summary);
+      }
     } catch (err) {
       set({ isLoading: false, error: errorMessage(err) });
     }
