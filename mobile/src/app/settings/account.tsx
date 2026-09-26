@@ -87,7 +87,7 @@ function NameForm() {
   }
 
   return (
-    <Card title="Thông tin tài khoản">
+    <Card title="Thông tin tài khoản" icon="person">
       <View style={styles.avatarRow}>
         <Avatar name={user?.name} uri={user?.avatar} size={72} />
         <View style={styles.avatarActions}>
@@ -168,7 +168,7 @@ function PasswordForm() {
   }
 
   return (
-    <Card title="Đổi mật khẩu">
+    <Card title="Đổi mật khẩu" icon="key">
       <ErrorBanner message={formError} />
       <TextField
         label="Mật khẩu hiện tại"
@@ -239,7 +239,7 @@ function DeleteAccount() {
   }
 
   return (
-    <Card title="Xoá tài khoản">
+    <Card title="Xoá tài khoản" icon="trash">
       <Text style={styles.muted}>
         Xoá vĩnh viễn tài khoản và mọi dữ liệu của bạn trên FitTrack. Không thể hoàn tác.
       </Text>

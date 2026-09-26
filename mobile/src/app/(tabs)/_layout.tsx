@@ -1,11 +1,9 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Link } from "expo-router";
 import { Tabs } from "expo-router/js-tabs";
 import type { ComponentProps } from "react";
-import { Pressable, type ColorValue } from "react-native";
-import { Avatar } from "@/components/ui/Avatar";
-import { colors, spacing } from "@/constants/theme";
-import { useAuthStore } from "@/stores/authStore";
+import type { ColorValue } from "react-native";
+import { ThemeToggleButton } from "@/components/ui/ThemeToggleButton";
+import { colors, shadow } from "@/constants/theme";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -26,21 +24,8 @@ const TABS: { name: string; title: string; icon: IconName; focusedIcon: IconName
   { name: "nutrition", title: "Dinh dưỡng", icon: "nutrition-outline", focusedIcon: "nutrition" },
   { name: "workout", title: "Tập luyện", icon: "barbell-outline", focusedIcon: "barbell" },
   { name: "progress", title: "Tiến độ", icon: "stats-chart-outline", focusedIcon: "stats-chart" },
+  { name: "profile", title: "Cá nhân", icon: "person-outline", focusedIcon: "person" },
 ];
-function ProfileButton() {
-  const user = useAuthStore((s) => s.user);
-  return (
-    <Link href="/profile" asChild>
-      <Pressable accessibilityLabel="Hồ sơ" hitSlop={8} style={{ marginRight: spacing.lg }}>
-        {user?.avatar ? (
-          <Avatar name={user.name} uri={user.avatar} size={30} />
-        ) : (
-          <Ionicons name="person-circle-outline" size={28} color={colors.primary} />
-        )}
-      </Pressable>
-    </Link>
-  );
-}
 
 export default function TabsLayout() {
   return (
@@ -48,7 +33,15 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        headerRight: () => <ProfileButton />,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          ...shadow(2),
+        },
+        headerStyle: { backgroundColor: colors.background },
+        headerShadowVisible: false,
+        headerRight: () => <ThemeToggleButton />,
+        headerTitleStyle: { fontSize: 20, fontWeight: "800", color: colors.text },
         sceneStyle: { backgroundColor: colors.background },
       }}
     >

@@ -19,7 +19,7 @@ function countSets(session: WorkoutSession) {
 export function TodayWorkoutCard({ active, completed }: TodayWorkoutCardProps) {
   if (active) {
     return (
-      <Card title="Buổi tập hôm nay" style={styles.activeCard}>
+      <Card title="Buổi tập hôm nay" icon="barbell" style={styles.activeCard}>
         <Text style={styles.name}>{active.name}</Text>
         <Text style={styles.muted}>
           {active.exercises.length} bài · {countSets(active)} set · {formatVolume(active.totalVolume)}
@@ -31,7 +31,7 @@ export function TodayWorkoutCard({ active, completed }: TodayWorkoutCardProps) {
 
   if (completed.length > 0) {
     return (
-      <Card title="Buổi tập hôm nay">
+      <Card title="Buổi tập hôm nay" icon="barbell">
         {completed.map((s) => (
           <View key={s.id} style={styles.row}>
             <Text style={styles.check}>✓</Text>
@@ -49,7 +49,7 @@ export function TodayWorkoutCard({ active, completed }: TodayWorkoutCardProps) {
   }
 
   return (
-    <Card title="Buổi tập hôm nay">
+    <Card title="Buổi tập hôm nay" icon="barbell">
       <Text style={styles.muted}>Hôm nay bạn chưa tập.</Text>
       <Button title="Bắt đầu tập" variant="secondary" onPress={() => router.push("/workout")} />
     </Card>

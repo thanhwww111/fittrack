@@ -36,7 +36,13 @@ export async function updateSettings(userId: string, input: UpdateSettingsInput)
     });
   }
   if (mealReminders) {
-    settings.set("mealReminders", { ...settings.toObject().mealReminders, ...mealReminders });
+    const items =
+      mealReminders.items && [...mealReminders.items].sort((a, b) => a.time.localeCompare(b.time));
+    settings.set("mealReminders", {
+      ...settings.toObject().mealReminders,
+      ...mealReminders,
+      ...(items && { items }),
+    });
   }
   settings.set(flags);
 

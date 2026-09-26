@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -13,61 +13,25 @@ import { ManualTargetForm } from "@/components/profile/ManualTargetForm";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
+import { ChipGroup } from "@/components/ui/ChipGroup";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
 import { colors, spacing, themedStyles } from "@/constants/theme";
-import { errorMessage, fieldErrorsFrom, parseNumber, type FieldErrors } from "@/lib/formErrors";
+import { errorMessage, fieldErrorsFrom, type FieldErrors } from "@/lib/formErrors";
+import {
+  ACTIVITY_OPTIONS,
+  GENDER_OPTIONS,
+  GOAL_OPTIONS,
+  NUMBER_FIELDS,
+  parseProfileNumbers,
+  type NumberField,
+} from "@/lib/profileForm";
 import { promptTargetRecalculation } from "@/lib/targetRecalculation";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { useProfileStore } from "@/stores/profileStore";
-import { useThemeStore, type ThemePreference } from "@/stores/themeStore";
-import type {
-  ActivityLevel,
-  Gender,
-  GoalType,
-  UpdateProfileInput,
-  UserProfile,
-} from "@/types/models";
+import type { UpdateProfileInput, UserProfile } from "@/types/models";
 
-const GENDER_OPTIONS: ChipOption<Gender>[] = [
-  { value: "MALE", label: "Nam" },
-  { value: "FEMALE", label: "Nữ" },
-  { value: "OTHER", label: "Khác" },
-];
-
-const GOAL_OPTIONS: ChipOption<GoalType>[] = [
-  { value: "WEIGHT_LOSS", label: "Giảm cân" },
-  { value: "MAINTENANCE", label: "Giữ cân" },
-  { value: "MUSCLE_GAIN", label: "Tăng cơ" },
-];
-
-const THEME_OPTIONS: ChipOption<ThemePreference>[] = [
-  { value: "system", label: "Theo hệ thống" },
-  { value: "light", label: "Sáng" },
-  { value: "dark", label: "Tối" },
-];
-
-const ACTIVITY_OPTIONS: ChipOption<ActivityLevel>[] = [
-  { value: "SEDENTARY", label: "Ít vận động" },
-  { value: "LIGHT", label: "Nhẹ (1–3 buổi)" },
-  { value: "MODERATE", label: "Vừa (3–5 buổi)" },
-  { value: "ACTIVE", label: "Nhiều (6–7 buổi)" },
-  { value: "VERY_ACTIVE", label: "Rất nhiều" },
-];
-
-// Khớp với giới hạn ở server (schemas/profile.schema.ts)
-const NUMBER_FIELDS = {
-  age: { label: "Tuổi", min: 10, max: 120, integer: true, suffix: "tuổi" },
-  height: { label: "Chiều cao", min: 50, max: 300, integer: false, suffix: "cm" },
-  currentWeight: { label: "Cân nặng hiện tại", min: 20, max: 500, integer: false, suffix: "kg" },
-  goalWeight: { label: "Cân nặng mục tiêu", min: 20, max: 500, integer: false, suffix: "kg" },
-  trainingDaysPerWeek: { label: "Số buổi tập / tuần", min: 0, max: 7, integer: true, suffix: "buổi" },
-  goalRate: { label: "Tốc độ mục tiêu (bỏ trống = mặc định)", min: 0.1, max: 1, integer: false, suffix: "kg/tuần" },
-} as const;
-
-type NumberField = keyof typeof NUMBER_FIELDS;
 type Field = NumberField | "gender" | "goalType" | "activityLevel";
 
 const toText = (value: number | null) => (value == null ? "" : String(value));
@@ -78,9 +42,12 @@ export default function ProfileScreen() {
   const loadError = useProfileStore((s) => s.error);
   const fetchProfile = useProfileStore((s) => s.fetchProfile);
 
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+  // Là tab nên màn hình không dựng lại: tải lại mỗi lần quay về để thấy cân nặng vừa ghi ở tab khác
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [fetchProfile])
+  );
 
   if (!profile) {
     return (
@@ -90,8 +57,8 @@ export default function ProfileScreen() {
     );
   }
 
-  // key = id: form khởi tạo lại state khi profile được tải xong
-  return <ProfileForm key={profile.id} profile={profile} />;
+  // key đổi khi dữ liệu trên server đổi: form nạp lại số mới, tránh lưu đè cân nặng cũ
+  return <ProfileForm key={`${profile.id}-${profile.updatedAt}`} profile={profile} />;
 }
 
 function ProfileForm({ profile }: { profile: UserProfile }) {
@@ -101,8 +68,6 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
   const recalculateTarget = useProfileStore((s) => s.recalculateTarget);
   const currentTarget = useProfileStore((s) => s.currentTarget);
   const setManualTarget = useProfileStore((s) => s.setManualTarget);
-  const themePreference = useThemeStore((s) => s.preference);
-  const setThemePreference = useThemeStore((s) => s.setPreference);
   const [editingTarget, setEditingTarget] = useState(false);
 
   const [gender, setGender] = useState(profile.gender);
@@ -124,21 +89,9 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
   const [calculating, setCalculating] = useState(false);
 
   function buildInput(): { input: UpdateProfileInput; errors: FieldErrors<Field> } {
-    const input: UpdateProfileInput = {};
-    const nextErrors: FieldErrors<Field> = {};
-
-    for (const key of Object.keys(NUMBER_FIELDS) as NumberField[]) {
-      const rule = NUMBER_FIELDS[key];
-      const value = parseNumber(numbers[key]);
-      if (value === null) continue;
-      if (Number.isNaN(value) || value < rule.min || value > rule.max) {
-        nextErrors[key] = `Nhập từ ${rule.min} đến ${rule.max}`;
-      } else if (rule.integer && !Number.isInteger(value)) {
-        nextErrors[key] = "Phải là số nguyên";
-      } else {
-        input[key] = value;
-      }
-    }
+    const parsed = parseProfileNumbers(numbers, Object.keys(NUMBER_FIELDS) as NumberField[]);
+    const input: UpdateProfileInput = parsed.input;
+    const nextErrors: FieldErrors<Field> = parsed.errors;
 
     // Xoá trắng ô tốc độ = quay về mức mặc định theo mục tiêu
     if (numbers.goalRate.trim() === "" && profile.goalRate != null) input.goalRate = null;
@@ -213,7 +166,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
         <ErrorBanner message={formError} />
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-        <Card title="Thông tin cơ thể">
+        <Card title="Thông tin cơ thể" icon="body">
           <ChipGroup label="Giới tính" options={GENDER_OPTIONS} value={gender} onChange={setGender} />
           {(["age", "height", "currentWeight"] as const).map((key) => (
             <TextField
@@ -228,7 +181,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
           ))}
         </Card>
 
-        <Card title="Mục tiêu">
+        <Card title="Mục tiêu" icon="flag">
           <ChipGroup label="Mục tiêu" options={GOAL_OPTIONS} value={goalType} onChange={setGoalType} />
           {errors.goalType ? <Text style={styles.error}>{errors.goalType}</Text> : null}
           <ChipGroup
@@ -255,7 +208,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
 
         <Button title="Lưu hồ sơ" onPress={handleSave} loading={saving} />
 
-        <Card title="Mục tiêu dinh dưỡng mỗi ngày">
+        <Card title="Mục tiêu dinh dưỡng mỗi ngày" icon="nutrition">
           {editingTarget ? (
             <ManualTargetForm
               initial={currentTarget}
@@ -305,15 +258,6 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
               </View>
             </>
           )}
-        </Card>
-
-        <Card title="Giao diện">
-          <ChipGroup
-            label="Chế độ màu"
-            options={THEME_OPTIONS}
-            value={themePreference}
-            onChange={setThemePreference}
-          />
         </Card>
 
         <Button

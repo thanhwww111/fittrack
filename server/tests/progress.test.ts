@@ -336,6 +336,31 @@ describe("GET /api/progress/weekly", () => {
     expect(after.body.data.adherence.protein).toEqual(expected);
   });
 
+  it("counts the streak of consecutive active days, starting yesterday while today is still empty", async () => {
+    const { auth, userId } = await createAuthedUser();
+    // Hôm qua + hôm kia có tập, hôm trước nữa trống, 4 ngày trước có tập (không được tính)
+    await completedSession(userId, addDays(today(), -1), 1000);
+    await completedSession(userId, addDays(today(), -2), 1000);
+    await completedSession(userId, addDays(today(), -4), 1000);
+
+    const before = await request(app).get("/api/progress/weekly").set(auth);
+    expect(before.body.data.streak).toBe(2);
+
+    // Ghi món hôm nay: chuỗi kéo dài thêm 1 ngày
+    await request(app)
+      .post("/api/food-logs")
+      .set(auth)
+      .send({ mealType: "LUNCH", foodId: chickenId, quantity: 100 });
+    const after = await request(app).get("/api/progress/weekly").set(auth);
+    expect(after.body.data.streak).toBe(3);
+  });
+
+  it("has a zero streak without recent activity", async () => {
+    const { auth } = await createAuthedUser();
+    const res = await request(app).get("/api/progress/weekly").set(auth);
+    expect(res.body.data.streak).toBe(0);
+  });
+
   it("requires authentication", async () => {
     const res = await request(app).get("/api/progress/weekly");
     expect(res.status).toBe(401);

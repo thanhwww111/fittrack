@@ -3,6 +3,21 @@ import { applyToJSON } from "../utils/toJSON";
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/; // HH:mm
 
+// Nhắc nạp dinh dưỡng: user tự thêm / sửa / xoá, mặc định 3 bữa chính
+const mealReminderSchema = new Schema(
+  {
+    time: { type: String, required: true, match: TIME_REGEX },
+    label: { type: String, required: true, trim: true, maxlength: 30 },
+  },
+  { _id: false }
+);
+
+const DEFAULT_MEAL_REMINDERS = [
+  { time: "07:00", label: "Bữa sáng" },
+  { time: "12:00", label: "Bữa trưa" },
+  { time: "19:00", label: "Bữa tối" },
+];
+
 // Nhắc tập và nhắc ghi bữa ăn do app tự đặt lịch trên máy (local notification).
 // Server lưu cài đặt để đồng bộ giữa các máy và để biết có gửi push sự kiện hay không.
 const notificationSettingsSchema = new Schema(
@@ -16,9 +31,8 @@ const notificationSettingsSchema = new Schema(
     },
     mealReminders: {
       enabled: { type: Boolean, default: false },
-      breakfast: { type: String, default: "07:30", match: TIME_REGEX },
-      lunch: { type: String, default: "12:00", match: TIME_REGEX },
-      dinner: { type: String, default: "19:00", match: TIME_REGEX },
+      // Sắp theo giờ. Bản ghi kiểu cũ (breakfast/lunch/dinner) không có items → nhận mặc định
+      items: { type: [mealReminderSchema], default: () => DEFAULT_MEAL_REMINDERS },
     },
     weeklyReport: { type: Boolean, default: true },
     prAlerts: { type: Boolean, default: true },

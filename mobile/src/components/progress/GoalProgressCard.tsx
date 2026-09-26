@@ -3,7 +3,8 @@ import { Text, View } from "react-native";
 import { shortDate } from "@/components/charts/scale";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { colors, radius, spacing, themedStyles } from "@/constants/theme";
+import { RingProgress } from "@/components/ui/RingProgress";
+import { colors, spacing, themedStyles } from "@/constants/theme";
 import { formatRate, goalStatusText } from "@/lib/goal";
 import type { GoalProgress } from "@/types/models";
 
@@ -16,7 +17,7 @@ const TREND_ROWS = 4;
 export function GoalProgressCard({ goal }: { goal: GoalProgress }) {
   if (!goal.goalType) {
     return (
-      <Card title="Mục tiêu cân nặng">
+      <Card title="Mục tiêu cân nặng" icon="flag">
         <Text style={styles.muted}>
           Đặt mục tiêu và cân nặng mục tiêu trong hồ sơ để theo dõi tiến độ theo tuần.
         </Text>
@@ -34,29 +35,32 @@ export function GoalProgressCard({ goal }: { goal: GoalProgress }) {
         : colors.textMuted;
 
   return (
-    <Card title="Mục tiêu cân nặng">
+    <Card title="Mục tiêu cân nặng" icon="flag">
       {goal.goalType === "MAINTENANCE" ? (
         <Text style={styles.body}>
           Giữ cân{goal.currentWeight !== null ? ` quanh ${fmt(goal.currentWeight)} kg` : ""}
         </Text>
       ) : goal.goalWeight !== null && goal.startWeight !== null && goal.currentWeight !== null ? (
         <View style={styles.progress}>
-          <View style={styles.ends}>
-            <Text style={styles.muted}>Bắt đầu {fmt(goal.startWeight)} kg</Text>
-            <Text style={styles.muted}>Mục tiêu {fmt(goal.goalWeight)} kg</Text>
-          </View>
-          <View
-            style={styles.track}
-            accessibilityRole="progressbar"
-            accessibilityValue={{ min: 0, max: 100, now: goal.percent ?? 0 }}
+          <RingProgress
+            progress={(goal.percent ?? 0) / 100}
+            size={104}
+            strokeWidth={11}
+            color={goal.reached ? colors.success : colors.primary}
+            trackColor={colors.surfaceMuted}
+            accessibilityLabel={`Đã đi được ${goal.percent ?? 0}% quãng đường tới mục tiêu`}
           >
-            <View style={[styles.fill, { width: `${goal.percent ?? 0}%` }]} />
+            <Text style={styles.percent}>{goal.percent ?? 0}%</Text>
+          </RingProgress>
+          <View style={styles.progressText}>
+            <Text style={styles.current}>{fmt(goal.currentWeight)} kg</Text>
+            <Text style={styles.body}>
+              {goal.reached ? "🎉 Đã đạt mục tiêu" : `còn ${fmt(goal.remaining ?? 0)} kg`}
+            </Text>
+            <Text style={styles.muted}>
+              {fmt(goal.startWeight)} kg → {fmt(goal.goalWeight)} kg
+            </Text>
           </View>
-          <Text style={styles.body}>
-            {goal.reached
-              ? `🎉 Đã đạt mục tiêu (${fmt(goal.currentWeight)} kg)`
-              : `${goal.percent ?? 0}% · hiện tại ${fmt(goal.currentWeight)} kg, còn ${fmt(goal.remaining ?? 0)} kg`}
-          </Text>
         </View>
       ) : (
         <Text style={styles.muted}>Nhập cân nặng mục tiêu trong hồ sơ để xem % tiến độ.</Text>
@@ -98,10 +102,10 @@ export function GoalProgressCard({ goal }: { goal: GoalProgress }) {
 const styles = themedStyles(() => ({
   muted: { fontSize: 14, color: colors.textMuted },
   body: { fontSize: 15, color: colors.text, fontWeight: "500" },
-  progress: { gap: spacing.xs },
-  ends: { flexDirection: "row", justifyContent: "space-between" },
-  track: { height: 10, borderRadius: radius.pill, backgroundColor: colors.border, overflow: "hidden" },
-  fill: { height: "100%", borderRadius: radius.pill, backgroundColor: colors.primary },
+  progress: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
+  progressText: { flex: 1, gap: 2 },
+  percent: { fontSize: 22, fontWeight: "800", color: colors.text, fontVariant: ["tabular-nums"] },
+  current: { fontSize: 24, fontWeight: "800", color: colors.text, fontVariant: ["tabular-nums"] },
   rates: { gap: 2 },
   status: { fontSize: 14, fontWeight: "600" },
   trend: { gap: spacing.xs },

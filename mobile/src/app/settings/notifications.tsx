@@ -1,3 +1,4 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,8 +17,9 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage } from "@/lib/formErrors";
 import { ensurePermission } from "@/lib/notifications";
+import { MAX_MEAL_REMINDERS, nextFreeReminderTime, validateMealReminders } from "@/lib/nutritionReminders";
 import { useNotificationStore } from "@/stores/notificationStore";
-import type { NotificationSettings } from "@/types/models";
+import type { MealReminder, NotificationSettings } from "@/types/models";
 
 // Hiển thị theo thứ tự T2 → CN, giá trị 0 = CN như server
 const WEEKDAYS = [
@@ -75,6 +77,12 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
     setDraft((d) => ({ ...d, workoutReminder: { ...d.workoutReminder, ...patch } }));
   const setMeals = (patch: Partial<NotificationSettings["mealReminders"]>) =>
     setDraft((d) => ({ ...d, mealReminders: { ...d.mealReminders, ...patch } }));
+  const mealItems = draft.mealReminders.items;
+  const updateMealItem = (index: number, patch: Partial<MealReminder>) =>
+    setMeals({ items: mealItems.map((item, i) => (i === index ? { ...item, ...patch } : item)) });
+  const removeMealItem = (index: number) => setMeals({ items: mealItems.filter((_, i) => i !== index) });
+  const addMealItem = () =>
+    setMeals({ items: [...mealItems, { time: nextFreeReminderTime(mealItems), label: "Bữa phụ" }] });
 
   function toggleDay(day: number) {
     const days = draft.workoutReminder.days;
@@ -82,14 +90,13 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
   }
 
   async function handleSave() {
-    const times = [
-      draft.workoutReminder.time,
-      draft.mealReminders.breakfast,
-      draft.mealReminders.lunch,
-      draft.mealReminders.dinner,
-    ];
-    if (times.some((t) => !TIME_REGEX.test(t))) {
-      setError("Giờ phải có dạng HH:mm, ví dụ 07:30 hoặc 18:00.");
+    if (!TIME_REGEX.test(draft.workoutReminder.time)) {
+      setError("Giờ nhắc tập phải có dạng HH:mm, ví dụ 18:00.");
+      return;
+    }
+    const mealError = validateMealReminders(mealItems);
+    if (mealError) {
+      setError(mealError);
       return;
     }
     if (draft.workoutReminder.enabled && draft.workoutReminder.days.length === 0) {
@@ -128,7 +135,7 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
         <ErrorBanner message={error} />
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-        <Card title="Nhắc tập">
+        <Card title="Nhắc tập" icon="barbell">
           <SwitchRow
             label="Nhắc tôi đi tập"
             value={draft.workoutReminder.enabled}
@@ -161,22 +168,37 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
           ) : null}
         </Card>
 
-        <Card title="Nhắc ghi bữa ăn">
+        <Card title="Nhắc nạp dinh dưỡng" icon="restaurant">
+          <Text style={styles.hint}>
+            Mỗi bữa FitTrack báo bạn còn thiếu bao nhiêu calo và protein hôm nay. Đủ rồi thì thôi nhắc.
+          </Text>
           <SwitchRow
-            label="Nhắc tôi ghi bữa ăn"
+            label="Nhắc tôi ăn đủ calo & protein"
             value={draft.mealReminders.enabled}
             onChange={(enabled) => setMeals({ enabled })}
           />
           {draft.mealReminders.enabled ? (
             <>
-              <TimeRow label="Bữa sáng" value={draft.mealReminders.breakfast} onChange={(breakfast) => setMeals({ breakfast })} />
-              <TimeRow label="Bữa trưa" value={draft.mealReminders.lunch} onChange={(lunch) => setMeals({ lunch })} />
-              <TimeRow label="Bữa tối" value={draft.mealReminders.dinner} onChange={(dinner) => setMeals({ dinner })} />
+              {mealItems.map((item, index) => (
+                <MealReminderRow
+                  // Index làm key: sửa giờ không làm ô đang nhập mất focus
+                  key={index}
+                  item={item}
+                  onChange={(patch) => updateMealItem(index, patch)}
+                  onRemove={() => removeMealItem(index)}
+                />
+              ))}
+              {mealItems.length === 0 ? (
+                <Text style={styles.hint}>Chưa có lần nhắc nào. Thêm một lần nhắc bên dưới.</Text>
+              ) : null}
+              {mealItems.length < MAX_MEAL_REMINDERS ? (
+                <Button title="+ Thêm lần nhắc" variant="secondary" onPress={addMealItem} />
+              ) : null}
             </>
           ) : null}
         </Card>
 
-        <Card title="Thông báo từ FitTrack">
+        <Card title="Thông báo từ FitTrack" icon="notifications">
           <SwitchRow
             label="🏆 Khi phá kỷ lục cá nhân"
             value={draft.prAlerts}
@@ -217,7 +239,54 @@ function SwitchRow({
         onValueChange={onChange}
         accessibilityLabel={label}
         trackColor={{ true: colors.primary, false: colors.border }}
+        // Núm trắng cho mọi nền tảng (web mặc định màu xanh ngọc, lệch tông cam)
+        thumbColor={colors.onGradient}
       />
+    </View>
+  );
+}
+
+// Một lần nhắc nạp dinh dưỡng: tên + giờ, sửa tại chỗ, nút xoá
+function MealReminderRow({
+  item,
+  onChange,
+  onRemove,
+}: {
+  item: MealReminder;
+  onChange: (patch: Partial<MealReminder>) => void;
+  onRemove: () => void;
+}) {
+  const invalid = !TIME_REGEX.test(item.time);
+  return (
+    <View style={styles.row}>
+      <TextInput
+        value={item.label}
+        onChangeText={(label) => onChange({ label })}
+        placeholder="Tên, ví dụ Bữa phụ"
+        placeholderTextColor={colors.textMuted}
+        maxLength={30}
+        accessibilityLabel="Tên lần nhắc"
+        style={[styles.labelInput, !item.label.trim() && styles.timeInvalid]}
+      />
+      <TextInput
+        value={item.time}
+        onChangeText={(time) => onChange({ time })}
+        placeholder="HH:mm"
+        placeholderTextColor={colors.textMuted}
+        keyboardType="numbers-and-punctuation"
+        maxLength={5}
+        accessibilityLabel={`Giờ nhắc ${item.label}`}
+        style={[styles.timeInput, invalid && styles.timeInvalid]}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Xoá lần nhắc ${item.label}`}
+        hitSlop={8}
+        onPress={onRemove}
+        style={({ pressed }) => [styles.removeButton, pressed && { opacity: 0.6 }]}
+      >
+        <Ionicons name="trash-outline" size={20} color={colors.danger} />
+      </Pressable>
     </View>
   );
 }
@@ -251,6 +320,7 @@ function TimeRow({
 
 const styles = themedStyles(() => ({
   flex: { flex: 1 },
+  hint: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   note: {
@@ -277,6 +347,18 @@ const styles = themedStyles(() => ({
   daySelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   dayText: { fontSize: 13, color: colors.text },
   dayTextSelected: { color: colors.onPrimary, fontWeight: "600" },
+  labelInput: {
+    flex: 1,
+    minHeight: 40,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    fontSize: 15,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  removeButton: { padding: spacing.xs },
   timeInput: {
     width: 80,
     minHeight: 40,
