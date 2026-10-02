@@ -1,18 +1,74 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { foodApi } from "@/api/foodApi";
 import { MacroChips } from "@/components/nutrition/MacroChips";
+import { AddMealForm } from "@/components/nutrition/AddMealForm";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { Button } from "@/components/ui/Button";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useFoodSearch } from "@/hooks/useFoodSearch";
-import { formatServing } from "@/lib/nutrition";
-import type { Food } from "@/types/models";
+import { useMeals } from "@/hooks/useMeals";
+import { formatServing, isMealType, mealLabel, mealTypeForHour } from "@/lib/nutrition";
+import type { Food, MealType } from "@/types/models";
 
 export default function FoodSearchScreen() {
-  // mealType + date truyền tiếp sang màn add để biết thêm vào bữa nào, ngày nào
-  const { mealType, date } = useLocalSearchParams<{ mealType?: string; date?: string }>();
+  const params = useLocalSearchParams<{ mealType?: string; date?: string }>();
+  const { meals, error, load } = useMeals();
+  const [mealType, setMealType] = useState<MealType>(() =>
+    isMealType(params.mealType)
+      ? params.mealType
+      : mealTypeForHour(new Date().getHours())
+  );
+  // Thêm từ một bữa cụ thể đã có mealType; Ghi món ở Trang chủ chưa có.
+  const [choosingMeal, setChoosingMeal] = useState(
+    () => !isMealType(params.mealType)
+  );
+
+  if (choosingMeal) {
+    return (
+      <ScrollView contentContainerStyle={styles.mealContent} keyboardShouldPersistTaps="handled">
+        <Text style={styles.heading}>Bạn muốn ghi món vào bữa nào?</Text>
+        <Text style={styles.hint}>
+          Đã chọn sẵn bữa ăn. Bạn có thể đổi bữa để ghi bổ sung những gì đã ăn.
+        </Text>
+        <ErrorBanner message={error} />
+        {error ? <Button title="Tải lại danh sách bữa" variant="secondary" onPress={load} /> : null}
+        <View accessibilityRole="radiogroup" style={styles.mealOptions}>
+          {meals.map((meal) => {
+            const selected = meal.id === mealType;
+            return (
+              <Pressable
+                key={meal.id}
+                accessibilityRole="radio"
+                accessibilityLabel={meal.name}
+                accessibilityState={{ selected }}
+                onPress={() => setMealType(meal.id)}
+                style={({ pressed }) => [styles.mealOption, selected && styles.mealSelected, pressed && styles.pressed]}
+              >
+                <Text style={styles.name}>{meal.name}</Text>
+                <Ionicons name={selected ? "checkmark-circle" : "ellipse-outline"}
+                  size={24} color={selected ? colors.primary : colors.textMuted} />
+              </Pressable>
+            );
+          })}
+        </View>
+        <AddMealForm onAdded={setMealType} />
+        <Button title="Tiếp tục chọn món" onPress={() => setChoosingMeal(false)} />
+      </ScrollView>
+    );
+  }
+
+  return <FoodSearchResults mealType={mealType} mealName={mealLabel(mealType, meals)} date={params.date} onChangeMeal={() => setChoosingMeal(true)} />;
+}
+
+function FoodSearchResults({ mealType, mealName, date, onChangeMeal }: {
+  mealType: MealType;
+  mealName: string;
+  date?: string;
+  onChangeMeal: () => void;
+}) {
   const [query, setQuery] = useState("");
   const { items, isLoading, error, loadMore, refresh } = useFoodSearch(query);
 
@@ -39,6 +95,12 @@ export default function FoodSearchScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.mealSummary}>
+        <Text style={styles.name}>{mealName}</Text>
+        <Pressable accessibilityRole="button" onPress={onChangeMeal} style={styles.changeMeal}>
+          <Text style={styles.createText}>Đổi bữa</Text>
+        </Pressable>
+      </View>
       <View style={styles.searchBox}>
         <Ionicons name="search" size={18} color={colors.textMuted} />
         <TextInput
@@ -153,6 +215,16 @@ function QuickFoods({ title, foods, onPick }: { title: string; foods: Food[]; on
 }
 
 const styles = themedStyles(() => ({
+  mealContent: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
+  heading: { fontSize: 22, fontWeight: "700", color: colors.text },
+  hint: { fontSize: 15, lineHeight: 22, color: colors.textMuted },
+  mealOptions: { gap: spacing.md },
+  mealOption: { flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    minHeight: 64, padding: spacing.md, borderRadius: radius.md, borderWidth: 1,
+    borderColor: colors.border, backgroundColor: colors.surface },
+  mealSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  mealSummary: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  changeMeal: { minHeight: 44, justifyContent: "center", paddingHorizontal: spacing.sm },
   container: { flex: 1, padding: spacing.lg, gap: spacing.md },
   recent: { gap: spacing.sm, marginBottom: spacing.xs },
   sectionTitle: { fontSize: 14, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase" },

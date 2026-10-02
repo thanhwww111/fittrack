@@ -19,7 +19,8 @@ import { TextField } from "@/components/ui/TextField";
 import { colors, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
-import { formatServing, MEAL_LABELS, MEAL_ORDER } from "@/lib/nutrition";
+import { formatServing, isMealType, mealLabel } from "@/lib/nutrition";
+import { useMeals } from "@/hooks/useMeals";
 import { useNutritionStore } from "@/stores/nutritionStore";
 import type { MealTemplate, MealType } from "@/types/models";
 
@@ -28,10 +29,11 @@ const fmt = (n: number) => n.toLocaleString("vi-VN", { maximumFractionDigits: 0 
 // Bữa mẫu: lưu các món hay ăn cùng nhau (vd "Sáng đi làm") rồi thêm cả bữa bằng một lần bấm
 export default function MealTemplatesScreen() {
   const params = useLocalSearchParams<{ mealType?: string; date?: string }>();
-  const mealType: MealType = MEAL_ORDER.includes(params.mealType as MealType)
-    ? (params.mealType as MealType)
+  const { meals, error: mealError } = useMeals();
+  const mealType: MealType = isMealType(params.mealType)
+    ? params.mealType
     : "BREAKFAST";
-  const mealLabel = MEAL_LABELS[mealType].toLowerCase();
+  const label = mealLabel(mealType, meals).toLowerCase();
 
   const store = useNutritionStore();
   const date = params.date ?? store.selectedDate ?? undefined;
@@ -114,9 +116,10 @@ export default function MealTemplatesScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ErrorBanner message={error} />
+        <ErrorBanner message={mealError} />
 
         {currentLogs.length > 0 ? (
-          <Card title={`Lưu ${mealLabel} này thành bữa mẫu`}>
+          <Card title={`Lưu ${label} này thành bữa mẫu`}>
             <Text style={styles.muted}>
               {currentLogs.map((l) => l.foodName).join(", ")}
             </Text>
@@ -132,7 +135,7 @@ export default function MealTemplatesScreen() {
           </Card>
         ) : null}
 
-        <Text style={styles.sectionTitle}>Thêm nhanh vào {mealLabel}</Text>
+        <Text style={styles.sectionTitle}>Thêm nhanh vào {label}</Text>
 
         {templates === null ? (
           error ? null : <ActivityIndicator color={colors.primary} />
@@ -169,7 +172,7 @@ export default function MealTemplatesScreen() {
                   <Text style={styles.muted}>{missing} món không còn tồn tại sẽ không được thêm.</Text>
                 ) : null}
                 <Button
-                  title={`Thêm vào ${mealLabel} · ${fmt(t.totals.calories)} kcal`}
+                  title={`Thêm vào ${label} · ${fmt(t.totals.calories)} kcal`}
                   onPress={() => apply(t)}
                   loading={busyId === t.id}
                   disabled={busyId !== null || missing === t.items.length}

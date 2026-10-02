@@ -1,4 +1,4 @@
-import type { MealType } from "../constants/enums";
+import { resolveMeal } from "./meal.service";
 import { FoodLogModel } from "../models/foodLog.model";
 import type {
   CopyMealInput,
@@ -27,7 +27,7 @@ type LoggableFood = Awaited<ReturnType<typeof getVisibleFood>>;
 export function buildFoodLog(
   userId: string,
   date: string,
-  mealType: MealType,
+  mealType: string,
   food: LoggableFood,
   quantity: number
 ) {
@@ -50,6 +50,7 @@ export async function listFoodLogs(userId: string, date?: string) {
 }
 
 export async function createFoodLog(userId: string, input: CreateFoodLogInput) {
+  await resolveMeal(userId, input.mealType);
   const date = await resolveLogDate(userId, input.date);
   const food = await getVisibleFood(userId, input.foodId);
 
@@ -60,6 +61,8 @@ export async function createFoodLog(userId: string, input: CreateFoodLogInput) {
 // Chép các món của một bữa (vd: bữa sáng hôm qua) sang bữa khác. Chép nguyên snapshot,
 // nên món đã bị xoá khỏi danh sách food vẫn chép được.
 export async function copyMeal(userId: string, input: CopyMealInput) {
+  await resolveMeal(userId, input.fromMealType);
+  await resolveMeal(userId, input.toMealType ?? input.fromMealType);
   const toDate = await resolveLogDate(userId, input.toDate);
   const toMealType = input.toMealType ?? input.fromMealType;
   if (toDate === input.fromDate && toMealType === input.fromMealType) {
@@ -100,7 +103,10 @@ export async function updateFoodLog(userId: string, logId: string, input: Update
   const log = await getOwnedLog(userId, logId);
 
   if (input.date) log.date = await resolveLogDate(userId, input.date);
-  if (input.mealType) log.mealType = input.mealType;
+  if (input.mealType) {
+    await resolveMeal(userId, input.mealType);
+    log.mealType = input.mealType;
+  }
 
   if (input.quantity && input.quantity !== log.quantity) {
     log.set({

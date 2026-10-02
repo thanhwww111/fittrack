@@ -21,7 +21,7 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
-import { addDays, formatDayLabel, formatServing, MEAL_LABELS, MEAL_ORDER } from "@/lib/nutrition";
+import { addDays, DEFAULT_MEALS, formatDayLabel, formatServing, mealLabel } from "@/lib/nutrition";
 import { useNutritionStore } from "@/stores/nutritionStore";
 import type { FoodLog, MealType } from "@/types/models";
 
@@ -31,6 +31,7 @@ export default function NutritionScreen() {
   const { today, selectedDate, summary, logs, isLoading, error, load, reload } = useNutritionStore();
   const [copying, setCopying] = useState<MealType | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const meals = summary?.mealOptions ?? DEFAULT_MEALS;
 
   // Tải lại khi quay về tab (vừa thêm / sửa món ở màn khác)
   useFocusEffect(
@@ -58,7 +59,7 @@ export default function NutritionScreen() {
   async function copyPrevious(mealType: MealType) {
     const fromDate = addDays(selectedDate!, -1);
     const ok = await confirmAction({
-      title: `Chép ${MEAL_LABELS[mealType].toLowerCase()} ngày ${formatDayLabel(fromDate, today!).toLowerCase()}?`,
+      title: `Chép ${mealLabel(mealType, meals).toLowerCase()} ngày ${formatDayLabel(fromDate, today!).toLowerCase()}?`,
       message: "Các món của bữa đó sẽ được thêm vào bữa này.",
       confirmText: "Chép",
     });
@@ -68,11 +69,11 @@ export default function NutritionScreen() {
     try {
       const res = await mealCopyApi.copy({ fromDate, fromMealType: mealType, toDate: selectedDate! });
       await reload();
-      setNotice(`Đã chép ${res.items.length} món vào ${MEAL_LABELS[mealType].toLowerCase()}.`);
+      setNotice(`Đã chép ${res.items.length} món vào ${mealLabel(mealType, meals).toLowerCase()}.`);
     } catch (err) {
       setNotice(
         err instanceof ApiError && err.status === 404
-          ? `${MEAL_LABELS[mealType]} ngày ${formatDayLabel(fromDate, today!).toLowerCase()} chưa có món nào.`
+          ? `${mealLabel(mealType, meals)} ngày ${formatDayLabel(fromDate, today!).toLowerCase()} chưa có món nào.`
           : errorMessage(err)
       );
     } finally {
@@ -111,6 +112,7 @@ export default function NutritionScreen() {
       </View>
 
       <ErrorBanner message={error} />
+      <Button title="Lịch sử theo ngày" variant="secondary" onPress={() => router.push("/history")} />
 
       <Card>
         {summary.target ? (
@@ -158,18 +160,18 @@ export default function NutritionScreen() {
 
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-      {MEAL_ORDER.map((meal) => (
+      {meals.map((meal) => (
         <MealSection
-          key={meal}
-          mealType={meal}
-          calories={summary.meals[meal].calories}
-          logs={logs.filter((l) => l.mealType === meal)}
-          onAdd={() => openAdd(meal)}
+          key={meal.id}
+          mealName={meal.name}
+          calories={summary.meals[meal.id]?.calories ?? 0}
+          logs={logs.filter((l) => l.mealType === meal.id)}
+          onAdd={() => openAdd(meal.id)}
           onTemplates={() =>
-            router.push({ pathname: "/food/templates", params: { mealType: meal, date: selectedDate } })
+            router.push({ pathname: "/food/templates", params: { mealType: meal.id, date: selectedDate } })
           }
-          onCopyPrevious={() => copyPrevious(meal)}
-          copying={copying === meal}
+          onCopyPrevious={() => copyPrevious(meal.id)}
+          copying={copying === meal.id}
         />
       ))}
     </ScrollView>
@@ -177,7 +179,7 @@ export default function NutritionScreen() {
 }
 
 function MealSection({
-  mealType,
+  mealName,
   calories,
   logs,
   onAdd,
@@ -185,7 +187,7 @@ function MealSection({
   onCopyPrevious,
   copying,
 }: {
-  mealType: MealType;
+  mealName: string;
   calories: number;
   logs: FoodLog[];
   onAdd: () => void;
@@ -196,7 +198,7 @@ function MealSection({
   return (
     <Card>
       <View style={styles.mealHeader}>
-        <Text style={styles.mealTitle}>{MEAL_LABELS[mealType]}</Text>
+        <Text style={styles.mealTitle}>{mealName}</Text>
         <Text style={styles.muted}>{fmt(calories)} kcal</Text>
       </View>
 
@@ -220,7 +222,7 @@ function MealSection({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Thêm món vào ${MEAL_LABELS[mealType]}`}
+        accessibilityLabel={`Thêm món vào ${mealName}`}
         onPress={onAdd}
         style={({ pressed }) => [styles.addRow, pressed && styles.pressed]}
       >
@@ -231,7 +233,7 @@ function MealSection({
       <View style={styles.extraRow}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Bữa mẫu cho ${MEAL_LABELS[mealType]}`}
+          accessibilityLabel={`Bữa mẫu cho ${mealName}`}
           onPress={onTemplates}
           hitSlop={6}
           style={({ pressed }) => [styles.extraButton, pressed && styles.pressed]}
@@ -241,7 +243,7 @@ function MealSection({
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Chép ${MEAL_LABELS[mealType]} ngày trước`}
+          accessibilityLabel={`Chép ${mealName} ngày trước`}
           onPress={onCopyPrevious}
           disabled={copying}
           hitSlop={6}

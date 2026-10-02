@@ -1,3 +1,4 @@
+import { resolveMeal } from "../meal.service";
 import { WorkoutSessionModel } from "../../models/workoutSession.model";
 import type { MealSuggestionInput } from "../../schemas/ai.schema";
 import { AppError } from "../../utils/AppError";
@@ -20,6 +21,7 @@ const ANALYSIS_WEEKS = 4;
 const CALORIE_TOLERANCE = 0.1;
 
 export async function suggestMeals(userId: string, input: MealSuggestionInput) {
+  const meal = await resolveMeal(userId, input.mealType);
   const [summary, profile] = await Promise.all([
     getDailySummary(userId),
     getProfileDocument(userId),
@@ -34,6 +36,7 @@ export async function suggestMeals(userId: string, input: MealSuggestionInput) {
     system: MEAL_SYSTEM_PROMPT,
     prompt: buildMealPrompt({
       mealType: input.mealType,
+      mealName: meal.isCustom ? meal.name : undefined,
       remaining,
       goalType: profile.goalType ?? null,
       preferences: input.preferences,

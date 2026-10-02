@@ -1,3 +1,6 @@
+import { CustomMealModel } from "../models/customMeal.model";
+import { TrainingScheduleModel } from "../models/trainingSchedule.model";
+import { WeeklyProgramModel } from "../models/weeklyProgram.model";
 import bcrypt from "bcrypt";
 import { env } from "../config/env";
 import { BodyMeasurementModel } from "../models/bodyMeasurement.model";
@@ -172,6 +175,9 @@ export async function deleteAccount(userId: string, password: string) {
     BodyMeasurementModel.deleteMany(owned),
     FoodLogModel.deleteMany(owned),
     MealTemplateModel.deleteMany(owned),
+    CustomMealModel.deleteMany(owned),
+    TrainingScheduleModel.deleteMany(owned),
+    WeeklyProgramModel.deleteMany(owned),
     NotificationSettingsModel.deleteMany(owned),
     NutritionTargetModel.deleteMany(owned),
     PasswordResetModel.deleteMany(owned),

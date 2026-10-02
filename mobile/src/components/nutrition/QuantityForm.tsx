@@ -1,16 +1,13 @@
 import { Text, View } from "react-native";
 import { Card } from "@/components/ui/Card";
-import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
-import { TextField } from "@/components/ui/TextField";
+import { ChipGroup } from "@/components/ui/ChipGroup";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { NumberStepper } from "@/components/ui/NumberStepper";
 import { colors, spacing, themedStyles } from "@/constants/theme";
-import { MEAL_LABELS, MEAL_ORDER, UNIT_LABELS } from "@/lib/nutrition";
+import { UNIT_LABELS } from "@/lib/nutrition";
+import { useMeals } from "@/hooks/useMeals";
 import type { MealType, NutritionValues, ServingUnit } from "@/types/models";
 import { MacroChips } from "./MacroChips";
-
-const MEAL_OPTIONS: ChipOption<MealType>[] = MEAL_ORDER.map((m) => ({
-  value: m,
-  label: MEAL_LABELS[m],
-}));
 
 interface QuantityFormProps {
   quantity: string;
@@ -32,18 +29,23 @@ export function QuantityForm({
   onMealTypeChange,
   preview,
 }: QuantityFormProps) {
+  const { meals, error } = useMeals();
   return (
     <Card>
-      <TextField
-        label="Khối lượng"
-        suffix={UNIT_LABELS[unit]}
+      <Text style={styles.previewLabel}>Số lượng ({UNIT_LABELS[unit]})</Text>
+      <NumberStepper
+        label="Số lượng thực phẩm"
         value={quantity}
         onChangeText={onQuantityChange}
-        error={quantityError}
-        keyboardType="decimal-pad"
-        selectTextOnFocus
+        error={!!quantityError}
+        min={0}
+        max={10000}
+        decimal
+        positive
       />
-      <ChipGroup label="Bữa" options={MEAL_OPTIONS} value={mealType} onChange={onMealTypeChange} />
+      {quantityError ? <Text style={styles.error}>{quantityError}</Text> : null}
+      <ErrorBanner message={error} />
+      <ChipGroup label="Bữa" options={meals.map((meal) => ({ value: meal.id, label: meal.name }))} value={mealType} onChange={onMealTypeChange} />
       <View style={styles.preview}>
         <Text style={styles.previewLabel}>Dinh dưỡng</Text>
         {preview ? (
@@ -57,6 +59,7 @@ export function QuantityForm({
 }
 
 const styles = themedStyles(() => ({
+  error: { fontSize: 13, color: colors.danger },
   preview: { gap: spacing.sm },
   previewLabel: { fontSize: 14, fontWeight: "500", color: colors.text },
   muted: { fontSize: 14, color: colors.textMuted },

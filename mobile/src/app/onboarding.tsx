@@ -20,9 +20,12 @@ import {
 } from "@/lib/profileForm";
 import { useAuthStore } from "@/stores/authStore";
 import { useProfileStore } from "@/stores/profileStore";
+import { ScheduleSelection } from "@/components/workout/ScheduleSelection";
+import { isProfileComplete } from "@/lib/profileForm";
+import { useTrainingScheduleStore } from "@/stores/trainingScheduleStore";
 import type { ActivityLevel, Gender, GoalType, Macros, UpdateProfileInput } from "@/types/models";
 
-const STEPS = ["Cơ thể", "Mục tiêu", "Kết quả"];
+const STEPS = ["Cơ thể", "Mục tiêu", "Kết quả", "Lịch tuần"];
 const BODY_FIELDS = ["age", "height", "currentWeight"] as const;
 
 type Field = NumberField | "gender" | "goalType" | "activityLevel";
@@ -39,7 +42,9 @@ export default function OnboardingScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(profile && isProfileComplete(profile) ? 3 : 0);
+  const schedule = useTrainingScheduleStore((s) => s.data);
+  useEffect(() => { if (schedule?.current && step === 3) setOnboardingActive(false); }, [schedule, step, setOnboardingActive]);
   const [gender, setGender] = useState<Gender | null>(profile?.gender ?? null);
   const [goalType, setGoalType] = useState<GoalType | null>(profile?.goalType ?? null);
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(profile?.activityLevel ?? null);
@@ -115,7 +120,8 @@ export default function OnboardingScreen() {
     try {
       await recalculateTarget();
       // Tắt cờ → root layout mở các tab
-      setOnboardingActive(false);
+      setStep(3);
+      setBusy(false);
     } catch (err) {
       setFormError(errorMessage(err));
       setBusy(false);
@@ -127,13 +133,13 @@ export default function OnboardingScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.kicker}>Bước {step + 1}/3 · {STEPS[step]}</Text>
+            <Text style={styles.kicker}>Bước {step + 1}/4 · {STEPS[step]}</Text>
             <Text style={styles.title}>
               {step === 0
                 ? `Chào ${user?.name ?? "bạn"} 👋`
                 : step === 1
                   ? "Mục tiêu của bạn"
-                  : "Mục tiêu mỗi ngày"}
+                  : step === 3 ? "Chọn lịch tập tuần" : "Mục tiêu mỗi ngày"}
             </Text>
             <Text style={styles.subtitle}>
               {step === 0
@@ -222,11 +228,12 @@ export default function OnboardingScreen() {
                     : " giữ nguyên để duy trì cân nặng"}
                 {numbers.goalRate.trim() ? " theo tốc độ bạn chọn" : ""}. Protein tính theo cân nặng.
               </Text>
-              <Button title="Bắt đầu dùng FitTrack" onPress={finish} loading={busy} />
+              <Button title="Tiếp tục chọn lịch tuần" onPress={finish} loading={busy} />
               <Button title="Sửa mục tiêu" variant="secondary" onPress={() => setStep(1)} />
             </>
           ) : null}
 
+          {step === 3 ? <ScheduleSelection setup onApplied={() => setOnboardingActive(false)} /> : null}
           <Button title="Đăng xuất" variant="secondary" onPress={logout} style={styles.logout} />
         </ScrollView>
       </KeyboardAvoidingView>

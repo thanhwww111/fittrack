@@ -28,6 +28,10 @@ const workoutSessionSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     templateId: { type: Schema.Types.ObjectId, ref: "WorkoutTemplate", default: null },
+    scheduledDate: { type: String },
+    scheduleVersionId: { type: String },
+    scheduleTimezone: { type: String },
+    expiredAt: { type: Date, default: null },
     name: { type: String, required: true, trim: true, maxlength: 100 },
     startedAt: { type: Date, required: true, default: Date.now },
     completedAt: { type: Date, default: null },
@@ -37,11 +41,14 @@ const workoutSessionSchema = new Schema(
     status: { type: String, enum: WORKOUT_STATUSES, default: "IN_PROGRESS" },
     notes: { type: String, default: "", trim: true, maxlength: 1000 },
   },
-  { timestamps: true }
+  { timestamps: true, optimisticConcurrency: true }
 );
 
 workoutSessionSchema.index({ userId: 1, startedAt: -1 });
 workoutSessionSchema.index({ userId: 1, status: 1 });
+workoutSessionSchema.index({ userId: 1, scheduledDate: 1 }, {
+  unique: true, partialFilterExpression: { scheduledDate: { $type: "string" } },
+});
 // Mỗi user chỉ có tối đa một buổi tập đang diễn ra, chặn cả khi 2 request đến cùng lúc
 workoutSessionSchema.index(
   { userId: 1 },

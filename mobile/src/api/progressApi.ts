@@ -6,6 +6,7 @@ import type {
   WeeklySummary,
   WeightProgress,
   WorkoutWeek,
+  DailyHistory,
 } from "@/types/models";
 import { api, unwrap } from "./client";
 
@@ -15,6 +16,8 @@ interface DateRange {
 }
 
 export const progressApi = {
+  history: (range: DateRange = {}) =>
+    unwrap(api.get<ApiSuccess<DailyHistory>>("/progress/history", { params: range })),
   weekly: () => unwrap(api.get<ApiSuccess<WeeklySummary>>("/progress/weekly")),
 
   goal: () => unwrap(api.get<ApiSuccess<GoalProgress>>("/progress/goal")),

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { foodEstimateSchema } from "../src/services/ai/foodEstimate";
 
 // Thay SDK thật bằng mock: test không gọi mạng
 const create = vi.fn();
@@ -62,5 +63,24 @@ describe("llm.generateJson", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     create.mockRejectedValue(new Error("quota exceeded"));
     await expect(call()).rejects.toMatchObject({ statusCode: 502 });
+  });
+
+  it("validates food estimates against the same units and limits as food creation", async () => {
+    const option = { name: "Sandwich", servingSize: 1, servingUnit: "piece", calories: 180,
+      protein: 8, carbs: 22, fat: 7, fiber: 2, description: "One small piece, about 70 g" };
+    const estimate = () => llm.generateJson({ system: "sys", prompt: "sandwich", schema: foodEstimateSchema });
+    create.mockResolvedValue({ output_text: JSON.stringify({ suggestions: [option, option] }) });
+    await expect(estimate()).resolves.toEqual({ suggestions: [option, option] });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    for (const invalid of [
+      { ...option, calories: -1 }, { ...option, servingSize: 0 },
+      { ...option, servingUnit: "slice" }, { ...option, name: "x".repeat(101) },
+      { ...option, fiber: null },
+    ]) {
+      create.mockResolvedValue({ output_text: JSON.stringify({ suggestions: [option, invalid] }) });
+      await expect(estimate()).rejects.toMatchObject({ statusCode: 502 });
+    }
+    create.mockResolvedValue({ output_text: JSON.stringify({ suggestions: [] }) });
+    await expect(estimate()).rejects.toMatchObject({ statusCode: 502 });
   });
 });

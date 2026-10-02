@@ -3,11 +3,13 @@ import { create } from "zustand";
 import { notificationApi } from "@/api/notificationApi";
 import { errorMessage } from "@/lib/formErrors";
 import { nutritionApi } from "@/api/nutritionApi";
+import { trainingScheduleApi } from "@/api/trainingScheduleApi";
 import {
   cancelReminders,
   getPushToken,
   scheduleNutritionReminders,
   scheduleReminders,
+  scheduleWorkoutReminders,
   type PushTokenResult,
   type TodayNutrition,
 } from "@/lib/notifications";
@@ -24,12 +26,14 @@ interface NotificationState {
   // Đặt lại nhắc nạp dinh dưỡng với số calo/protein còn thiếu mới nhất.
   // Truyền summary của hôm nay nếu đã có sẵn để khỏi gọi API lần nữa.
   refreshNutritionReminders: (today?: DailyNutrition) => Promise<void>;
+  refreshWorkoutReminders: () => Promise<void>;
   // Gọi TRƯỚC khi đăng xuất (còn access token) để server ngừng gửi push tới máy này
   unregisterDevice: () => Promise<void>;
   reset: () => void;
 }
 
 const initialState = { settings: null, push: null, error: null };
+let generation = 0;
 
 // Lỗi mạng thì vẫn đặt nhắc dạng chung (không có số liệu)
 async function loadToday(): Promise<TodayNutrition | null> {
@@ -52,35 +56,52 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
   ...initialState,
 
   syncOnLogin: async () => {
+    const version = ++generation;
     try {
       const settings = await notificationApi.getSettings();
+      if (version !== generation) return;
       set({ settings, error: null });
       const today = await loadToday();
-      await enqueue(() => scheduleReminders(settings, today));
+      const schedule = await trainingScheduleApi.get().catch(() => null);
+      await enqueue(async () => { if (version === generation) await scheduleReminders(settings, today, schedule); });
+      if (version !== generation) return;
 
       const push = await getPushToken();
+      if (version !== generation) return;
       set({ push });
       if (push.token && Platform.OS !== "web") {
         await notificationApi.registerDevice(push.token, Platform.OS === "ios" ? "ios" : "android");
       }
     } catch (err) {
       // Thông báo là tính năng phụ: lỗi ở đây không được chặn việc dùng app
-      set({ error: errorMessage(err) });
+      if (version === generation) set({ error: errorMessage(err) });
     }
   },
 
   update: async (input) => {
+    const version = ++generation;
     const settings = await notificationApi.updateSettings(input);
+    if (version !== generation) return;
     set({ settings });
     const today = await loadToday();
-    await enqueue(() => scheduleReminders(settings, today));
+    const schedule = await trainingScheduleApi.get().catch(() => null);
+    await enqueue(async () => { if (version === generation) await scheduleReminders(settings, today, schedule); });
   },
 
   refreshNutritionReminders: async (summary) => {
+    const version = generation;
     const { settings } = get();
     if (!settings?.mealReminders.enabled) return;
     const today = summary ? { target: summary.target, consumed: summary.consumed } : await loadToday();
-    await enqueue(() => scheduleNutritionReminders(settings, today));
+    await enqueue(async () => { if (version === generation) await scheduleNutritionReminders(settings, today); });
+  },
+
+  refreshWorkoutReminders: async () => {
+    const version = generation;
+    const settings = get().settings;
+    if (!settings) return;
+    const schedule = await trainingScheduleApi.get().catch(() => null);
+    await enqueue(async () => { if (version === generation) await scheduleWorkoutReminders(settings, schedule); });
   },
 
   unregisterDevice: async () => {
@@ -94,7 +115,8 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
   },
 
   reset: () => {
-    cancelReminders().catch(() => {});
+    generation++;
+    void enqueue(cancelReminders);
     set(initialState);
   },
 }));

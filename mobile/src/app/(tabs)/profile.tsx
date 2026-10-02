@@ -1,3 +1,4 @@
+import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -70,10 +71,11 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
   const setManualTarget = useProfileStore((s) => s.setManualTarget);
   const [editingTarget, setEditingTarget] = useState(false);
 
-  const [gender, setGender] = useState(profile.gender);
-  const [goalType, setGoalType] = useState(profile.goalType);
-  const [activityLevel, setActivityLevel] = useState(profile.activityLevel);
-  const [numbers, setNumbers] = useState<Record<NumberField, string>>({
+  const draftKey = `profile`;
+  const [gender, setGender] = useDraftState(draftKey + "gender", profile.gender);
+  const [goalType, setGoalType] = useDraftState(draftKey + "goalType", profile.goalType);
+  const [activityLevel, setActivityLevel] = useDraftState(draftKey + "activityLevel", profile.activityLevel);
+  const [numbers, setNumbers] = useDraftState<Record<NumberField, string>>(draftKey + "numbers", {
     age: toText(profile.age),
     height: toText(profile.height),
     currentWeight: toText(profile.currentWeight),
@@ -117,6 +119,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
     setSaving(true);
     try {
       await updateProfile(input);
+      clearFormDrafts(draftKey);
       const updated = await promptTargetRecalculation();
       setNotice(updated ? "Đã lưu hồ sơ và cập nhật mục tiêu dinh dưỡng." : "Đã lưu hồ sơ.");
     } catch (err) {

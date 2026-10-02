@@ -27,7 +27,7 @@ const notificationSettingsSchema = new Schema(
       enabled: { type: Boolean, default: false },
       // 0 = Chủ nhật ... 6 = thứ Bảy
       days: { type: [Number], default: [1, 3, 5] },
-      time: { type: String, default: "18:00", match: TIME_REGEX },
+      time: { type: String, default: "07:00", match: TIME_REGEX },
     },
     mealReminders: {
       enabled: { type: Boolean, default: false },

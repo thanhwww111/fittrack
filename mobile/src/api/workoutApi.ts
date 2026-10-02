@@ -58,6 +58,9 @@ export const exerciseApi = {
 };
 
 export const templateApi = {
+  applySuggestion: (key: string) =>
+    unwrap(api.post<ApiSuccess<WorkoutTemplate>>(`/workout-templates/suggestions/${key}/apply`)),
+
   list: () => unwrap(api.get<ApiSuccess<WorkoutTemplate[]>>("/workout-templates")),
 
   get: (id: string) => unwrap(api.get<ApiSuccess<WorkoutTemplate>>(`/workout-templates/${id}`)),
@@ -139,8 +142,8 @@ export const programApi = {
   presets: () => unwrap(api.get<ApiSuccess<ProgramPreset[]>>("/weekly-programs/presets")),
 
   // Tạo sẵn các template của lịch đề xuất + lịch tuần dùng chúng
-  applyPreset: (key: string) =>
-    unwrap(api.post<ApiSuccess<WeeklyProgram>>(`/weekly-programs/presets/${key}/apply`)),
+  applyPreset: (key: string, requestId?: string) =>
+    unwrap(api.post<ApiSuccess<WeeklyProgram>>(`/weekly-programs/presets/${key}/apply`, requestId ? { requestId } : undefined)),
 
   create: (input: WeeklyProgramInput) =>
     unwrap(api.post<ApiSuccess<WeeklyProgram>>("/weekly-programs", input)),

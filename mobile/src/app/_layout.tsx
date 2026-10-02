@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from "expo-router";
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router, usePathname, type Theme } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
@@ -12,6 +12,9 @@ import { useAuthStore } from "@/stores/authStore";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { useProfileStore } from "@/stores/profileStore";
 import { useThemeStore } from "@/stores/themeStore";
+import { useTrainingScheduleStore } from "@/stores/trainingScheduleStore";
+import { AppFooter } from "@/components/navigation/AppFooter";
+import { BackButton } from "@/components/navigation/BackButton";
 import "@/stores/resetOnLogout";
 
 // Giữ splash cho đến khi biết user đã đăng nhập hay chưa, tránh nháy màn Login
@@ -35,6 +38,9 @@ function navigationTheme(scheme: ColorScheme): Theme {
 }
 
 export default function RootLayout() {
+  const pathname = usePathname();
+  const schedule = useTrainingScheduleStore((s) => s.data);
+  const scheduleError = useTrainingScheduleStore((s) => s.error);
   const status = useAuthStore((s) => s.status);
   const bootstrap = useAuthStore((s) => s.bootstrap);
   const isAuthenticated = status === "authenticated";
@@ -46,7 +52,16 @@ export default function RootLayout() {
   // Lỗi mạng khi tải hồ sơ thì vẫn cho vào app (tab Cá nhân sẽ báo lỗi), không khoá user
   const profileSettled = !isAuthenticated || profile !== null || profileError !== null;
   const needsOnboarding =
-    isAuthenticated && profile !== null && (onboardingActive || !isProfileComplete(profile));
+    isAuthenticated && profile !== null && (onboardingActive || !isProfileComplete(profile) || (schedule !== null && !schedule.current));
+  const profileComplete = profile !== null && isProfileComplete(profile);
+
+  useEffect(() => {
+    if (isAuthenticated && profileComplete) void useTrainingScheduleStore.getState().load();
+  }, [isAuthenticated, profileComplete]);
+  useEffect(() => {
+    if (isAuthenticated && profileComplete && schedule && !schedule.current
+      && pathname !== "/onboarding" && !pathname.startsWith("/workout/")) router.replace("/onboarding");
+  }, [isAuthenticated, profileComplete, schedule, pathname]);
 
   const preference = useThemeStore((s) => s.preference);
   const themeReady = useThemeStore((s) => s.hydrated);
@@ -87,7 +102,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isAuthenticated) return;
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") useNotificationStore.getState().refreshNutritionReminders();
+      if (state === "active") {
+        void useNotificationStore.getState().refreshNutritionReminders();
+        void useNotificationStore.getState().refreshWorkoutReminders();
+        void useTrainingScheduleStore.getState().load();
+      }
     });
     return () => sub.remove();
   }, [isAuthenticated]);
@@ -111,10 +130,12 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={navTheme}>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+      <View style={{ flex: 1 }}>
       <Stack
         key={scheme}
         screenOptions={{
           headerShown: false,
+          headerLeft: () => <BackButton />,
           contentStyle: { backgroundColor: colors.background },
         }}
       >
@@ -123,12 +144,13 @@ export default function RootLayout() {
           <Stack.Screen name="onboarding" />
         </Stack.Protected>
 
-        <Stack.Protected guard={isAuthenticated && !needsOnboarding}>
+        <Stack.Protected guard={isAuthenticated && (!needsOnboarding || profileComplete)}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="food" />
           <Stack.Screen name="workout" />
           <Stack.Screen name="ai" />
           <Stack.Screen name="measurements" />
+          <Stack.Screen name="history" options={{ headerShown: true, title: "Lịch sử theo ngày", headerBackTitle: "Quay lại" }} />
           <Stack.Screen
             name="settings/account"
             options={{ headerShown: true, title: "Tài khoản & bảo mật", headerBackTitle: "Quay lại" }}
@@ -143,6 +165,8 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
       </Stack>
+      {isAuthenticated && !needsOnboarding && (schedule?.current || scheduleError) ? <AppFooter /> : null}
+      </View>
     </ThemeProvider>
   );
 }

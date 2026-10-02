@@ -1,4 +1,4 @@
-import { MEAL_TYPES, type MealType } from "../constants/enums";
+import { listMeals } from "./meal.service";
 import { FoodLogModel } from "../models/foodLog.model";
 import { todayInTimezone } from "../utils/date";
 import { round1, sumNutrition, type NutritionValues } from "../utils/foodNutrition";
@@ -30,9 +30,10 @@ function subtractMacros(target: Macros, consumed: Macros): Macros {
 export async function getDailySummary(userId: string, date?: string) {
   const day = date ?? todayInTimezone(await getUserTimezone(userId));
 
-  const [target, logs] = await Promise.all([
+  const [target, logs, mealOptions] = await Promise.all([
     getActiveTarget(userId, day),
     FoodLogModel.find({ userId, date: day }).lean(),
+    listMeals(userId),
   ]);
 
   const toValues = (l: (typeof logs)[number]): NutritionValues => ({
@@ -46,11 +47,11 @@ export async function getDailySummary(userId: string, date?: string) {
   const consumed = sumNutrition(logs.map(toValues));
 
   const meals = Object.fromEntries(
-    MEAL_TYPES.map((meal) => [
+    mealOptions.map(({ id: meal }) => [
       meal,
       sumNutrition(logs.filter((l) => l.mealType === meal).map(toValues)),
     ])
-  ) as Record<MealType, NutritionValues>;
+  ) as Record<string, NutritionValues>;
 
   const targetMacros = target ? pickMacros(target) : null;
 
@@ -60,6 +61,7 @@ export async function getDailySummary(userId: string, date?: string) {
     consumed,
     remaining: targetMacros ? subtractMacros(targetMacros, consumed) : null,
     meals,
+    mealOptions,
     logCount: logs.length,
   };
 }

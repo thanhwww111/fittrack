@@ -1,3 +1,4 @@
+import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
+import { NumberStepper } from "@/components/ui/NumberStepper";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
@@ -82,8 +84,9 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
   const deleteTemplate = useWorkoutStore((s) => s.deleteTemplate);
   const openPicker = useExercisePickerStore((s) => s.open);
 
-  const [name, setName] = useState(template?.name ?? "");
-  const [exercises, setExercises] = useState<DraftExercise[]>(template ? toDraft(template) : []);
+  const draftKey = `template-${template?.id ?? "new"}`;
+  const [name, setName] = useDraftState(draftKey + "name", template?.name ?? "");
+  const [exercises, setExercises] = useDraftState<DraftExercise[]>(draftKey + "exercises", template ? toDraft(template) : []);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -155,6 +158,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
     setSaving(true);
     try {
       await saveTemplate(template?.id ?? null, { name: name.trim(), exercises: payload });
+      clearFormDrafts(draftKey);
       router.back();
     } catch (err) {
       setFormError(errorMessage(err));
@@ -187,6 +191,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
     if (!ok) return;
     try {
       await deleteTemplate(template.id);
+      clearFormDrafts(draftKey);
       router.back();
     } catch (err) {
       setFormError(errorMessage(err));
@@ -234,14 +239,22 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
               {(Object.keys(LIMITS) as NumberKey[]).map((key) => (
                 <View key={key} style={styles.numberField}>
                   <Text style={styles.numberLabel}>{LIMITS[key].label}</Text>
-                  <TextInput
+                  {key !== "rest" ? <NumberStepper
+                    value={e[key]}
+                    onChangeText={(v) => update(index, key, v)}
+                    label={`${LIMITS[key].label} của ${e.name}`}
+                    min={LIMITS[key].min}
+                    max={LIMITS[key].max}
+                    error={!!errors[`${index}.${key}`]}
+                    disabled={saving}
+                  /> : <TextInput
                     value={e[key]}
                     onChangeText={(v) => update(index, key, v)}
                     keyboardType="number-pad"
                     selectTextOnFocus
                     accessibilityLabel={`${LIMITS[key].label} của ${e.name}`}
                     style={[styles.numberInput, errors[`${index}.${key}`] && styles.inputError]}
-                  />
+                  />}
                 </View>
               ))}
             </View>
@@ -308,8 +321,8 @@ const styles = themedStyles(() => ({
   exerciseName: { flex: 1, fontSize: 16, fontWeight: "600", color: colors.text },
   iconButton: { padding: spacing.xs, borderRadius: radius.sm },
   disabled: { opacity: 0.3 },
-  numberRow: { flexDirection: "row", gap: spacing.md },
-  numberField: { flex: 1, gap: spacing.xs },
+  numberRow: { gap: spacing.md },
+  numberField: { gap: spacing.xs },
   numberLabel: { fontSize: 13, color: colors.textMuted },
   numberInput: {
     minHeight: 44,

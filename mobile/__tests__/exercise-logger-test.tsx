@@ -18,6 +18,18 @@ async function setup(exercise: SessionExercise = bench) {
 }
 
 describe("ExerciseLogger", () => {
+  it("steps reps and keeps manual entry within the button limits", async () => {
+    await setup();
+    await fireEvent.press(screen.getByLabelText("Tăng Số rep Bench Press"));
+    expect(screen.getByLabelText("Số rep Bench Press").props.value).toBe("9");
+    await fireEvent.press(screen.getByLabelText("Giảm Số rep Bench Press"));
+    expect(screen.getByLabelText("Số rep Bench Press").props.value).toBe("8");
+    await fireEvent.changeText(screen.getByLabelText("Số rep Bench Press"), "1");
+    expect(screen.getByLabelText("Giảm Số rep Bench Press")).toBeDisabled();
+    await fireEvent.changeText(screen.getByLabelText("Số rep Bench Press"), "1000");
+    expect(screen.getByLabelText("Tăng Số rep Bench Press")).toBeDisabled();
+  });
+
   it("prefills reps from the target and shows the next set number", async () => {
     await setup();
     expect(screen.getByText("Mục tiêu 3 × 8")).toBeTruthy();

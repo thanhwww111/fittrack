@@ -23,6 +23,7 @@ import {
   weeklyAverages,
 } from "../utils/goalProgress";
 import { getUserTimezone } from "./profile.service";
+import { getTrainingSchedule } from "./trainingSchedule.service";
 
 interface Macros {
   calories: number;
@@ -42,6 +43,9 @@ async function userContext(userId: string) {
 function resolveRange(query: DateRangeQuery, today: string, defaultDays: number) {
   const to = query.to ?? today;
   const from = query.from ?? addDays(to, -(defaultDays - 1));
+  if (from > to) {
+    throw AppError.badRequest("from must be before or equal to to");
+  }
   if (daysBetween(from, to) + 1 > MAX_RANGE_DAYS) {
     throw AppError.badRequest(`Date range cannot exceed ${MAX_RANGE_DAYS} days`);
   }
@@ -89,13 +93,16 @@ async function completedSessionsBetween(userId: string, timezone: string, from: 
   const sessions = await WorkoutSessionModel.find({
     userId,
     status: "COMPLETED",
-    completedAt: { $gte: utcLowerBound(from) },
+    completedAt: { $gte: utcLowerBound(from), $lt: new Date(`${addDays(to, 2)}T00:00:00Z`) },
   })
-    .select("completedAt totalVolume duration exercises.sets")
+    .select("name completedAt totalVolume duration exercises.sets")
+    .sort({ completedAt: -1, _id: -1 })
     .lean();
 
   return sessions
     .map((s) => ({
+      id: String(s._id),
+      name: s.name,
       date: todayInTimezone(timezone, s.completedAt!),
       totalVolume: s.totalVolume,
       duration: s.duration,
@@ -205,6 +212,31 @@ export async function getNutritionProgress(userId: string, query: DateRangeQuery
   const { from, to } = resolveRange(query, today, 7);
   const days = await nutritionByDay(userId, from, to);
   return { from, to, days, summary: summarizeNutrition(days) };
+}
+
+export async function getDailyHistory(userId: string, query: DateRangeQuery) {
+  const { timezone, today } = await userContext(userId);
+  const { from, to } = resolveRange(query, today, 7);
+  const [nutrition, sessions, schedule] = await Promise.all([
+    nutritionByDay(userId, from, to),
+    completedSessionsBetween(userId, timezone, from, to),
+    getTrainingSchedule(userId, { from, to }),
+  ]);
+  const days = nutrition.reverse().map((day) => {
+    const workouts = sessions.filter((session) => session.date === day.date);
+    return {
+      ...day,
+      trainingSchedule: schedule.days.find((item) => item.date === day.date),
+      workout: {
+        sessions: workouts.length,
+        sets: workouts.reduce((sum, session) => sum + session.sets, 0),
+        totalVolume: round1(workouts.reduce((sum, session) => sum + session.totalVolume, 0)),
+        duration: workouts.reduce((sum, session) => sum + session.duration, 0),
+      },
+      workouts: workouts.map(({ id, name, totalVolume, duration }) => ({ id, name, totalVolume, duration })),
+    };
+  });
+  return { today, from, to, days };
 }
 
 // ---------- Weekly summary ----------

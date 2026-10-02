@@ -1,6 +1,11 @@
 import type { ApiSuccess } from "@/types/api";
-import type { DailyNutrition, FoodLog, MealTemplate, MealType, WaterDay } from "@/types/models";
+import type { DailyNutrition, FoodLog, MealOption, MealTemplate, MealType, WaterDay } from "@/types/models";
 import { api, unwrap } from "./client";
+
+export const mealApi = {
+  list: () => unwrap(api.get<ApiSuccess<MealOption[]>>("/meals")),
+  create: (name: string) => unwrap(api.post<ApiSuccess<MealOption>>("/meals", { name })),
+};
 
 export interface CreateFoodLogInput {
   foodId: string;

@@ -49,16 +49,17 @@ export const MEAL_SYSTEM_PROMPT = [
 ].join(" ");
 
 interface MealPromptInput {
-  mealType: MealType;
+  mealType: string;
+  mealName?: string;
   remaining: { calories: number; protein: number; carbs: number; fat: number };
   goalType: GoalType | null;
   preferences?: string;
 }
 
-export function buildMealPrompt({ mealType, remaining, goalType, preferences }: MealPromptInput) {
+export function buildMealPrompt({ mealType, mealName, remaining, goalType, preferences }: MealPromptInput) {
   const clamp = (n: number) => Math.max(0, Math.round(n));
   const lines = [
-    `Gợi ý 3 lựa chọn cho ${MEAL_NAMES[mealType]}.`,
+    `Gợi ý 3 lựa chọn cho ${mealName ? JSON.stringify(mealName) : MEAL_NAMES[mealType as MealType]}.`,
     `Lượng còn lại trong ngày: ${clamp(remaining.calories)} kcal, protein ${clamp(remaining.protein)} g, carbs ${clamp(remaining.carbs)} g, fat ${clamp(remaining.fat)} g.`,
   ];
   if (goalType) lines.push(`Mục tiêu của người dùng: ${GOAL_NAMES[goalType]}.`);

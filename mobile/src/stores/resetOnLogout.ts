@@ -1,7 +1,9 @@
 import { useAuthStore } from "./authStore";
+import { clearAllFormDrafts } from "@/hooks/useDraftState";
 import { useExercisePickerStore } from "./exercisePickerStore";
 import { useNotificationStore } from "./notificationStore";
 import { useNutritionStore } from "./nutritionStore";
+import { useMealStore } from "./mealStore";
 import { useProfileStore } from "./profileStore";
 import { useWorkoutStore } from "./workoutStore";
 
@@ -10,8 +12,10 @@ import { useWorkoutStore } from "./workoutStore";
 // notificationStore.reset() còn huỷ các lịch nhắc cục bộ của user cũ.
 useAuthStore.subscribe((state, prev) => {
   if (prev.isAuthenticated && !state.isAuthenticated) {
+    clearAllFormDrafts();
     useProfileStore.getState().reset();
     useNutritionStore.getState().reset();
+    useMealStore.getState().reset();
     useWorkoutStore.getState().reset();
     useExercisePickerStore.getState().clear();
     useNotificationStore.getState().reset();

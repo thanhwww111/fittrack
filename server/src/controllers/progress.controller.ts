@@ -44,6 +44,12 @@ export const getNutrition: RequestHandler = async (req, res) => {
   res.json({ success: true, data });
 };
 
+export const getHistory: RequestHandler = async (req, res) => {
+  const query = dateRangeQuerySchema.parse(req.query);
+  const data = await progressService.getDailyHistory(req.user!.id, query);
+  res.json({ success: true, data });
+};
+
 export const getWeekly: RequestHandler = async (req, res) => {
   const data = await progressService.getWeeklySummary(req.user!.id);
   res.json({ success: true, data });

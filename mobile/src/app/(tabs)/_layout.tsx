@@ -30,6 +30,7 @@ const TABS: { name: string; title: string; icon: IconName; focusedIcon: IconName
 export default function TabsLayout() {
   return (
     <Tabs
+      tabBar={() => null}
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,

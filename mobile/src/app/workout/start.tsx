@@ -127,6 +127,7 @@ export default function ActiveWorkoutScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={styles.muted}>Buổi theo lịch cần hoàn thành trong ngày. Qua ngày, buổi chưa xong được ghi bỏ lỡ và lịch ngày mới không thay đổi.</Text>
         {prAlert ? (
           <View style={styles.prBanner} accessibilityRole="alert">
             <Text style={styles.prTitle}>🏆 PR mới: {prAlert.exerciseName}</Text>

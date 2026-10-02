@@ -41,15 +41,17 @@ export const useNutritionStore = create<NutritionState>()((set, get) => ({
   load: async (date) => {
     set({ isLoading: true, error: null });
     try {
-      const [summary, logs] = await Promise.all([
+      const [summary, logs, currentDay] = await Promise.all([
         date ? nutritionApi.daily(date) : nutritionApi.today(),
         foodLogApi.list(date),
+        // Ghi món có thể chạy trước lần mở tab đầu tiên; ngày ghi không nhất thiết là hôm nay.
+        date && !get().today ? nutritionApi.today() : Promise.resolve(null),
       ]);
       set((state) => ({
         summary,
         logs: logs.items,
         selectedDate: summary.date,
-        today: date ? state.today : summary.date,
+        today: date ? (currentDay?.date ?? state.today) : summary.date,
         isLoading: false,
       }));
       // Số liệu hôm nay đổi → cập nhật nội dung nhắc "còn thiếu bao nhiêu"

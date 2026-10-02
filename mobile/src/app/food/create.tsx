@@ -1,3 +1,4 @@
+import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -9,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { foodApi } from "@/api/foodApi";
+import { FoodAiHelper } from "@/components/nutrition/FoodAiHelper";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
@@ -65,9 +67,10 @@ export default function CreateFoodScreen() {
 function FoodForm({ food }: { food: Food | null }) {
   const params = useLocalSearchParams<{ name?: string; mealType?: string; date?: string }>();
 
-  const [name, setName] = useState(food?.name ?? params.name ?? "");
-  const [unit, setUnit] = useState<ServingUnit>(food?.servingUnit ?? "g");
-  const [values, setValues] = useState<Record<NumberKey, string>>(() =>
+  const draftKey = `food-${food?.id ?? "new"}`;
+  const [name, setName] = useDraftState(draftKey + "name", food?.name ?? params.name ?? "");
+  const [unit, setUnit] = useDraftState<ServingUnit>(draftKey + "unit", food?.servingUnit ?? "g");
+  const [values, setValues] = useDraftState<Record<NumberKey, string>>(draftKey + "values", () =>
     food
       ? {
           servingSize: String(food.servingSize),
@@ -112,11 +115,13 @@ function FoodForm({ food }: { food: Food | null }) {
     try {
       if (food) {
         await foodApi.update(food.id, input);
+      clearFormDrafts(draftKey);
         // Màn thêm món tự tải lại khi quay về
         router.back();
         return;
       }
       const created = await foodApi.create(input);
+      clearFormDrafts(draftKey);
       // Tạo xong đi thẳng tới màn nhập khối lượng của món vừa tạo
       router.replace({
         pathname: "/food/add",
@@ -146,6 +151,23 @@ function FoodForm({ food }: { food: Food | null }) {
           <TextField label="Tên món" value={name} onChangeText={setName} error={errors.name} />
           <ChipGroup label="Đơn vị" options={UNIT_OPTIONS} value={unit} onChange={setUnit} />
         </Card>
+
+        {!food ? (
+          <FoodAiHelper foodName={name} disabled={saving} onApply={(suggestion) => {
+            setName(suggestion.name);
+            setUnit(suggestion.servingUnit);
+            setValues({
+              servingSize: String(suggestion.servingSize),
+              calories: String(suggestion.calories),
+              protein: String(suggestion.protein),
+              carbs: String(suggestion.carbs),
+              fat: String(suggestion.fat),
+              fiber: String(suggestion.fiber),
+            });
+            setErrors({});
+            setFormError(null);
+          }} />
+        ) : null}
 
         <Card title="Dinh dưỡng trên mỗi khẩu phần">
           <Text style={styles.hint}>

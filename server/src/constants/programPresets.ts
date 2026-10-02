@@ -62,6 +62,13 @@ const LEGS: PresetWorkout = {
   ],
 };
 
+// Buổi gợi ý độc lập: chỉ tạo mẫu khi người dùng chọn để lưu vào lịch.
+export const SUGGESTED_WORKOUTS = [
+  { key: "push" as const, ...PUSH, name: "Ngực vai tay sau" },
+  { key: "pull" as const, ...PULL, name: "Lưng xô tay trước" },
+  { key: "legs" as const, ...LEGS, name: "Chân bụng" },
+];
+
 export const PROGRAM_PRESETS: ProgramPreset[] = [
   {
     key: "ppl-3",

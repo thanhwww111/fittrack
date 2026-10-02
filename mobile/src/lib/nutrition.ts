@@ -1,13 +1,23 @@
-import type { Food, MealType, NutritionValues, ServingUnit } from "@/types/models";
+import type { DefaultMealType, Food, MealOption, MealType, NutritionValues, ServingUnit } from "@/types/models";
 
-export const MEAL_LABELS: Record<MealType, string> = {
+export const MEAL_LABELS: Record<DefaultMealType, string> = {
   BREAKFAST: "Bữa sáng",
   LUNCH: "Bữa trưa",
   DINNER: "Bữa tối",
   SNACK: "Ăn vặt",
 };
 
-export const MEAL_ORDER: MealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
+export const MEAL_ORDER: DefaultMealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
+
+export const DEFAULT_MEALS: MealOption[] = MEAL_ORDER.map((id) => ({ id, name: MEAL_LABELS[id], isCustom: false }));
+
+export function isMealType(value: string | undefined): value is MealType {
+  return !!value && (MEAL_ORDER.includes(value as DefaultMealType) || /^CUSTOM_[a-f0-9]{24}$/.test(value));
+}
+
+export function mealLabel(id: MealType, meals: MealOption[] = DEFAULT_MEALS) {
+  return meals.find((meal) => meal.id === id)?.name ?? "Bữa tùy chọn";
+}
 
 export const UNIT_LABELS: Record<ServingUnit, string> = { g: "g", ml: "ml", piece: "cái" };
 

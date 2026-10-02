@@ -47,7 +47,7 @@ describe("notification settings", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({
-      workoutReminder: { enabled: false, days: [1, 3, 5], time: "18:00" },
+      workoutReminder: { enabled: false, days: [1, 3, 5], time: "07:00" },
       mealReminders: {
         enabled: false,
         items: [

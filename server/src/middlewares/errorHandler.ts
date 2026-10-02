@@ -30,6 +30,10 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   }
 
   // ID MongoDB sai định dạng
+  if (err instanceof mongoose.Error.VersionError) {
+    res.status(409).json({ success: false, error: { message: "Workout changed; reload before continuing" } });
+    return;
+  }
   if (err instanceof mongoose.Error.CastError) {
     res.status(400).json({
       success: false,

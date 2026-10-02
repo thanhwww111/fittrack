@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import * as programService from "../services/weeklyProgram.service";
+import { z } from "zod";
 
 type IdParams = { id: string };
 
@@ -8,7 +9,8 @@ export const listPresets: RequestHandler = (_req, res) => {
 };
 
 export const applyPreset: RequestHandler<{ key: string }> = async (req, res) => {
-  const data = await programService.applyPreset(req.user!.id, req.params.key);
+  const { requestId } = z.object({ requestId: z.string().min(1).max(128).optional() }).parse(req.body ?? {});
+  const data = await programService.applyPreset(req.user!.id, req.params.key, requestId);
   res.status(201).json({ success: true, data });
 };
 

@@ -16,6 +16,7 @@ import { getVisibleExercise, getVisibleExercisesByIds } from "./exercise.service
 import { notifyNewRecords } from "./notification.service";
 import { getUserTimezone } from "./profile.service";
 import { getOwnedTemplate } from "./workoutTemplate.service";
+import { expireScheduledSessions } from "./scheduledSession.service";
 
 
 function allSets(session: WorkoutSessionDocument) {
@@ -23,6 +24,7 @@ function allSets(session: WorkoutSessionDocument) {
 }
 
 async function getOwnedSession(userId: string, sessionId: string) {
+  await expireScheduledSessions(userId);
   const session = await WorkoutSessionModel.findOne({ _id: sessionId, userId });
   if (!session) {
     throw AppError.notFound("Workout session not found");
@@ -31,6 +33,7 @@ async function getOwnedSession(userId: string, sessionId: string) {
 }
 
 function assertInProgress(session: WorkoutSessionDocument) {
+  if (session.expiredAt) throw AppError.conflict("Scheduled workout has expired; today's schedule remains unchanged");
   if (session.status === "COMPLETED") {
     throw AppError.conflict("Workout is already completed");
   }
@@ -112,12 +115,14 @@ export async function listSessions(userId: string, query: ListSessionsQuery) {
 }
 
 export async function getActiveSession(userId: string) {
+  await expireScheduledSessions(userId);
   const session = await WorkoutSessionModel.findOne({ userId, status: "IN_PROGRESS" });
   return session?.toJSON() ?? null;
 }
 
 // Cho Dashboard: buổi đang tập (nếu có) + các buổi đã hoàn thành trong hôm nay của user
 export async function getTodayWorkout(userId: string) {
+  await expireScheduledSessions(userId);
   const timezone = await getUserTimezone(userId);
   const today = todayInTimezone(timezone);
 

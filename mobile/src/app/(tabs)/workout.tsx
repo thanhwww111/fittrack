@@ -1,3 +1,4 @@
+import { ScheduledWorkoutCard } from "@/components/workout/ScheduledWorkoutCard";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link, router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -6,30 +7,23 @@ import { programApi, sessionApi } from "@/api/workoutApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { GradientView } from "@/components/ui/GradientView";
+
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage } from "@/lib/formErrors";
-import { dayName, programDayFor } from "@/lib/goal";
+
 import { formatDate, formatDuration, formatVolume, formatWeight } from "@/lib/workout";
 import { useWorkoutStore } from "@/stores/workoutStore";
-import type { PersonalRecord, WeeklyProgramList, WorkoutSession } from "@/types/models";
+import type { PersonalRecord, WorkoutSession } from "@/types/models";
 
 export default function WorkoutDashboardScreen() {
-  const activeSession = useWorkoutStore((s) => s.activeSession);
-  const templates = useWorkoutStore((s) => s.templates);
-  const start = useWorkoutStore((s) => s.start);
-
   const [recent, setRecent] = useState<WorkoutSession[]>([]);
   const [records, setRecords] = useState<PersonalRecord[]>([]);
-  const [programs, setPrograms] = useState<WeeklyProgramList | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [starting, setStarting] = useState<string | null>(null);
-
   const load = useCallback(async () => {
     const { loadActive, loadTemplates } = useWorkoutStore.getState();
     try {
-      const [history, prs, programList] = await Promise.all([
+      const [history, prs] = await Promise.all([
         sessionApi.list({ status: "COMPLETED", limit: 3 }),
         sessionApi.personalRecords(),
         programApi.list(),
@@ -38,7 +32,7 @@ export default function WorkoutDashboardScreen() {
       ]);
       setRecent(history.items);
       setRecords(prs);
-      setPrograms(programList);
+
       setError(null);
     } catch (err) {
       setError(errorMessage(err));
@@ -50,24 +44,6 @@ export default function WorkoutDashboardScreen() {
       load();
     }, [load])
   );
-
-  async function handleStart(key: string, input: { templateId?: string; name?: string }) {
-    setStarting(key);
-    setError(null);
-    try {
-      await start(input);
-      router.push("/workout/start");
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setStarting(null);
-    }
-  }
-
-  const favorites = programs?.items.filter((p) => p.isFavorite) ?? [];
-  const today = programs?.todayDayOfWeek ?? null;
-
-  const setCount = activeSession?.exercises.reduce((n, e) => n + e.sets.length, 0) ?? 0;
 
   return (
     <ScrollView
@@ -85,99 +61,9 @@ export default function WorkoutDashboardScreen() {
     >
       <ErrorBanner message={error} />
 
-      {activeSession ? (
-        <GradientView style={styles.hero}>
-          <View style={styles.liveRow}>
-            <View style={styles.liveDot} />
-            <Text style={styles.heroLabel}>Đang tập</Text>
-          </View>
-          <Text style={styles.heroName}>{activeSession.name}</Text>
-          <Text style={styles.heroMuted}>
-            {activeSession.exercises.length} bài · {setCount} set · {formatVolume(activeSession.totalVolume)}
-          </Text>
-          <Button title="Tiếp tục buổi tập" variant="light" onPress={() => router.push("/workout/start")} />
-        </GradientView>
-      ) : null}
-
-      {!activeSession && favorites.length > 0 && today !== null ? (
-        <GradientView style={styles.hero}>
-          <Text style={styles.heroLabel}>Lịch tuần · {dayName(today)}</Text>
-          {favorites.map((program) => {
-            const day = programDayFor(program, today);
-            return day ? (
-              <Pressable
-                key={program.id}
-                accessibilityRole="button"
-                accessibilityLabel={`Bắt đầu ${day.templateName} theo lịch ${program.name}`}
-                disabled={starting !== null}
-                onPress={() => handleStart(day.templateId, { templateId: day.templateId })}
-                style={({ pressed }) => [styles.programRow, pressed && styles.pressed]}
-              >
-                <View style={styles.flex}>
-                  <Text style={styles.heroName}>{day.templateName}</Text>
-                  <Text style={styles.heroMuted}>
-                    {program.name} · {day.exerciseCount} bài tập
-                  </Text>
-                </View>
-                <Ionicons
-                  name={starting === day.templateId ? "hourglass-outline" : "play-circle"}
-                  size={48}
-                  color={colors.onGradient}
-                />
-              </Pressable>
-            ) : (
-              <Text key={program.id} style={styles.heroMuted}>
-                {program.name}: hôm nay nghỉ, hồi phục cho buổi sau 💤
-              </Text>
-            );
-          })}
-        </GradientView>
-      ) : null}
-
-      {activeSession ? null : (
-        <Card title="Bắt đầu tập" icon="play">
-          {templates.map((t) => (
-            <Pressable
-              key={t.id}
-              accessibilityRole="button"
-              accessibilityLabel={`Bắt đầu ${t.name}`}
-              disabled={starting !== null}
-              onPress={() => handleStart(t.id, { templateId: t.id })}
-              style={({ pressed }) => [styles.templateRow, pressed && styles.pressed]}
-            >
-              <View style={styles.flex}>
-                <Text style={styles.templateName}>{t.name}</Text>
-                <Text style={styles.muted}>{t.exercises.length} bài tập</Text>
-              </View>
-              <Ionicons
-                name={starting === t.id ? "hourglass-outline" : "play-circle"}
-                size={30}
-                color={colors.primary}
-              />
-            </Pressable>
-          ))}
-          {templates.length === 0 ? (
-            <Text style={styles.muted}>
-              Tạo template như “Push Day” để bắt đầu nhanh với bài tập và số set có sẵn.
-            </Text>
-          ) : null}
-          <Button
-            title="Buổi tập trống"
-            variant="secondary"
-            loading={starting === "empty"}
-            disabled={starting !== null}
-            onPress={() => handleStart("empty", { name: "Buổi tập" })}
-          />
-        </Card>
-      )}
-
+      <ScheduledWorkoutCard />
       <View style={styles.linkRow}>
-        <Link href="/workout/templates" asChild>
-          <Pressable style={styles.linkButton}>
-            <Ionicons name="list-outline" size={20} color={colors.primaryText} />
-            <Text style={styles.linkText}>Template</Text>
-          </Pressable>
-        </Link>
+
         <Link href="/workout/programs" asChild>
           <Pressable style={styles.linkButton}>
             <Ionicons name="calendar-outline" size={20} color={colors.primaryText} />

@@ -1,3 +1,4 @@
+import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
@@ -11,15 +12,11 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { colors, spacing, themedStyles } from "@/constants/theme";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage, parseNumber } from "@/lib/formErrors";
-import { formatServing, MEAL_ORDER, mealTypeForHour, previewNutrition } from "@/lib/nutrition";
+import { formatServing, isMealType, mealTypeForHour, previewNutrition } from "@/lib/nutrition";
 import { useNutritionStore } from "@/stores/nutritionStore";
 import type { Food, MealType } from "@/types/models";
 
 const MAX_QUANTITY = 10000;
-
-function isMealType(value: string | undefined): value is MealType {
-  return MEAL_ORDER.includes(value as MealType);
-}
 
 export default function AddFoodScreen() {
   const params = useLocalSearchParams<{ foodId: string; mealType?: string; date?: string }>();
@@ -27,8 +24,9 @@ export default function AddFoodScreen() {
 
   const [food, setFood] = useState<Food | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [quantity, setQuantity] = useState("");
-  const [mealType, setMealType] = useState<MealType>(
+  const draftKey = `add-${params.foodId}-${params.date ?? "today"}-${params.mealType ?? "default"}`;
+  const [quantity, setQuantity] = useDraftState(draftKey + "quantity", "");
+  const [mealType, setMealType] = useDraftState<MealType>(draftKey + "mealType",
     isMealType(params.mealType) ? params.mealType : mealTypeForHour(new Date().getHours())
   );
   const [quantityError, setQuantityError] = useState<string>();
@@ -52,7 +50,7 @@ export default function AddFoodScreen() {
         .favorites()
         .then((list) => setFavorite(list.some((f) => f.id === params.foodId)))
         .catch(() => {});
-    }, [params.foodId])
+    }, [params.foodId, setQuantity])
   );
 
   async function toggleFavorite() {
@@ -92,6 +90,7 @@ export default function AddFoodScreen() {
     try {
       await addLog({ foodId: food!.id, mealType, quantity: amount, date: params.date });
       // Quay thẳng về tab Dinh dưỡng, bỏ qua màn tìm kiếm
+      clearFormDrafts(draftKey);
       router.dismissTo("/nutrition");
     } catch (err) {
       setFormError(errorMessage(err));

@@ -16,6 +16,7 @@ const workoutTemplateSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     name: { type: String, required: true, trim: true, maxlength: 100 },
+    suggestedKey: { type: String, enum: ["push", "pull", "legs"] },
     exercises: {
       type: [templateExerciseSchema],
       validate: [(v: unknown[]) => v.length > 0, "Workout template needs at least one exercise"],
@@ -25,6 +26,10 @@ const workoutTemplateSchema = new Schema(
 );
 
 workoutTemplateSchema.index({ userId: 1 });
+workoutTemplateSchema.index(
+  { userId: 1, suggestedKey: 1 },
+  { unique: true, partialFilterExpression: { suggestedKey: { $type: "string" } } }
+);
 
 applyToJSON(workoutTemplateSchema);
 

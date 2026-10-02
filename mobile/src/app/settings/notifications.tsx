@@ -1,3 +1,4 @@
+import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useState } from "react";
 import {
@@ -20,17 +21,6 @@ import { ensurePermission } from "@/lib/notifications";
 import { MAX_MEAL_REMINDERS, nextFreeReminderTime, validateMealReminders } from "@/lib/nutritionReminders";
 import { useNotificationStore } from "@/stores/notificationStore";
 import type { MealReminder, NotificationSettings } from "@/types/models";
-
-// Hiển thị theo thứ tự T2 → CN, giá trị 0 = CN như server
-const WEEKDAYS = [
-  { value: 1, label: "T2" },
-  { value: 2, label: "T3" },
-  { value: 3, label: "T4" },
-  { value: 4, label: "T5" },
-  { value: 5, label: "T6" },
-  { value: 6, label: "T7" },
-  { value: 0, label: "CN" },
-];
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -68,7 +58,8 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
   const update = useNotificationStore((s) => s.update);
   const push = useNotificationStore((s) => s.push);
 
-  const [draft, setDraft] = useState(settings);
+  const draftKey = `notifications`;
+  const [draft, setDraft] = useDraftState(draftKey + "draft", settings);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -84,23 +75,14 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
   const addMealItem = () =>
     setMeals({ items: [...mealItems, { time: nextFreeReminderTime(mealItems), label: "Bữa phụ" }] });
 
-  function toggleDay(day: number) {
-    const days = draft.workoutReminder.days;
-    setWorkout({ days: days.includes(day) ? days.filter((d) => d !== day) : [...days, day] });
-  }
-
   async function handleSave() {
     if (!TIME_REGEX.test(draft.workoutReminder.time)) {
-      setError("Giờ nhắc tập phải có dạng HH:mm, ví dụ 18:00.");
+      setError("Giờ nhắc tập phải có dạng HH:mm, ví dụ 07:00.");
       return;
     }
     const mealError = validateMealReminders(mealItems);
     if (mealError) {
       setError(mealError);
-      return;
-    }
-    if (draft.workoutReminder.enabled && draft.workoutReminder.days.length === 0) {
-      setError("Chọn ít nhất một ngày để nhắc tập.");
       return;
     }
 
@@ -114,6 +96,7 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
         return;
       }
       await update(draft);
+      clearFormDrafts(draftKey);
       setNotice("Đã lưu cài đặt thông báo.");
     } catch (err) {
       setError(errorMessage(err));
@@ -143,22 +126,7 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
           />
           {draft.workoutReminder.enabled ? (
             <>
-              <View style={styles.days}>
-                {WEEKDAYS.map((d) => {
-                  const selected = draft.workoutReminder.days.includes(d.value);
-                  return (
-                    <Pressable
-                      key={d.value}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: selected }}
-                      onPress={() => toggleDay(d.value)}
-                      style={[styles.day, selected && styles.daySelected]}
-                    >
-                      <Text style={[styles.dayText, selected && styles.dayTextSelected]}>{d.label}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <Text style={styles.hint}>Ngày nhắc tự theo lịch đang áp dụng, không nhắc ngày nghỉ. Mở app để cập nhật lịch nhắc cho 28 ngày tới.</Text>
               <TimeRow
                 label="Lúc"
                 value={draft.workoutReminder.time}

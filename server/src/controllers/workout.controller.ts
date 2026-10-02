@@ -62,6 +62,11 @@ export const createTemplate: RequestHandler = async (req, res) => {
   res.status(201).json({ success: true, data });
 };
 
+export const applyWorkoutSuggestion: RequestHandler<{ key: string }> = async (req, res) => {
+  const data = await templateService.applySuggestion(req.user!.id, req.params.key);
+  res.json({ success: true, data });
+};
+
 export const updateTemplate: RequestHandler<IdParams> = async (req, res) => {
   const data = await templateService.updateTemplate(req.user!.id, req.params.id, req.body);
   res.json({ success: true, data });

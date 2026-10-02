@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MEAL_TYPES } from "../constants/enums";
+import { mealIdSchema } from "./meal.schema";
 import { isValidDateString } from "../utils/date";
 
 const date = z.string().refine(isValidDateString, "date must be a valid YYYY-MM-DD date");
@@ -9,13 +9,13 @@ const quantity = z.number().positive("quantity must be greater than 0").max(1000
 // Không có calories/protein/...: backend tự tính từ Food, không tin số client gửi lên
 export const createFoodLogSchema = z.object({
   date: date.optional(),
-  mealType: z.enum(MEAL_TYPES),
+  mealType: mealIdSchema,
   foodId: objectId,
   quantity,
 });
 
 export const updateFoodLogSchema = z
-  .object({ date, mealType: z.enum(MEAL_TYPES), quantity })
+  .object({ date, mealType: mealIdSchema, quantity })
   .partial()
   .refine((data) => Object.keys(data).length > 0, "At least one field is required");
 
@@ -26,9 +26,9 @@ export const listFoodLogsQuerySchema = z.object({
 // toDate bỏ trống = hôm nay, toMealType bỏ trống = cùng bữa với nguồn
 export const copyMealSchema = z.object({
   fromDate: date,
-  fromMealType: z.enum(MEAL_TYPES),
+  fromMealType: mealIdSchema,
   toDate: date.optional(),
-  toMealType: z.enum(MEAL_TYPES).optional(),
+  toMealType: mealIdSchema.optional(),
 });
 
 export type CreateFoodLogInput = z.infer<typeof createFoodLogSchema>;

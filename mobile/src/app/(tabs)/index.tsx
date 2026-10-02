@@ -14,7 +14,6 @@ import { TodayWorkoutCard } from "@/components/workout/TodayWorkoutCard";
 import { colors, radius, shadow, spacing, themedStyles } from "@/constants/theme";
 import { useDashboard } from "@/hooks/useDashboard";
 import { localToday } from "@/hooks/useProgress";
-import { mealTypeForHour } from "@/lib/nutrition";
 import { formatDayAdherence, formatSignedPercent } from "@/lib/weekly";
 import { formatDuration, formatVolume } from "@/lib/workout";
 import { useAuthStore } from "@/stores/authStore";
@@ -108,6 +107,7 @@ export default function HomeScreen() {
           </View>
         ) : null}
       </GradientView>
+      <Button title="Lịch sử theo ngày" variant="secondary" onPress={() => router.push("/history")} />
 
       {weekly ? (
         <View style={styles.section}>
@@ -163,12 +163,7 @@ export default function HomeScreen() {
         <QuickAction
           icon="restaurant"
           label="Ghi món"
-          onPress={() =>
-            router.push({
-              pathname: "/food/search",
-              params: { mealType: mealTypeForHour(new Date().getHours()) },
-            })
-          }
+          onPress={() => router.push("/food/search")}
         />
         <QuickAction
           icon="scale"

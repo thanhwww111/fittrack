@@ -1,3 +1,4 @@
+import mealRoutes from "./meal.routes";
 import { Router } from "express";
 import mongoose from "mongoose";
 import aiRoutes from "./ai.routes";
@@ -11,6 +12,7 @@ import nutritionRoutes from "./nutrition.routes";
 import profileRoutes from "./profile.routes";
 import waterRoutes from "./water.routes";
 import weeklyProgramRoutes from "./weeklyProgram.routes";
+import trainingScheduleRoutes from "./trainingSchedule.routes";
 import { bodyMeasurementRoutes, progressRoutes } from "./progress.routes";
 import {
   exerciseRoutes,
@@ -36,6 +38,7 @@ router.use("/profile", profileRoutes);
 router.use("/goals", goalRoutes);
 router.use("/foods", foodRoutes);
 router.use("/food-logs", foodLogRoutes);
+router.use("/meals", mealRoutes);
 router.use("/meal-templates", mealTemplateRoutes);
 router.use("/nutrition", nutritionRoutes);
 router.use("/water", waterRoutes);
@@ -44,6 +47,7 @@ router.use("/workout-templates", workoutTemplateRoutes);
 router.use("/workout-sessions", workoutSessionRoutes);
 router.use("/personal-records", personalRecordRoutes);
 router.use("/weekly-programs", weeklyProgramRoutes);
+router.use("/training-schedule", trainingScheduleRoutes);
 router.use("/body-measurements", bodyMeasurementRoutes);
 router.use("/progress", progressRoutes);
 router.use("/ai", aiRoutes);

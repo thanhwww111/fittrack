@@ -1,3 +1,4 @@
+import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -93,7 +94,8 @@ export default function EditMeasurementScreen() {
 const toText = (value: number | null | undefined) => (value == null ? "" : String(value));
 
 function MeasurementForm({ date, measurement }: { date: string; measurement: BodyMeasurement | null }) {
-  const [values, setValues] = useState<Record<MeasurementField, string>>(() => ({
+  const draftKey = `measure-${date}`;
+  const [values, setValues] = useDraftState<Record<MeasurementField, string>>(draftKey + "values", () => ({
     weight: toText(measurement?.weight),
     bodyFat: toText(measurement?.bodyFat),
     chest: toText(measurement?.chest),
@@ -128,6 +130,7 @@ function MeasurementForm({ date, measurement }: { date: string; measurement: Bod
     setSaving(true);
     try {
       await measurementApi.save({ ...(input as MeasurementInput), date });
+      clearFormDrafts(draftKey);
       await promptTargetRecalculation();
       router.back();
     } catch (err) {

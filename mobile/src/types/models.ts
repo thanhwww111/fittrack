@@ -3,7 +3,14 @@
 export type Gender = "MALE" | "FEMALE" | "OTHER";
 export type ActivityLevel = "SEDENTARY" | "LIGHT" | "MODERATE" | "ACTIVE" | "VERY_ACTIVE";
 export type GoalType = "WEIGHT_LOSS" | "MAINTENANCE" | "MUSCLE_GAIN";
-export type MealType = "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK";
+export type DefaultMealType = "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK";
+export type MealType = DefaultMealType | `CUSTOM_${string}`;
+
+export interface MealOption {
+  id: MealType;
+  name: string;
+  isCustom: boolean;
+}
 
 export interface User {
   id: string;
@@ -134,6 +141,7 @@ export interface DailyNutrition {
   consumed: Macros & { fiber: number };
   remaining: Macros | null;
   meals: Record<MealType, Macros & { fiber: number }>;
+  mealOptions?: MealOption[];
   logCount: number;
 }
 
@@ -201,6 +209,14 @@ export interface Food extends NutritionValues {
 
 export type CreateFoodInput = Omit<Food, "id" | "isCustom" | "createdBy">;
 
+export interface FoodNutritionEstimate extends CreateFoodInput {
+  description: string;
+}
+
+export interface FoodEstimateResult {
+  suggestions: FoodNutritionEstimate[];
+}
+
 // Snapshot dinh dưỡng tại thời điểm ghi, do server tính
 export interface FoodLog extends NutritionValues {
   id: string;
@@ -263,6 +279,7 @@ export interface TemplateExercise {
 export interface WorkoutTemplate {
   id: string;
   name: string;
+  suggestedKey?: "push" | "pull" | "legs";
   exercises: TemplateExercise[];
   updatedAt: string;
 }
@@ -409,6 +426,23 @@ export type UpdateNotificationSettings = {
   prAlerts?: boolean;
   goalAlerts?: boolean;
 };
+
+export interface HistoryDay {
+  trainingSchedule?: import("./trainingSchedule").TrainingScheduleDay;
+  date: string;
+  logged: boolean;
+  consumed: Macros;
+  target: Macros | null;
+  workout: { sessions: number; sets: number; totalVolume: number; duration: number };
+  workouts: { id: string; name: string; totalVolume: number; duration: number }[];
+}
+
+export interface DailyHistory {
+  today: string;
+  from: string;
+  to: string;
+  days: HistoryDay[];
+}
 
 export interface MealTemplateItem {
   foodId: string;

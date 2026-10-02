@@ -4,6 +4,7 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import type { Macros, NotificationSettings } from "@/types/models";
 import { buildNutritionReminders } from "./nutritionReminders";
+import { buildWorkoutReminders, type WorkoutReminderSchedule } from "./workoutReminders";
 
 // Mọi lịch nhắc app tự đặt đều có id bắt đầu bằng tiền tố này,
 // để huỷ đúng phần của mình mà không đụng thông báo khác
@@ -70,11 +71,6 @@ export async function getPushToken(): Promise<PushTokenResult> {
   }
 }
 
-function parseTime(time: string) {
-  const [hour, minute] = time.split(":").map(Number);
-  return { hour, minute };
-}
-
 async function cancelByPrefix(prefix: string) {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(
@@ -128,39 +124,22 @@ export async function scheduleNutritionReminders(
 
 // Đặt lại toàn bộ lịch nhắc cục bộ theo cài đặt. Chạy được cả trong Expo Go
 // vì không cần server: máy tự hiện thông báo đúng giờ.
-export async function scheduleReminders(settings: NotificationSettings, today: TodayNutrition | null) {
+export async function scheduleWorkoutReminders(settings: NotificationSettings, schedule: WorkoutReminderSchedule | null) {
   if (Platform.OS === "web") return;
-  await cancelReminders();
+  await cancelByPrefix(`${REMINDER_PREFIX}workout-`);
+  if (!settings.workoutReminder.enabled || !schedule || !(await ensurePermission())) return;
+  const reminders = buildWorkoutReminders({ now: new Date(), time: settings.workoutReminder.time, schedule });
+  await Promise.all(reminders.map((r) => Notifications.scheduleNotificationAsync({
+    identifier: `${REMINDER_PREFIX}${r.id}`,
+    content: { title: r.title, body: r.body, data: { url: "/workout" } },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: r.date, channelId: "default" },
+  })));
+}
 
-  const wantsAny = settings.workoutReminder.enabled || settings.mealReminders.enabled;
-  if (!wantsAny || !(await ensurePermission())) return;
-
-  const jobs: Promise<string>[] = [];
-
-  if (settings.workoutReminder.enabled) {
-    const { hour, minute } = parseTime(settings.workoutReminder.time);
-    for (const day of settings.workoutReminder.days) {
-      jobs.push(
-        Notifications.scheduleNotificationAsync({
-          identifier: `${REMINDER_PREFIX}workout-${day}`,
-          content: {
-            title: "💪 Đến giờ tập rồi!",
-            body: "Mở FitTrack để bắt đầu buổi tập hôm nay.",
-            data: { url: "/workout" },
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-            // Server lưu 0 = CN ... 6 = T7, Expo dùng 1 = CN ... 7 = T7
-            weekday: day + 1,
-            hour,
-            minute,
-            channelId: "default",
-          },
-        })
-      );
-    }
-  }
-
-  await Promise.all(jobs);
+export async function scheduleReminders(
+  settings: NotificationSettings, today: TodayNutrition | null, schedule: WorkoutReminderSchedule | null = null
+) {
+  if (Platform.OS === "web") return;
+  await scheduleWorkoutReminders(settings, schedule);
   await scheduleNutritionReminders(settings, today);
 }

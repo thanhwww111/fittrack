@@ -103,6 +103,9 @@ export function WaterCard({ date, onChange }: { date: string; onChange?: (water:
           </Pressable>
         ))}
       </View>
+      <Text style={styles.reminder}>
+        Khát thì uống, đừng nhịn khát. Nhớ uống nước đều trong ngày, không cần ép bản thân uống thật nhiều.
+      </Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </Card>
   );
@@ -126,5 +129,6 @@ const styles = themedStyles(() => ({
   minus: { width: 48 },
   buttonText: { fontSize: 15, fontWeight: "600", color: colors.waterText },
   dim: { opacity: 0.5 },
+  reminder: { fontSize: 13, lineHeight: 20, color: colors.waterText },
   error: { fontSize: 13, color: colors.danger },
 }));

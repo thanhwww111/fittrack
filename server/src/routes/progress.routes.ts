@@ -15,5 +15,6 @@ export const progressRoutes = Router()
   .get("/weight", progress.getWeight)
   .get("/workout", progress.getWorkout)
   .get("/nutrition", progress.getNutrition)
+  .get("/history", progress.getHistory)
   .get("/weekly", progress.getWeekly)
   .get("/goal", progress.getGoal);

@@ -13,7 +13,7 @@ import { foodApi } from "@/api/foodApi";
 import { MacroChips } from "@/components/nutrition/MacroChips";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { ChipGroup, type ChipOption } from "@/components/ui/ChipGroup";
+import { ChipGroup } from "@/components/ui/ChipGroup";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextField } from "@/components/ui/TextField";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
@@ -21,17 +21,18 @@ import { aiErrorMessage } from "@/lib/aiErrors";
 import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
 import { useNutritionStore } from "@/stores/nutritionStore";
-import { MEAL_LABELS, MEAL_ORDER, mealTypeForHour } from "@/lib/nutrition";
+import { isMealType, mealLabel, mealTypeForHour } from "@/lib/nutrition";
+import { useMeals } from "@/hooks/useMeals";
 import type { MealSuggestion, MealSuggestionResult, MealType } from "@/types/models";
 
-const MEAL_OPTIONS: ChipOption<MealType>[] = MEAL_ORDER.map((m) => ({ value: m, label: MEAL_LABELS[m] }));
 const fmt = (n: number) => Math.max(0, Math.round(n)).toLocaleString("vi-VN");
 
 export default function AiMealScreen() {
   const params = useLocalSearchParams<{ mealType?: string }>();
+  const { meals, error: mealError } = useMeals();
   const [mealType, setMealType] = useState<MealType>(
-    MEAL_ORDER.includes(params.mealType as MealType)
-      ? (params.mealType as MealType)
+    isMealType(params.mealType)
+      ? params.mealType
       : mealTypeForHour(new Date().getHours())
   );
   const [preferences, setPreferences] = useState("");
@@ -58,7 +59,7 @@ export default function AiMealScreen() {
   // Lưu gợi ý thành món tự tạo "1 phần" với macro AI ước tính, rồi ghi vào bữa đang chọn
   async function logSuggestion(suggestion: MealSuggestion, index: number) {
     const ok = await confirmAction({
-      title: `Ghi "${suggestion.name}" vào ${MEAL_LABELS[mealType].toLowerCase()}?`,
+      title: `Ghi "${suggestion.name}" vào ${mealLabel(mealType, meals).toLowerCase()}?`,
       message:
         "Món sẽ được lưu vào danh sách món của bạn (1 phần) với số liệu AI ước tính. Bạn có thể sửa lại sau.",
       confirmText: "Ghi vào nhật ký",
@@ -93,7 +94,8 @@ export default function AiMealScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Card>
-          <ChipGroup label="Gợi ý cho" options={MEAL_OPTIONS} value={mealType} onChange={setMealType} />
+          <ErrorBanner message={mealError} />
+          <ChipGroup label="Gợi ý cho" options={meals.map((meal) => ({ value: meal.id, label: meal.name }))} value={mealType} onChange={setMealType} />
           <TextField
             label="Sở thích (không bắt buộc)"
             value={preferences}

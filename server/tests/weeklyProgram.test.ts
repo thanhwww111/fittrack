@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import app from "../src/app";
 import { ExerciseModel } from "../src/models/exercise.model";
 import { WorkoutTemplateModel } from "../src/models/workoutTemplate.model";
+import { WeeklyProgramModel } from "../src/models/weeklyProgram.model";
 import { seedExercises } from "../src/scripts/seedExercises";
 import { todayInTimezone } from "../src/utils/date";
 import { createAuthedUser } from "./helpers/auth";
@@ -24,6 +25,55 @@ async function createTemplate(auth: Record<string, string>, name: string) {
     .send({ name, exercises: [{ exerciseId: benchId, targetSets: 3, targetReps: 8 }] });
   return res.body.data.id as string;
 }
+
+describe("POST /api/workout-templates/suggestions/:key/apply", () => {
+  it("materializes only the selected workout with real PPL exercises, without a program", async () => {
+    const { auth, userId } = await createAuthedUser();
+    const res = await request(app).post("/api/workout-templates/suggestions/pull/apply").set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ name: "Lưng xô tay trước", suggestedKey: "pull" });
+    expect(res.body.data.exercises).toHaveLength(6);
+    const first = await ExerciseModel.findById(res.body.data.exercises[0].exerciseId);
+    expect(first?.name).toBe("Deadlift");
+    expect(await WorkoutTemplateModel.countDocuments({ userId })).toBe(1);
+    expect(await WeeklyProgramModel.countDocuments({ userId })).toBe(0);
+  });
+
+  it("reuses one owned template on concurrent requests and retries, preserving edits", async () => {
+    const { auth, userId } = await createAuthedUser();
+    const results = await Promise.all(Array.from({ length: 3 }, () =>
+      request(app).post("/api/workout-templates/suggestions/push/apply").set(auth)));
+    expect(results.map((r) => r.status)).toEqual([200, 200, 200]);
+    expect(new Set(results.map((r) => r.body.data.id)).size).toBe(1);
+    const id = results[0].body.data.id;
+    await request(app).put(`/api/workout-templates/${id}`).set(auth).send({ name: "Push của tôi" });
+    const again = await request(app).post("/api/workout-templates/suggestions/push/apply").set(auth);
+    expect(again.body.data).toMatchObject({ id, name: "Push của tôi" });
+    expect(await WorkoutTemplateModel.countDocuments({ userId })).toBe(1);
+  });
+
+  it("keeps templates private to each user and validates the suggestion key", async () => {
+    const owner = await createAuthedUser();
+    const other = await createAuthedUser();
+    const first = await request(app).post("/api/workout-templates/suggestions/legs/apply").set(owner.auth);
+    const second = await request(app).post("/api/workout-templates/suggestions/legs/apply").set(other.auth);
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(first.body.data.id).not.toBe(second.body.data.id);
+    const invalid = await request(app).post("/api/workout-templates/suggestions/nope/apply").set(owner.auth);
+    expect(invalid.status).toBe(404);
+    const anonymous = await request(app).post("/api/workout-templates/suggestions/legs/apply");
+    expect(anonymous.status).toBe(401);
+  });
+
+  it("does not create an incomplete template when the exercise library is missing", async () => {
+    const { auth, userId } = await createAuthedUser();
+    await ExerciseModel.deleteMany({ name: "Squat" });
+    const res = await request(app).post("/api/workout-templates/suggestions/legs/apply").set(auth);
+    expect(res.status).toBe(500);
+    expect(await WorkoutTemplateModel.countDocuments({ userId })).toBe(0);
+  });
+});
 
 describe("GET /api/weekly-programs/presets", () => {
   it("lists the suggested weekly splits with their sessions", async () => {

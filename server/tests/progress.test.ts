@@ -239,6 +239,45 @@ describe("GET /api/progress/nutrition", () => {
   });
 });
 
+describe("GET /api/progress/history", () => {
+  it("returns seven descending empty days by default", async () => {
+    const { auth } = await createAuthedUser();
+    const res = await request(app).get("/api/progress/history").set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ today: today(), from: addDays(today(), -6), to: today() });
+    expect(res.body.data.days.map((d: { date: string }) => d.date)).toEqual(dateRange(addDays(today(), -6), today()).reverse());
+    expect(res.body.data.days[0]).toMatchObject({ date: today(), logged: false, consumed: { calories: 0, protein: 0, carbs: 0, fat: 0 }, target: null, workout: { sessions: 0, sets: 0, totalVolume: 0, duration: 0 }, workouts: [] });
+  });
+
+  it("combines own nutrition with completed workouts on their local completion day", async () => {
+    const { auth, userId } = await createAuthedUser();
+    const other = await createAuthedUser();
+    await UserProfileModel.updateOne({ userId }, { timezone: "America/Los_Angeles" });
+    await NutritionTargetModel.create({ userId, effectiveFrom: "2026-09-10", source: "MANUAL", calories: 2000, protein: 150, carbs: 200, fat: 60 });
+    for (const quantity of [100, 200]) await request(app).post("/api/food-logs").set(auth).send({ date: "2026-09-10", mealType: "LUNCH", foodId: chickenId, quantity });
+    await request(app).post("/api/food-logs").set(other.auth).send({ date: "2026-09-10", mealType: "LUNCH", foodId: chickenId, quantity: 1000 });
+    const makeSession = (owner: string, completedAt: string, status = "COMPLETED") => WorkoutSessionModel.create({ userId: owner, name: "Evening workout", status, startedAt: new Date("2026-09-09T20:00:00Z"), completedAt: new Date(completedAt), totalVolume: 1000, duration: 600, exercises: [{ exerciseId: benchId, exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 50, reps: 20 }] }] });
+    const included = await makeSession(userId, "2026-09-11T06:59:00Z");
+    await makeSession(userId, "2026-09-11T07:00:00Z");
+    await makeSession(other.userId, "2026-09-11T06:59:00Z");
+    await makeSession(userId, "2026-09-11T06:59:00Z", "CANCELLED");
+    await makeSession(userId, "2026-09-11T06:59:00Z", "IN_PROGRESS");
+    const res = await request(app).get("/api/progress/history?from=2026-09-09&to=2026-09-10").set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body.data.today).toBe(todayInTimezone("America/Los_Angeles"));
+    expect(res.body.data.days[0]).toMatchObject({ date: "2026-09-10", logged: true, consumed: { calories: 495, protein: 93 }, target: { calories: 2000 }, workout: { sessions: 1, sets: 1, totalVolume: 1000, duration: 600 }, workouts: [{ id: included.id, name: "Evening workout", totalVolume: 1000, duration: 600 }] });
+    expect(res.body.data.days[1]).toMatchObject({ logged: false, target: null, workouts: [] });
+  });
+
+  it("requires authentication and validates explicit and defaulted ranges", async () => {
+    expect((await request(app).get("/api/progress/history")).status).toBe(401);
+    const { auth } = await createAuthedUser();
+    for (const query of ["from=bad", "from=2026-09-10&to=2026-09-09", "from=2024-01-01&to=2026-01-01", `from=${addDays(today(), 1)}`]) {
+      expect((await request(app).get(`/api/progress/history?${query}`).set(auth)).status).toBe(400);
+    }
+  });
+});
+
 describe("GET /api/progress/weekly", () => {
   it("summarises the current week", async () => {
     const { auth, userId } = await createAuthedUser();

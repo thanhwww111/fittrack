@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { NumberStepper } from "@/components/ui/NumberStepper";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage, parseNumber } from "@/lib/formErrors";
 import { formatWeight } from "@/lib/workout";
@@ -127,26 +128,24 @@ export function ExerciseLogger({ exercise, onRecord, onRemoveSet }: ExerciseLogg
           />
         </View>
         <Text style={styles.times}>×</Text>
-        <View style={styles.inputGroup}>
+        <View style={styles.repGroup}>
           <Text style={styles.inputLabel}>rep</Text>
-          <TextInput
+          <NumberStepper
             value={reps}
             onChangeText={setReps}
-            keyboardType="number-pad"
-            placeholder="0"
-            placeholderTextColor={colors.textMuted}
-            selectTextOnFocus
-            accessibilityLabel={`Số rep ${exercise.exerciseName}`}
-            style={styles.input}
+            label={`Số rep ${exercise.exerciseName}`}
+            min={1}
+            max={1000}
+            disabled={saving}
           />
         </View>
-        <Button
-          title={editing ? `Lưu set ${editing.setNumber}` : `Ghi set ${exercise.sets.length + 1}`}
-          onPress={submit}
-          loading={saving}
-          style={styles.recordButton}
-        />
       </View>
+      <Button
+        title={editing ? `Lưu set ${editing.setNumber}` : `Ghi set ${exercise.sets.length + 1}`}
+        onPress={submit}
+        loading={saving}
+        style={styles.recordButton}
+      />
       {editing ? (
         <Pressable onPress={cancelEdit} accessibilityRole="button">
           <Text style={styles.cancelEdit}>Huỷ sửa</Text>
@@ -175,6 +174,7 @@ const styles = themedStyles(() => ({
   setValue: { flex: 1, fontSize: 16, color: colors.text, fontVariant: ["tabular-nums"] },
   inputRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm },
   inputGroup: { width: 72, gap: 2 },
+  repGroup: { flex: 1, gap: 2 },
   inputLabel: { fontSize: 12, color: colors.textMuted, textAlign: "center" },
   input: {
     minHeight: 48,
@@ -188,7 +188,7 @@ const styles = themedStyles(() => ({
     color: colors.text,
   },
   times: { fontSize: 18, color: colors.textMuted, paddingBottom: spacing.md },
-  recordButton: { flex: 1, paddingHorizontal: spacing.sm },
+  recordButton: { paddingHorizontal: spacing.sm },
   cancelEdit: { fontSize: 14, color: colors.primary, fontWeight: "600" },
   error: { fontSize: 13, color: colors.danger },
 }));

@@ -1,3 +1,4 @@
+import { resolveMeal } from "./meal.service";
 import { FoodModel } from "../models/food.model";
 import { FoodLogModel } from "../models/foodLog.model";
 import { MealTemplateModel } from "../models/mealTemplate.model";
@@ -72,6 +73,7 @@ export async function createMealTemplate(userId: string, input: CreateMealTempla
 }
 
 export async function createFromMeal(userId: string, input: MealTemplateFromMealInput) {
+  await resolveMeal(userId, input.mealType);
   const logs = await FoodLogModel.find({ userId, date: input.date, mealType: input.mealType })
     .sort({ createdAt: 1 })
     .lean();
@@ -116,6 +118,7 @@ export async function applyMealTemplate(
   input: ApplyMealTemplateInput
 ) {
   const template = await getOwnedTemplate(userId, templateId);
+  await resolveMeal(userId, input.mealType);
   const date = await resolveLogDate(userId, input.date);
   const foods = await visibleFoods(userId, template.items.map((i) => String(i.foodId)));
 

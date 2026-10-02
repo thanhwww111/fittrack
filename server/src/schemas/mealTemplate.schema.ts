@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MEAL_TYPES } from "../constants/enums";
+import { mealIdSchema } from "./meal.schema";
 import { isValidDateString } from "../utils/date";
 
 const date = z.string().refine(isValidDateString, "date must be a valid YYYY-MM-DD date");
@@ -22,13 +22,13 @@ export const updateMealTemplateSchema = z
 export const mealTemplateFromMealSchema = z.object({
   name,
   date,
-  mealType: z.enum(MEAL_TYPES),
+  mealType: mealIdSchema,
 });
 
 // Ghi tất cả món của template vào một bữa. date bỏ trống = hôm nay
 export const applyMealTemplateSchema = z.object({
   date: date.optional(),
-  mealType: z.enum(MEAL_TYPES),
+  mealType: mealIdSchema,
 });
 
 export type CreateMealTemplateInput = z.infer<typeof createMealTemplateSchema>;

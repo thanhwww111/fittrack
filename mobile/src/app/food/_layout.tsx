@@ -1,3 +1,4 @@
+import { BackButton } from "@/components/navigation/BackButton";
 import { Stack } from "expo-router";
 import { colors } from "@/constants/theme";
 
@@ -5,11 +6,11 @@ export default function FoodLayout() {
   return (
     <Stack
       screenOptions={{
-        headerBackTitle: "Quay lại",
+        headerBackTitle: "Quay lại", headerLeft: () => <BackButton />,
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="search" options={{ title: "Tìm món ăn" }} />
+      <Stack.Screen name="search" options={{ title: "Ghi món" }} />
       <Stack.Screen name="add" options={{ title: "Thêm món" }} />
       <Stack.Screen name="detail" options={{ title: "Chi tiết món đã ăn" }} />
       <Stack.Screen name="create" options={{ title: "Tạo món mới" }} />

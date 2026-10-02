@@ -1,4 +1,5 @@
-import type { Types } from "mongoose";
+import { Types } from "mongoose";
+import { createHash } from "node:crypto";
 import { findPreset, PROGRAM_PRESETS } from "../constants/programPresets";
 import { ExerciseModel } from "../models/exercise.model";
 import { WeeklyProgramModel } from "../models/weeklyProgram.model";
@@ -79,10 +80,16 @@ export function listPresets() {
 
 // Tạo template cho từng buổi khác nhau của lịch đề xuất (buổi lặp lại dùng chung template),
 // rồi tạo lịch tuần trỏ tới các template đó
-export async function applyPreset(userId: string, key: string) {
+export async function applyPreset(userId: string, key: string, requestId?: string) {
   const preset = findPreset(key);
   if (!preset) {
     throw AppError.notFound("Program preset not found");
+  }
+  const stableId = (part: string) => new Types.ObjectId(createHash("sha256").update(`${userId}:${key}:${requestId}:${part}`).digest("hex").slice(0, 24));
+  const programId = requestId ? stableId("program") : new Types.ObjectId();
+  if (requestId) {
+    const existing = await WeeklyProgramModel.findOne({ _id: programId, userId });
+    if (existing) return serializeOne(existing);
   }
 
   const names = [
@@ -100,7 +107,8 @@ export async function applyPreset(userId: string, key: string) {
 
   const templateIds = new Map<string, Types.ObjectId>();
   for (const [workoutKey, workout] of Object.entries(preset.workouts)) {
-    const template = await WorkoutTemplateModel.create({
+    const templateId = requestId ? stableId(workoutKey) : new Types.ObjectId();
+    const template = await WorkoutTemplateModel.findOneAndUpdate({ _id: templateId, userId }, { $setOnInsert: {
       userId,
       name: workout.name,
       exercises: workout.exercises.map((e, order) => ({
@@ -110,11 +118,11 @@ export async function applyPreset(userId: string, key: string) {
         targetReps: e.reps,
         restSeconds: e.rest,
       })),
-    });
-    templateIds.set(workoutKey, template._id);
+    } }, { upsert: true, returnDocument: "after", runValidators: true });
+    templateIds.set(workoutKey, template!._id);
   }
 
-  const program = await WeeklyProgramModel.create({
+  const program = await WeeklyProgramModel.findOneAndUpdate({ _id: programId, userId }, { $setOnInsert: {
     userId,
     name: preset.name,
     presetKey: preset.key,
@@ -122,8 +130,8 @@ export async function applyPreset(userId: string, key: string) {
       dayOfWeek,
       templateId: templateIds.get(workout),
     })),
-  });
-  return serializeOne(program);
+  } }, { upsert: true, returnDocument: "after", runValidators: true });
+  return serializeOne(program!);
 }
 
 export async function listPrograms(userId: string) {

@@ -23,6 +23,7 @@ export const exerciseRoutes = Router()
 
 export const workoutTemplateRoutes = Router()
   .use(authenticate)
+  .post("/suggestions/:key/apply", workout.applyWorkoutSuggestion)
   .get("/", workout.listTemplates)
   .get("/:id", workout.getTemplate)
   .post("/", validateBody(createTemplateSchema), workout.createTemplate)

@@ -1,5 +1,6 @@
+import { isMealId } from "../constants/meals";
 import { Schema, model, type InferSchemaType } from "mongoose";
-import { MEAL_TYPES, SERVING_UNITS } from "../constants/enums";
+import { SERVING_UNITS } from "../constants/enums";
 import { DATE_REGEX } from "../utils/date";
 import { applyToJSON } from "../utils/toJSON";
 
@@ -9,7 +10,7 @@ const foodLogSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     date: { type: String, required: true, match: DATE_REGEX }, // YYYY-MM-DD theo giờ của user
-    mealType: { type: String, enum: MEAL_TYPES, required: true },
+    mealType: { type: String, validate: isMealId, required: true },
     foodId: { type: Schema.Types.ObjectId, ref: "Food", required: true },
     foodName: { type: String, required: true },
     servingUnit: { type: String, enum: SERVING_UNITS, required: true },
