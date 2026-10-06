@@ -1,11 +1,12 @@
-import { ActivityIndicator, Pressable, Text, type ViewStyle } from "react-native";
-import { colors, radius, shadow, spacing, themedStyles } from "@/constants/theme";
+import { ActivityIndicator, Text, type ViewStyle } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
+import { colors, getActiveScheme, radius, shadow, spacing, themedStyles } from "@/constants/theme";
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
   // light: nút trắng đặt trên nền gradient
-  variant?: "primary" | "secondary" | "danger" | "light";
+  variant?: "primary" | "secondary" | "danger" | "light" | "accent";
   loading?: boolean;
   disabled?: boolean;
   style?: ViewStyle;
@@ -19,13 +20,12 @@ export function Button({
   disabled = false,
   style,
 }: ButtonProps) {
+  "use no memo"; // Palette getters follow the resolved theme.
   const isDisabled = disabled || loading;
-  const textColor =
-    variant === "secondary"
-      ? colors.primaryText
-      : variant === "light"
-        ? colors.gradientEnd
-        : colors.onPrimary;
+  const textColor = getActiveScheme() === "dark" ? "#FFD277" :
+    variant === "secondary" ? colors.primaryText :
+    variant === "light" ? colors.gradientEnd :
+    variant === "accent" ? "#FFFFFF" : colors.onPrimary;
 
   return (
     <Pressable
@@ -62,6 +62,7 @@ const styles = themedStyles(() => ({
   primary: { backgroundColor: colors.primary },
   secondary: { backgroundColor: colors.primarySoft },
   danger: { backgroundColor: colors.danger },
+  accent: { backgroundColor: "#2563EB" },
   light: { backgroundColor: colors.onGradient },
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.5 },

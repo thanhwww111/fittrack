@@ -3,7 +3,8 @@ import { ScheduledWorkoutCard } from "@/components/workout/ScheduledWorkoutCard"
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link, router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { programApi, sessionApi } from "@/api/workoutApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";

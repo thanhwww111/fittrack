@@ -2,7 +2,7 @@ import { BackButton } from "@/components/navigation/BackButton";
 import { localeTag , translate as t, useTranslation } from "@/i18n";
 import { LanguagePicker } from "@/components/ui/LanguagePicker";
 import { useEffect, useState } from "react";
-import { router } from "expo-router";
+
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { goalApi } from "@/api/profileApi";
@@ -24,12 +24,11 @@ import {
 } from "@/lib/profileForm";
 import { useAuthStore } from "@/stores/authStore";
 import { useProfileStore } from "@/stores/profileStore";
-import { ScheduleSelection } from "@/components/workout/ScheduleSelection";
+import { OnboardingActivitySelection } from "@/components/profile/OnboardingActivitySelection";
 import { isProfileComplete } from "@/lib/profileForm";
-import { useTrainingScheduleStore } from "@/stores/trainingScheduleStore";
 import type { ActivityLevel, Gender, GoalType, Macros, UpdateProfileInput } from "@/types/models";
 
-const STEPS = ["Cơ thể", "Mục tiêu", "Kết quả", "Lịch tuần"];
+const STEPS = ["Cơ thể", "Mục tiêu", "Kết quả", "Hình thức vận động"];
 const BODY_FIELDS = ["age", "height", "currentWeight"] as const;
 
 type Field = NumberField | "gender" | "goalType" | "activityLevel";
@@ -50,8 +49,6 @@ export default function OnboardingScreen() {
   const logout = useAuthStore((s) => s.logout);
 
   const [step, setStep] = useState(profile && isProfileComplete(profile) ? 3 : 0);
-  const schedule = useTrainingScheduleStore((s) => s.data);
-  useEffect(() => { if (schedule?.current && step === 3) setOnboardingActive(false); }, [schedule, step, setOnboardingActive]);
   const [gender, setGender] = useState<Gender | null>(profile?.gender ?? null);
   const [goalType, setGoalType] = useState<GoalType | null>(profile?.goalType ?? null);
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(profile?.activityLevel ?? null);
@@ -154,7 +151,7 @@ export default function OnboardingScreen() {
                 ? t("Cho FitTrack biết chỉ số cơ thể để tính lượng calo và protein phù hợp với bạn.")
                 : step === 1
                   ? t("Chọn mục tiêu và mức vận động, FitTrack sẽ tự tính phần còn lại.")
-                  : t("FitTrack đã tính sẵn cho bạn. Bạn có thể đổi bất cứ lúc nào ở tab Cá nhân.")}
+                  : step === 3 ? t("Chọn hình thức phù hợp với bạn.") : t("FitTrack đã tính sẵn cho bạn. Bạn có thể đổi bất cứ lúc nào ở tab Cá nhân.")}
             </Text>
             <View style={styles.progress}>
               {STEPS.map((label, i) => (
@@ -237,14 +234,8 @@ export default function OnboardingScreen() {
             </>
           ) : null}
 
-          {step === 3 ? <>
-            <Card title={t("Chọn hình thức vận động")}>
-              <Button title={t("Gym")} variant="secondary" loading={busy} onPress={async () => { setBusy(true); setFormError(null); try { await updateProfile({ trainingMode: "GYM" }); } catch (e) { setFormError(errorMessage(e)); } finally { setBusy(false); } }} />
-              <Button title={t("Yoga / Đi bộ")} loading={busy} onPress={async () => { setBusy(true); setFormError(null); try { await updateProfile({ trainingMode: "OTHER" }); setOnboardingActive(false); router.replace("/plan/survey"); } catch (e) { setFormError(errorMessage(e)); } finally { setBusy(false); } }} />
-            </Card>
-            {profile?.trainingMode !== "OTHER" ? <ScheduleSelection setup onApplied={() => setOnboardingActive(false)} /> : null}
-          </> : null}
-          <Button title={t("Đăng xuất")} variant="secondary" onPress={logout} style={styles.logout} />
+          {step === 3 ? <OnboardingActivitySelection /> : null}
+          <Button title={t("Đăng xuất")} variant="danger" onPress={logout} style={styles.logout} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

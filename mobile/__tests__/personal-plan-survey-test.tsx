@@ -8,7 +8,8 @@ import { clearAllFormDrafts } from '@/hooks/useDraftState';
 import type { LifestyleSurvey } from '@/types/personalPlan';
 import { ApiError } from '@/api/client';
 
-jest.mock('expo-router', () => ({ router: { dismissTo: jest.fn(), replace: jest.fn() } }));
+const mockSurveyParams: { sport?: string; selectionId?: string } = {};
+jest.mock('expo-router', () => ({ router: { dismissTo: jest.fn(), replace: jest.fn() }, useLocalSearchParams: () => mockSurveyParams }));
 jest.mock('@/api/personalPlanApi', () => ({ personalPlanApi: { survey: jest.fn(), saveSurvey: jest.fn(), createDraft: jest.fn() } }));
 jest.mock('@/api/nutritionApi', () => ({ mealApi: { list: jest.fn(), create: jest.fn() } }));
 jest.mock('@/api/foodApi', () => ({ foodApi: { get: jest.fn() } }));
@@ -17,12 +18,36 @@ jest.mock('@/stores/personalPlanStore', () => ({ usePersonalPlanStore: { getStat
 const primaryMeals = [{ mealId: 'BREAKFAST' as const, time: '07:00' }, { mealId: 'LUNCH' as const, time: '12:00' }, { mealId: 'DINNER' as const, time: '19:00' }];
 const savedSurvey: LifestyleSurvey = { revision: 2, sport: 'YOGA', experience: 'BEGINNER', availableDays: [{ dayOfWeek: 1, time: '18:00', durationMinutes: 30 }], mealTimes: primaryMeals, preferredFoodIds: [], excludedFoodIds: [], remindersEnabled: false };
 beforeEach(() => {
-  jest.clearAllMocks(); clearAllFormDrafts(); useMealStore.getState().reset();
+  jest.clearAllMocks(); clearAllFormDrafts(); useMealStore.getState().reset(); delete mockSurveyParams.sport; delete mockSurveyParams.selectionId;
   jest.mocked(mealApi.list).mockResolvedValue(DEFAULT_MEALS);
   jest.mocked(personalPlanApi.survey).mockResolvedValue(null);
   jest.mocked(personalPlanApi.saveSurvey).mockImplementation(async value => ({ ...value, revision: value.revision + 1 }));
 });
 
+it('carries the selected onboarding sport into the survey', async () => {
+  mockSurveyParams.sport = 'WALKING';
+  await render(<SurveyScreen />); await screen.findByLabelText('Bữa sáng (HH:mm)');
+  await fireEvent.press(screen.getByText('Lưu khảo sát'));
+  await waitFor(() => expect(personalPlanApi.saveSurvey).toHaveBeenCalledWith(expect.objectContaining({ sport: 'WALKING' })));
+});
+it('consumes the sport seed once, preserves later edits on remount and accepts a new explicit selection', async () => {
+  mockSurveyParams.sport = 'WALKING'; mockSurveyParams.selectionId = 'first-selection';
+  const view = await render(<SurveyScreen key='light' />); await screen.findByLabelText('Bữa sáng (HH:mm)');
+  await fireEvent.press(screen.getByText('Yoga'));
+  await view.rerender(<SurveyScreen key='dark' />); await screen.findByLabelText('Bữa sáng (HH:mm)');
+  await fireEvent.press(screen.getByText('Lưu khảo sát'));
+  await waitFor(() => expect(personalPlanApi.saveSurvey).toHaveBeenLastCalledWith(expect.objectContaining({ sport: 'YOGA' })));
+  mockSurveyParams.selectionId = 'new-selection';
+  await view.rerender(<SurveyScreen key='new-entry' />); await screen.findByLabelText('Bữa sáng (HH:mm)');
+  await fireEvent.press(screen.getByText('Lưu khảo sát'));
+  await waitFor(() => expect(personalPlanApi.saveSurvey).toHaveBeenLastCalledWith(expect.objectContaining({ sport: 'WALKING' })));
+});
+it('ignores unsupported onboarding sport parameters', async () => {
+  mockSurveyParams.sport = 'RUNNING';
+  await render(<SurveyScreen />); await screen.findByLabelText('Bữa sáng (HH:mm)');
+  await fireEvent.press(screen.getByText('Lưu khảo sát'));
+  await waitFor(() => expect(personalPlanApi.saveSurvey).toHaveBeenCalledWith(expect.objectContaining({ sport: 'YOGA' })));
+});
 it('keeps three required meals and saves without optional meals', async () => {
   await render(<SurveyScreen />);
   await screen.findByLabelText('Bữa sáng (HH:mm)');

@@ -1,6 +1,7 @@
 import { translate as t, useTranslation } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, Vibration, View } from "react-native";
+import { Text, Vibration, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { formatClock } from "@/lib/workout";
 

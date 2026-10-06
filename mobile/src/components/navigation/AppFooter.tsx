@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, usePathname } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, themedStyles } from "@/constants/theme";
 import { activeTab, APP_TABS, selectTab } from "@/lib/navigation";
@@ -18,7 +19,7 @@ export function AppFooter() {
   return <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 6) }]}
     pointerEvents={blocked ? "none" : "auto"} accessibilityElementsHidden={blocked}
     importantForAccessibility={blocked ? "no-hide-descendants" : "auto"}>
-    {APP_TABS.map((tab) => <Pressable key={tab.name} accessibilityRole="tab"
+    {APP_TABS.map((tab) => <Pressable key={tab.name} appearance="plain" accessibilityRole="tab"
       accessibilityLabel={tab.title} accessibilityState={{ selected: selected === tab.name, disabled: blocked }}
       disabled={blocked} onPress={() => selectTab(router, path, tab.name)} style={styles.item}>
       <Ionicons name={selected === tab.name ? tab.focusedIcon : tab.icon} size={23}

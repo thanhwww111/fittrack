@@ -1,7 +1,8 @@
 import { translate as t, useTranslation } from "@/i18n";
 import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { ApiError } from "@/api/client";
 import { exerciseApi } from "@/api/workoutApi";
 import { ChartCard } from "@/components/charts/ChartCard";

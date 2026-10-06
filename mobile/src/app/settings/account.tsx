@@ -1,6 +1,7 @@
 import { translate as t, useTranslation } from "@/i18n";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { accountApi } from "@/api/authApi";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";

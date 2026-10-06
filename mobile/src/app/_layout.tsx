@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router, usePathname, typ
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
+import { FloatingCoachChat } from '@/components/coach/FloatingCoachChat';
 import { useEffect, useMemo } from "react";
 import { ActivityIndicator, AppState, useColorScheme, View } from "react-native";
 import { colors, setActiveScheme, type ColorScheme } from "@/constants/theme";
@@ -189,6 +190,7 @@ export default function RootLayout() {
         </Stack.Protected>
       </Stack>
       {isAuthenticated && !needsOnboarding && (profile?.trainingMode === "OTHER" || schedule?.current || scheduleError) ? <AppFooter /> : null}
+      {isAuthenticated && authUserId ? <FloatingCoachChat key={authUserId} footerVisible={!needsOnboarding && !!(profile?.trainingMode === 'OTHER' || schedule?.current || scheduleError)} /> : null}
       {isAuthenticated && profileComplete && !needsOnboarding && profile ? <WeeklyCheckInGate key={profile.userId} profile={profile} /> : null}
       </View>
     </ThemeProvider>

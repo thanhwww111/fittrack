@@ -1,6 +1,7 @@
 import { localeTag , translate as t, useTranslation } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
-import { Linking, Pressable, Text, View } from "react-native";
+import { Linking, Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { aiApi } from "@/api/aiApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";

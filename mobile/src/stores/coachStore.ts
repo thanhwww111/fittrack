@@ -57,7 +57,7 @@ export const useCoachStore = create<CoachState>((set, get) => {
       if (![input.energy, input.difficulty].every(v => Number.isInteger(v) && v >= 1 && v <= 5) || input.note.length > 1000) throw new ApiError('Chọn mức 1–5 và ghi chú tối đa 1000 ký tự.');
       await mutate(async current => { await coachApi.checkIn(input); if (current()) { const data = await coachApi.overview(); if (current()) set({ data, settings: data.settings }); } });
     },
-    review: async (requestId, kind) => { await mutate(async current => { const result = await coachApi.review(requestId, kind); if (current() && get().data) set({ data: { ...get().data!, [kind === 'DAILY' ? 'dailyAdvice' : 'weeklyReview']: result.content } }); }); },
+    review: async (requestId, kind) => { await mutate(async current => { const result = await coachApi.review(requestId, kind); if (current() && get().data) set({ data: { ...get().data!, [kind === 'DAILY' ? 'dailyAdvice' : 'weeklyReview']: result.content, ...(kind === 'WEEKLY' ? { trainingProposal: result.trainingProposal ?? null } : {}) } }); }); },
     reset: () => { generation++; loadVersion++; set(initial); },
   };
 });

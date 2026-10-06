@@ -1,16 +1,18 @@
 import { translate as t, useTranslation } from "@/i18n";
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Switch, Text, View } from 'react-native';
+import { Switch, Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { programApi } from '@/api/workoutApi';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
-import { colors, spacing, themedStyles } from '@/constants/theme';
+import { colors, getActiveScheme, radius, spacing, themedStyles } from '@/constants/theme';
 import { errorMessage } from '@/lib/formErrors';
 import { dayName } from '@/lib/goal';
 import { defaultTrainingDays, mapTrainingDays, scheduleRequestId } from '@/lib/trainingSchedule';
 import { useTrainingScheduleStore } from '@/stores/trainingScheduleStore';
+import { useProfileStore } from '@/stores/profileStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import type { ProgramPreset, WeeklyProgram } from '@/types/models';
 import { ExerciseNote } from './ExerciseNote';
@@ -27,12 +29,16 @@ export function ScheduleSelection({ onApplied, setup = false }: { onApplied?: ()
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [reminder, setReminder] = useState<boolean | null>(null);
+  const trainingDaysPerWeek = useProfileStore(s => s.profile?.trainingDaysPerWeek);
   const settings = useNotificationStore(s => s.settings);
   const data = useTrainingScheduleStore(s => s.data);
   const attempt = useRef<{ key: string; requestId: string; program?: WeeklyProgram } | null>(null);
   const saving = useRef(false);
   const load = () => programApi.presets().then(setPresets).catch(e => setError(errorMessage(e)));
   useEffect(() => { void load(); void useTrainingScheduleStore.getState().load(); }, []);
+  function selectPreset(preset: ProgramPreset) {
+    setSelected(preset); setDays(defaultTrainingDays(preset)); attempt.current = null; setError(null);
+  }
   async function apply() {
     if (!selected || saving.current) return;
     try { mapTrainingDays(selected.days.map(d => d.name), days); } catch (e) { setError((e as Error).message); return; }
@@ -58,8 +64,16 @@ export function ScheduleSelection({ onApplied, setup = false }: { onApplied?: ()
   return <View style={styles.content}>
     <ErrorBanner message={error} />
     {!presets.length ? <Button title={t("Tải lại lịch đề xuất")} onPress={load} /> : null}
-    {presets.map(p => <Button key={p.key} title={t("{value1} · {value2} buổi", { value1: t(p.name), value2: p.days.length })} variant={selected?.key === p.key ? 'primary' : 'secondary'} disabled={busy}
-      onPress={() => { setSelected(p); setDays(defaultTrainingDays(p)); attempt.current = null; setError(null); }} />)}
+    {presets.map(p => {
+      const recommended = p.daysPerWeek === trainingDaysPerWeek;
+      const title = p.name.endsWith(`· ${p.days.length} buổi`) ? t(p.name) : t("{value1} · {value2} buổi", { value1: t(p.name), value2: p.days.length });
+      return <Pressable key={p.key} accessibilityRole="button" accessibilityLabel={recommended ? `${title} · ${t("Đề xuất")}` : title}
+        accessibilityState={{ selected: selected?.key === p.key, disabled: busy }} disabled={busy}
+        onPress={() => selectPreset(p)} style={({ pressed }) => [styles.preset, recommended && styles.recommended, selected?.key === p.key && styles.selectedPreset, pressed && styles.pressed, busy && styles.disabled]}>
+        {recommended ? <View style={styles.badge}><Text style={styles.badgeText}>{t("Đề xuất")}</Text></View> : null}
+        <Text style={styles.presetTitle}>{title}</Text>
+      </Pressable>;
+    })}
     {selected ? <Card title={t(selected.name)}>
       <Text style={styles.text}>{t(selected.description)}</Text>
       <Text style={styles.text}>{t("Chọn đúng {value1} ngày. Các buổi xếp theo thứ tăng dần.", { value1: selected.days.length })}</Text>
@@ -78,7 +92,16 @@ export function ScheduleSelection({ onApplied, setup = false }: { onApplied?: ()
       <Button title={t("Áp dụng lịch")} loading={busy} onPress={apply} />
     </Card> : null}
     {notice ? <Text style={styles.text}>{notice}</Text> : null}
-    <Button title={t("Tự tạo lịch tuần")} variant="secondary" disabled={busy} onPress={() => router.push({ pathname: '/workout/program', params: setup ? { setup: '1' } : {} })} />
+    {setup && selected ? <Text style={styles.editHint}>{t("Bạn có thể chỉnh sửa lịch tập sau khi đăng ký.")}</Text> : null}
+    <Button title={t("Tự tạo lịch tuần")} variant="accent" disabled={busy} onPress={() => router.push({ pathname: '/workout/program', params: setup ? { setup: '1' } : {} })} />
   </View>;
 }
-const styles = themedStyles(() => ({ content: { gap: spacing.md }, text: { color: colors.text, fontSize: 14 }, muted: { color: colors.textMuted, fontSize: 13 }, week: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' }, day: { padding: spacing.sm, borderWidth: 1, borderColor: colors.border, borderRadius: 8 }, chosen: { backgroundColor: colors.primarySoft, borderColor: colors.primary } }));
+const styles = themedStyles(() => ({ content: { gap: spacing.md },
+  preset: { minHeight: 54, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, alignItems: 'center', justifyContent: 'center' },
+  recommended: { marginTop: spacing.sm, borderColor: colors.primary, paddingTop: spacing.lg },
+  selectedPreset: { backgroundColor: colors.primarySoft, borderColor: colors.primary, borderWidth: 2 },
+  presetTitle: { color: colors.text, fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  badge: { position: 'absolute', top: -10, right: spacing.md, borderRadius: radius.pill, backgroundColor: getActiveScheme() === 'dark' ? '#211806' : colors.primarySoft, borderWidth: 1, borderColor: getActiveScheme() === 'dark' ? '#FFD277' : colors.primary, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+  badgeText: { color: getActiveScheme() === 'dark' ? '#FFD277' : colors.primaryText, fontSize: 11, fontWeight: '800' },
+  editHint: { color: colors.textMuted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  pressed: { opacity: 0.8 }, disabled: { opacity: 0.5 }, text: { color: colors.text, fontSize: 14 }, muted: { color: colors.textMuted, fontSize: 13 }, week: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' }, day: { padding: spacing.sm, borderWidth: 1, borderColor: colors.border, borderRadius: 8 }, chosen: { backgroundColor: colors.primarySoft, borderColor: colors.primary } }));

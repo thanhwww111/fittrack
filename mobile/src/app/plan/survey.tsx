@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, Text, View, Pressable, Switch, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ScrollView, Text, View, Switch, ActivityIndicator } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
+import { router, useLocalSearchParams } from 'expo-router';
+import { OTHER_ACTIVITY_OPTIONS, isOtherActivity } from '@/constants/otherActivities';
 import { personalPlanApi } from '@/api/personalPlanApi';
 import { foodApi } from '@/api/foodApi';
 import { Button } from '@/components/ui/Button';
@@ -12,7 +14,7 @@ import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { PlanFoodPicker } from '@/components/plan/PlanFoodPicker';
 import { planStyles as s } from '@/components/plan/planStyles';
 import { useTranslation } from '@/i18n';
-import { useDraftState, clearFormDrafts } from '@/hooks/useDraftState';
+import { useDraftState, clearFormDrafts, getFormDraft } from '@/hooks/useDraftState';
 import { useAuthStore } from '@/stores/authStore';
 import { usePersonalPlanStore } from '@/stores/personalPlanStore';
 import { errorMessage } from '@/lib/formErrors';
@@ -32,6 +34,9 @@ function withPrimaryMeals(value: LifestyleSurvey): LifestyleSurvey {
 }
 export default function SurveyScreen() {
   const { t, localeTag } = useTranslation();
+  const { sport: sportParam, selectionId } = useLocalSearchParams<{ sport?: string; selectionId?: string }>();
+  const requestedSport = isOtherActivity(sportParam) ? sportParam : undefined;
+  const sportSeed = requestedSport ? `${typeof selectionId === 'string' ? selectionId.slice(0, 120) : 'initial'}:${requestedSport}` : null;
   const { meals, error: mealError } = useMeals();
   const weekdayLabel = (day: number) => new Intl.DateTimeFormat(localeTag, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 9, 4 + day)));
   const userId = useAuthStore(s => s.user?.id);
@@ -44,11 +49,17 @@ export default function SurveyScreen() {
   const [saved, setSaved] = useState(false);
   const [generationFailed, setGenerationFailed] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [, setSportSeed] = useDraftState<string | null>(key + '-sport-seed', null);
+  const initializeSurvey = useCallback((value: LifestyleSurvey | null) => {
+    const shouldSeed = !!requestedSport && !!sportSeed && getFormDraft<string | null>(key + '-sport-seed', null) !== sportSeed;
+    setSurvey(previous => { const initial = withPrimaryMeals(previous ?? value ?? defaults); return shouldSeed ? { ...initial, sport: requestedSport! } : initial; });
+    if (shouldSeed) setSportSeed(sportSeed);
+  }, [key, requestedSport, sportSeed, setSurvey, setSportSeed]);
   useEffect(() => {
     let active = true;
-    void personalPlanApi.survey().then(value => { if (active) setSurvey(previous => withPrimaryMeals(previous ?? value ?? defaults)); }).catch(e => { if (active) setError(errorMessage(e)); }).finally(() => { if (active) setLoading(false); });
+    void personalPlanApi.survey().then(value => { if (active) initializeSurvey(value); }).catch(e => { if (active) setError(errorMessage(e)); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [setSurvey]);
+  }, [initializeSurvey]);
   useEffect(() => {
     let active = true;
     void Promise.all([...(survey?.preferredFoodIds ?? []), ...(survey?.excludedFoodIds ?? [])].map(async id => {
@@ -78,12 +89,12 @@ export default function SurveyScreen() {
     } catch (e) { setError(errorMessage(e)); if (create && isFailedPlanGeneration(e)) setGenerationFailed(true); }
     finally { setBusy(false); setGenerating(false); }
   }
-  if (!survey) return <View style={s.content}>{loading ? <ActivityIndicator color={colors.primary} /> : null}<ErrorBanner message={error} /><Button title={t('Thử lại')} onPress={() => { setLoading(true); void personalPlanApi.survey().then(value => setSurvey(withPrimaryMeals(value ?? defaults))).catch(e => setError(errorMessage(e))).finally(() => setLoading(false)); }} /></View>;
+  if (!survey) return <View style={s.content}>{loading ? <ActivityIndicator color={colors.primary} /> : null}<ErrorBanner message={error} /><Button title={t('Thử lại')} onPress={() => { setLoading(true); void personalPlanApi.survey().then(initializeSurvey).catch(e => setError(errorMessage(e))).finally(() => setLoading(false)); }} /></View>;
   return <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps='handled'>
     <Button title={t('PT AI của bạn')} variant='secondary' onPress={() => router.push('/plan/coach')} />
     <Card title={t('Lịch sinh hoạt của bạn')}>
       <Text style={s.muted}>{t('Mục tiêu và target dùng từ hồ sơ hiện tại. Chọn một môn cho kế hoạch 7 ngày.')}</Text>
-      <ChipGroup label={t('Môn chính')} value={survey.sport} onChange={sport => change({ sport })} options={[{ value: 'YOGA', label: t('Yoga') }, { value: 'WALKING', label: t('Đi bộ') }]} />
+      <ChipGroup label={t('Môn chính')} value={survey.sport} onChange={sport => change({ sport })} options={OTHER_ACTIVITY_OPTIONS.map(option => ({ ...option, label: t(option.label) }))} />
       <ChipGroup label={t('Kinh nghiệm')} value={survey.experience} onChange={experience => change({ experience })} options={[{ value: 'BEGINNER', label: t('Mới bắt đầu') }, { value: 'REGULAR', label: t('Đã tập thường xuyên') }]} />
       <Text style={s.text}>{t('Chọn ngày rảnh')}</Text><View style={s.chips}>
         {Array.from({ length: 7 }, (_, i) => i + 1).map(day => {

@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { AccessibilityInfo, Modal, Platform, ScrollView, Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useTranslation } from "@/i18n";

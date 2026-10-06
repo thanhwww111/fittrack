@@ -1,6 +1,7 @@
 import { translate as t, useTranslation } from "@/i18n";
 import { useState, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { Card } from "@/components/ui/Card";
 import { colors, spacing, themedStyles } from "@/constants/theme";
 

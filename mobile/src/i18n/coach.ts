@@ -1,4 +1,9 @@
 export const coachMessages: Record<string, string> = {
+  'phút': 'min',
+  'Mở trò chuyện với PT': 'Open coach chat', 'Đóng trò chuyện với PT': 'Close coach chat', 'Thu gọn trò chuyện': 'Minimize chat',
+  'Tư vấn dựa trên hồ sơ và khảo sát của bạn': 'Advice based on your profile and survey',
+  'Lịch tập cá nhân hóa': 'Personalized training schedule', 'Đề xuất lịch tập cá nhân': 'Suggest my training schedule', 'Nghỉ phục hồi': 'Recovery day',
+  'PT dựa vào hồ sơ, lịch rảnh và cảm nhận để đề xuất 7 ngày. Đây là đề xuất để bạn xem trước, chưa thay đổi lịch hiện tại.': 'Your coach uses your profile, availability and feedback to suggest seven days. Review this proposal; your current schedule stays unchanged.',
   'Đang xử lý yêu cầu AI. Vui lòng chờ; thử lại sau lỗi mạng sẽ dùng cùng yêu cầu.': 'Processing your AI request. Please wait; retrying after a network error uses the same request.',
   'Cường độ: {level}': 'Intensity: {level}', 'Nhẹ': 'Easy', 'Vừa phải': 'Moderate',
   'Yêu cầu trước đã thất bại. Bạn có thể bắt đầu yêu cầu mới.': 'The previous request failed. You can start a new request.',

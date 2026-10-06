@@ -176,6 +176,42 @@ export const PROGRAM_PRESETS: ProgramPreset[] = [
   },
 ];
 
+// Reuse the existing session definitions so templates retain the seeded exercise library.
+const fullBody = PROGRAM_PRESETS.find(p => p.key === "full-body-3")!;
+const upperLower = PROGRAM_PRESETS.find(p => p.key === "upper-lower-4")!;
+PROGRAM_PRESETS.push(
+  {
+    key: "full-body-2", name: "Full Body · 2 buổi",
+    description: "Hai buổi toàn thân A / B, nghỉ xen kẽ. Phù hợp lịch rảnh 2 ngày mỗi tuần.",
+    schedule: [{ dayOfWeek: 1, workout: "a" }, { dayOfWeek: 4, workout: "b" }],
+    workouts: fullBody.workouts,
+  },
+  {
+    key: "ppl-upper-lower-5", name: "PPL / Upper / Lower · 5 buổi",
+    description: "Push / Pull / Legs kết hợp thân trên / thân dưới; nghỉ thứ Năm và Chủ nhật.",
+    schedule: [
+      { dayOfWeek: 1, workout: "push" }, { dayOfWeek: 2, workout: "pull" },
+      { dayOfWeek: 3, workout: "legs" }, { dayOfWeek: 5, workout: "upper" },
+      { dayOfWeek: 6, workout: "lower" },
+    ],
+    workouts: { push: PUSH, pull: PULL, legs: LEGS, upper: upperLower.workouts.upperA, lower: upperLower.workouts.lowerB },
+  },
+  {
+    key: "ppl-recovery-7", name: "PPL / Vận động nhẹ · 7 buổi",
+    description: "Sáu buổi PPL và một buổi vận động nhẹ. Buổi thứ bảy dùng tạ nhẹ, không tập đến kiệt sức; giảm buổi nếu chưa hồi phục.",
+    schedule: [
+      { dayOfWeek: 1, workout: "push" }, { dayOfWeek: 2, workout: "pull" },
+      { dayOfWeek: 3, workout: "legs" }, { dayOfWeek: 4, workout: "push" },
+      { dayOfWeek: 5, workout: "pull" }, { dayOfWeek: 6, workout: "legs" },
+      { dayOfWeek: 7, workout: "recovery" },
+    ],
+    workouts: { push: PUSH, pull: PULL, legs: LEGS,
+      recovery: { name: "Vận động nhẹ / Core", exercises: [ex("Lateral Raise", 2, 12, 60), ex("Hanging Leg Raise", 2, 10, 60)] },
+    },
+  },
+);
+PROGRAM_PRESETS.sort((a, b) => a.schedule.length - b.schedule.length);
+
 export function findPreset(key: string) {
   return PROGRAM_PRESETS.find((p) => p.key === key);
 }

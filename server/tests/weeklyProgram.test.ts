@@ -113,6 +113,19 @@ describe("POST /api/weekly-programs/presets/:key/apply", () => {
     expect(await WorkoutTemplateModel.countDocuments({ userId })).toBe(2);
   });
 
+  it.each([["full-body-2", 2, 2], ["ppl-upper-lower-5", 5, 5], ["ppl-recovery-7", 7, 4]])(
+    "persists the new %s schedule and its complete owned templates", async (key, days, templates) => {
+      const { auth, userId } = await createAuthedUser();
+      const res = await request(app).post(`/api/weekly-programs/presets/${key}/apply`).set(auth);
+      expect(res.status).toBe(201);
+      expect(res.body.data.days).toHaveLength(Number(days));
+      expect(await WeeklyProgramModel.countDocuments({ userId, presetKey: key })).toBe(1);
+      expect(await WorkoutTemplateModel.countDocuments({ userId })).toBe(Number(templates));
+      const stored = await WorkoutTemplateModel.find({ userId }).lean();
+      expect(stored.every(t => t.exercises.length > 0 && t.exercises.every(e => e.exerciseId))).toBe(true);
+    },
+  );
+
   it("returns 404 for an unknown preset", async () => {
     const { auth } = await createAuthedUser();
     const res = await request(app).post("/api/weekly-programs/presets/nope/apply").set(auth);

@@ -30,13 +30,11 @@ const pushNotes = {
 export default function CoachScreen() {
   const { t } = useTranslation();
   const userId = useAuthStore(state => state.user?.id);
-  const { data, settings, messages, isLoading, busy, error, load, send, saveSettings, checkIn, review } = useCoachStore();
+  const { data, settings, isLoading, busy, error, load, saveSettings, checkIn, review } = useCoachStore();
   const survey = usePersonalPlanStore(state => state.survey);
   const push = useNotificationStore(state => state.push);
   const pushError = useNotificationStore(state => state.error);
   const key = `coach-${userId}`;
-  const [text, setText] = useDraftState(key + '-text', '');
-  const [sendId, setSendId] = useDraftState(key + '-send', newPlanRequestId());
   const [dailyId, setDailyId] = useDraftState(key + '-daily', newPlanRequestId());
   const [weeklyId, setWeeklyId] = useDraftState(key + '-weekly', newPlanRequestId());
   const [draftId, setDraftId] = useDraftState(key + '-draft', newPlanRequestId());
@@ -47,11 +45,11 @@ export default function CoachScreen() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
-  const [failedKind, setFailedKind] = useState<'CHAT' | 'DRAFT' | CoachReviewKind | null>(null);
+  const [failedKind, setFailedKind] = useState<'DRAFT' | CoachReviewKind | null>(null);
   const actionLock = useRef(false);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   const blocked = busy || working || isLoading;
-  async function run(task: () => Promise<void>, kind?: 'CHAT' | 'DRAFT' | CoachReviewKind) {
+  async function run(task: () => Promise<void>, kind?: 'DRAFT' | CoachReviewKind) {
     if (actionLock.current || blocked) return;
     actionLock.current = true; setWorking(true); setLocalError(null); setNotice(null);
     const current = () => useAuthStore.getState().isAuthenticated && useAuthStore.getState().user?.id === userId;
@@ -80,7 +78,7 @@ export default function CoachScreen() {
       {failedKind ? <>
         <Text style={s.muted}>{t('Yêu cầu trước đã thất bại. Bạn có thể bắt đầu yêu cầu mới.')}</Text>
         <Button title={t('Bắt đầu yêu cầu AI mới')} disabled={blocked} onPress={() => {
-          (failedKind === 'DRAFT' ? setDraftId : failedKind === 'CHAT' ? setSendId : failedKind === 'DAILY' ? setDailyId : setWeeklyId)(newPlanRequestId());
+          (failedKind === 'DRAFT' ? setDraftId : failedKind === 'DAILY' ? setDailyId : setWeeklyId)(newPlanRequestId());
           setFailedKind(null); setLocalError(null); useCoachStore.setState({ error: null });
         }} />
       </> : null}
@@ -90,23 +88,22 @@ export default function CoachScreen() {
     <Card title={t('Lời khuyên hôm nay')}>
       <Text style={s.text}>{data?.dailyAdvice ?? t('Chưa có lời khuyên AI. Yêu cầu PT phân tích để tiếp tục.')}</Text>
       <Button title={t('Phân tích hôm nay')} disabled={blocked || !data} onPress={() => void run(() => requestReview('DAILY'), 'DAILY')} />
-      <Text style={s.text}>{data?.weeklyReview ?? t('Chưa có đánh giá tuần.')}</Text>
-      <Button title={t('Đánh giá tuần với AI')} variant='secondary' disabled={blocked || !data} onPress={() => void run(() => requestReview('WEEKLY'), 'WEEKLY')} />
+    </Card>
+    <Card title={t('Lịch tập cá nhân hóa')}>
+      <Text style={s.muted}>{t('PT dựa vào hồ sơ, lịch rảnh và cảm nhận để đề xuất 7 ngày. Đây là đề xuất để bạn xem trước, chưa thay đổi lịch hiện tại.')}</Text>
+      {data?.trainingProposal?.map(day => <View key={day.date} style={s.item}>
+        <Text style={s.badge}>{day.date} · {t(day.activity === 'REST' ? 'Nghỉ phục hồi' : day.activity === 'GYM' ? 'Gym' : day.activity === 'YOGA' ? 'Yoga' : 'Đi bộ')}</Text>
+        <Text style={s.text}>{day.title}{day.minutes ? ` · ${day.minutes} ${t('phút')}` : ''}{day.time ? ` · ${day.time}` : ''}</Text>
+        <Text style={s.muted}>{day.rationale}</Text>
+      </View>)}
+      <Text style={s.text} selectable>{data?.weeklyReview ?? t('Chưa có đánh giá tuần.')}</Text>
+      <Button title={t('Đề xuất lịch tập cá nhân')} variant='secondary' disabled={blocked || !data} onPress={() => void run(() => requestReview('WEEKLY'), 'WEEKLY')} />
     </Card>
     <Card title={t('Cảm nhận hôm nay')}>
       {rating('Năng lượng (1 thấp, 5 cao)', energy, setEnergy)}
       {rating('Độ khó (1 dễ, 5 khó)', difficulty, setDifficulty)}
       <TextField label={t('Ghi chú cho PT')} value={note} onChangeText={setNote} maxLength={1000} multiline editable={!blocked} />
       <Button title={t('Lưu cảm nhận')} disabled={blocked || !data} onPress={() => void run(async () => { await checkIn({ energy: Number(energy), difficulty: Number(difficulty), note }); if (useAuthStore.getState().user?.id === userId) setNotice(t('Đã lưu cảm nhận hôm nay.')); })} />
-    </Card>
-    <Card title={t('Trò chuyện với PT')}>
-      {messages.length ? messages.map(message => <View key={message.id} style={s.item}>
-        <Text style={s.badge}>{t(message.role === 'user' ? 'Bạn' : 'PT AI')} · {message.createdAt.replace('T', ' ').slice(0, 16)}</Text>
-        <Text style={s.text} selectable>{message.content}</Text>
-      </View>) : <Text style={s.muted}>{t('Hỏi PT về vận động, bữa ăn hoặc kế hoạch của bạn.')}</Text>}
-      <TextField label={t('Tin nhắn cho PT')} value={text} onChangeText={value => { setText(value); setSendId(newPlanRequestId()); }} multiline maxLength={2000} editable={!blocked} />
-      <Text style={s.muted}>{text.length}/2000</Text>
-      <Button title={t('Gửi tin nhắn')} disabled={blocked || !text.trim()} onPress={() => void run(async () => { setSendId(sendId); await send(sendId, text); if (useAuthStore.getState().user?.id === userId) { setText(''); setSendId(newPlanRequestId()); } }, 'CHAT')} />
     </Card>
     <Card title={t('Kế hoạch tiếp theo')}>
       <Text style={s.muted}>{t('AI tạo bản nháp để bạn xem và chỉnh sửa. Chỉ áp dụng khi bạn xác nhận.')}</Text>

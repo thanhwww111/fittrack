@@ -1,7 +1,8 @@
 import { translate as t, useTranslation } from "@/i18n";
 import { Link, Redirect, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text } from "react-native";
+import { Text } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { passwordResetApi } from "@/api/authApi";
 import { AuthForm } from "@/components/AuthForm";
 import { Button } from "@/components/ui/Button";

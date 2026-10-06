@@ -1,7 +1,8 @@
 import { translate as t, useTranslation } from "@/i18n";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { sessionApi } from "@/api/workoutApi";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";

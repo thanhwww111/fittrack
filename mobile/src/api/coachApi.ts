@@ -1,6 +1,6 @@
 import { api, unwrap } from './client';
 import type { ApiSuccess } from '@/types/api';
-import type { CoachSettings, CoachOverview, CoachMessage, CoachCheckIn, CoachReviewKind } from '@/types/coach';
+import type { CoachSettings, CoachOverview, CoachMessage, CoachCheckIn, CoachReviewKind, CoachTrainingDay } from '@/types/coach';
 export const coachApi = {
   opened: (jobId: string) => unwrap(api.post<ApiSuccess<unknown>>('/coach/opened', { jobId })),
   overview: () => unwrap(api.get<ApiSuccess<CoachOverview>>('/coach/overview')),
@@ -9,5 +9,5 @@ export const coachApi = {
   messages: () => unwrap(api.get<ApiSuccess<CoachMessage[]>>('/coach/messages')),
   send: (requestId: string, text: string) => unwrap(api.post<ApiSuccess<CoachMessage>>('/coach/messages', { requestId, text })),
   checkIn: (input: CoachCheckIn) => unwrap(api.post<ApiSuccess<unknown>>('/coach/check-in', input)),
-  review: (requestId: string, kind: CoachReviewKind) => unwrap(api.post<ApiSuccess<{ content: string }>>('/coach/review', { requestId, kind })),
+  review: (requestId: string, kind: CoachReviewKind) => unwrap(api.post<ApiSuccess<{ content: string; trainingProposal?: CoachTrainingDay[] }>>('/coach/review', { requestId, kind })),
 };

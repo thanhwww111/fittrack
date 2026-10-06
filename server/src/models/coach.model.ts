@@ -15,7 +15,7 @@ export const CoachCheckInModel = model('CoachCheckIn', checkin);
 const request = new Schema({ userId: owner, requestId: { type: String, required: true }, kind: String, input: String, state: { type: String, enum: ['PENDING', 'DONE', 'FAILED'], default: 'PENDING' }, result: Schema.Types.Mixed, error: String }, { timestamps: true });
 request.index({ userId: 1, requestId: 1 }, { unique: true });
 export const CoachRequestModel = model('CoachRequest', request);
-const review = new Schema({ userId: owner, date: String, kind: String, content: String }, { timestamps: true });
+const review = new Schema({ userId: owner, date: String, kind: String, content: String, trainingProposal: { type: [Schema.Types.Mixed], default: null } }, { timestamps: true });
 review.index({ userId: 1, date: 1, kind: 1 }, { unique: true });
 export const CoachReviewModel = model('CoachReview', review);
 const budget = new Schema({ userId: owner, date: String, channel: String, used: { type: Number, default: 0 }, claims: { type: [String], default: [] } });

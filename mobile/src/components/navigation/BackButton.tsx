@@ -1,7 +1,7 @@
 import { translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, usePathname } from "expo-router";
-import { Pressable } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { colors, radius } from "@/constants/theme";
 import { leaveScreen } from "@/lib/navigation";
 

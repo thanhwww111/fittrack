@@ -1,4 +1,5 @@
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useTranslation } from "@/i18n";
 

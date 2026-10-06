@@ -1,7 +1,8 @@
 import { localeTag , translate as t, useTranslation } from "@/i18n";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { progressApi } from "@/api/progressApi";
 import { foodLogApi } from "@/api/nutritionApi";
 import { Button } from "@/components/ui/Button";

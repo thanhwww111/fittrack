@@ -2,7 +2,8 @@ import { localeTag , translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link, router } from "expo-router";
 import { useState, type ComponentProps } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { MacroBars } from "@/components/nutrition/MacroBars";
 import { WaterCard } from "@/components/nutrition/WaterCard";
 import { Button } from "@/components/ui/Button";
@@ -288,6 +289,7 @@ function QuickAction({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
+      appearance="plain"
       style={({ pressed }) => [styles.quick, shadow(1), pressed && styles.pressed]}
     >
       <View style={styles.quickIcon}>

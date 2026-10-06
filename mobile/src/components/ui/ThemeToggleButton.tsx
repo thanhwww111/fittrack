@@ -2,7 +2,7 @@ import { translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, usePathname, type Href } from "expo-router";
 import { useEffect } from "react";
-import { Pressable } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { colors, getActiveScheme, radius, spacing } from "@/constants/theme";
 import { useThemeStore } from "@/stores/themeStore";
 

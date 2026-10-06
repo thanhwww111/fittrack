@@ -1,5 +1,6 @@
 import { translate as t, useTranslation } from "@/i18n";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
+import { AppPressable as Pressable } from "@/components/ui/AppPressable";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { parseNumber } from "@/lib/formErrors";
 
