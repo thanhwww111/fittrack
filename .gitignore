@@ -15,6 +15,15 @@ dist-ai-pt/
 .serena/
 .tmp/
 
+# Local documentation and AI/editor workspace settings
+*.md
+*.MD
+*.markdown
+*.docx
+.agents/
+.codex/
+.claude/
+
 # Expo / React Native
 .expo/
 web-build/
