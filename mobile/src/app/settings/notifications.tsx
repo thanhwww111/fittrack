@@ -63,6 +63,7 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
   useTranslation();
   const update = useNotificationStore((s) => s.update);
   const push = useNotificationStore((s) => s.push);
+  const schedulingError = useNotificationStore((s) => s.error);
 
   const draftKey = `notifications`;
   const [draft, setDraft] = useDraftState(draftKey + "draft", settings);
@@ -105,7 +106,7 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
       clearFormDrafts(draftKey);
       setNotice(t("Đã lưu cài đặt thông báo."));
     } catch (err) {
-      setError(errorMessage(err));
+      setError(useNotificationStore.getState().error ?? errorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -121,7 +122,7 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {pushNote ? <Text style={styles.note}>{pushNote}</Text> : null}
-        <ErrorBanner message={error} />
+        <ErrorBanner message={error ?? schedulingError} />
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
         <Card title={t("Nhắc tập")} icon="barbell">

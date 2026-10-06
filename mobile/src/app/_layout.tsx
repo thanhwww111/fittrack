@@ -53,7 +53,6 @@ export default function RootLayout() {
   const authUserId = useAuthStore(s => s.user?.id);
   const planData = usePersonalPlanStore(s => s.data);
   const planSurvey = usePersonalPlanStore(s => s.survey);
-  const coachSettings = useCoachStore(s => s.settings);
   const schedule = useTrainingScheduleStore((s) => s.data);
   const scheduleError = useTrainingScheduleStore((s) => s.error);
   const status = useAuthStore((s) => s.status);
@@ -131,7 +130,7 @@ export default function RootLayout() {
     return () => sub.remove();
   }, [isAuthenticated]);
 
-  useEffect(() => { void schedulePersonalPlanReminders(isAuthenticated ? planData : null, isAuthenticated && coachSettings !== null && !coachSettings.enabled && !!planSurvey?.remindersEnabled); }, [isAuthenticated, authUserId, planData, planSurvey?.remindersEnabled, coachSettings, locale]);
+  useEffect(() => { void schedulePersonalPlanReminders(isAuthenticated ? planData : null, isAuthenticated && !!planSurvey?.remindersEnabled); }, [isAuthenticated, authUserId, planData, planSurvey?.remindersEnabled, locale]);
 
   useNotificationNavigation(isAuthenticated);
 
@@ -190,8 +189,8 @@ export default function RootLayout() {
         </Stack.Protected>
       </Stack>
       {isAuthenticated && !needsOnboarding && (profile?.trainingMode === "OTHER" || schedule?.current || scheduleError) ? <AppFooter /> : null}
-      {isAuthenticated && authUserId ? <FloatingCoachChat key={authUserId} footerVisible={!needsOnboarding && !!(profile?.trainingMode === 'OTHER' || schedule?.current || scheduleError)} /> : null}
-      {isAuthenticated && profileComplete && !needsOnboarding && profile ? <WeeklyCheckInGate key={profile.userId} profile={profile} /> : null}
+      {isAuthenticated && authUserId ? <FloatingCoachChat key={`coach-chat:${authUserId}`} footerVisible={!needsOnboarding && !!(profile?.trainingMode === 'OTHER' || schedule?.current || scheduleError)} /> : null}
+      {isAuthenticated && profileComplete && !needsOnboarding && profile ? <WeeklyCheckInGate key={`weekly-check-in:${profile.userId}`} profile={profile} /> : null}
       </View>
     </ThemeProvider>
   );

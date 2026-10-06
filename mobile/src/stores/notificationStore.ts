@@ -48,8 +48,9 @@ async function loadToday(): Promise<TodayNutrition | null> {
 // Xếp hàng các lần đặt lịch: huỷ rồi đặt lại của 2 lần gọi sát nhau không được chen vào nhau
 let queue: Promise<void> = Promise.resolve();
 function enqueue(task: () => Promise<void>) {
-  queue = queue.then(task).catch(() => {});
-  return queue;
+  const operation = queue.catch(() => {}).then(task);
+  queue = operation.catch(() => {});
+  return operation;
 }
 
 export const useNotificationStore = create<NotificationState>()((set, get) => ({
@@ -80,12 +81,14 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
 
   update: async (input) => {
     const version = ++generation;
+    set({ error: null });
     const settings = await notificationApi.updateSettings(input);
     if (version !== generation) return;
-    set({ settings });
+    set({ settings, error: null });
     const today = await loadToday();
     const schedule = await trainingScheduleApi.get().catch(() => null);
-    await enqueue(async () => { if (version === generation) await scheduleReminders(settings, today, schedule); });
+    try { await enqueue(async () => { if (version === generation) await scheduleReminders(settings, today, schedule); }); }
+    catch (error) { if (version === generation) set({ error: error instanceof Error ? error.message : errorMessage(error) }); throw error; }
   },
 
   refreshNutritionReminders: async (summary) => {
@@ -93,7 +96,7 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
     const { settings } = get();
     if (!settings?.mealReminders.enabled) return;
     const today = summary ? { target: summary.target, consumed: summary.consumed } : await loadToday();
-    await enqueue(async () => { if (version === generation) await scheduleNutritionReminders(settings, today); });
+    await enqueue(async () => { if (version === generation) await scheduleNutritionReminders(settings, today); }).catch(error => { if (version === generation) set({ error: errorMessage(error) }); });
   },
 
   refreshWorkoutReminders: async () => {
@@ -101,7 +104,7 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
     const settings = get().settings;
     if (!settings) return;
     const schedule = await trainingScheduleApi.get().catch(() => null);
-    await enqueue(async () => { if (version === generation) await scheduleWorkoutReminders(settings, schedule); });
+    await enqueue(async () => { if (version === generation) await scheduleWorkoutReminders(settings, schedule); }).catch(error => { if (version === generation) set({ error: errorMessage(error) }); });
   },
 
   unregisterDevice: async () => {
@@ -116,7 +119,7 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
 
   reset: () => {
     generation++;
-    void enqueue(cancelReminders);
+    void enqueue(cancelReminders).catch(() => {});
     set(initialState);
   },
 }));

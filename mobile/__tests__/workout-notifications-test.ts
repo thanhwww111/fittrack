@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
-import { scheduleWorkoutReminders } from "@/lib/notifications";
+import { scheduleWorkoutReminders, scheduleReminders } from "@/lib/notifications";
 import type { NotificationSettings } from "@/types/models";
 
 jest.mock("expo-notifications", () => ({
@@ -37,11 +37,19 @@ it("cancels without scheduling when disabled or permission is denied", async () 
   await scheduleWorkoutReminders({ ...settings, workoutReminder: { ...settings.workoutReminder, enabled: false } }, schedule);
   expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
   jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({ granted: false, canAskAgain: false } as never);
-  await scheduleWorkoutReminders(settings, schedule);
+  await expect(scheduleWorkoutReminders(settings, schedule)).rejects.toThrow('Chưa cấp quyền thông báo.');
   expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
 });
 it("does not call native APIs on web", async () => {
   Platform.OS = "web";
   await scheduleWorkoutReminders(settings, schedule);
   expect(Notifications.getAllScheduledNotificationsAsync).not.toHaveBeenCalled();
+});
+it('still attempts meal reminders when scheduling a workout fails', async () => {
+  jest.mocked(Notifications.scheduleNotificationAsync).mockImplementation(async request => {
+    if (request.identifier?.startsWith('fittrack-reminder-workout-')) throw new Error('Workout scheduler failed');
+    return request.identifier!;
+  });
+  await expect(scheduleReminders({ ...settings, mealReminders: { enabled: true, items: [{ label: 'Bữa phụ', time: '23:55' }] } }, null, schedule)).rejects.toThrow('Workout scheduler failed');
+  expect(jest.mocked(Notifications.scheduleNotificationAsync).mock.calls.some(([request]) => request.identifier?.startsWith('fittrack-reminder-meal-'))).toBe(true);
 });

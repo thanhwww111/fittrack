@@ -1,4 +1,5 @@
 export const coachMessages: Record<string, string> = {
+  'Hiện mật khẩu': 'Show password', 'Ẩn mật khẩu': 'Hide password',
   'phút': 'min',
   'Mở trò chuyện với PT': 'Open coach chat', 'Đóng trò chuyện với PT': 'Close coach chat', 'Thu gọn trò chuyện': 'Minimize chat',
   'Tư vấn dựa trên hồ sơ và khảo sát của bạn': 'Advice based on your profile and survey',

@@ -1,3 +1,4 @@
+import { translate as t } from '@/i18n';
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -53,8 +54,8 @@ export type PushTokenResult =
 export async function getPushToken(): Promise<PushTokenResult> {
   if (Platform.OS === "web") return { token: null, reason: "web" };
   if (!Device.isDevice) return { token: null, reason: "simulator" };
-  // Từ SDK 53, Expo Go trên Android không nhận remote push: cần development build / bản EAS
-  if (Platform.OS === "android" && Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+  // Expo Go does not support remote push; local reminders remain independent.
+  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
     return { token: null, reason: "expo-go" };
   }
 
@@ -102,7 +103,8 @@ export async function scheduleNutritionReminders(
 ) {
   if (Platform.OS === "web") return;
   await cancelByPrefix(MEAL_PREFIX);
-  if (!settings.mealReminders.enabled || !(await ensurePermission())) return;
+  if (!settings.mealReminders.enabled) return;
+  if (!(await ensurePermission())) throw new Error(t('Chưa cấp quyền thông báo.'));
 
   const reminders = buildNutritionReminders({
     now: new Date(),
@@ -115,7 +117,7 @@ export async function scheduleNutritionReminders(
     reminders.map((r) =>
       Notifications.scheduleNotificationAsync({
         identifier: `${REMINDER_PREFIX}${r.id}`,
-        content: { title: r.title, body: r.body, data: { url: "/nutrition" } },
+        content: { title: r.title, body: r.body, sound: 'default', data: { url: "/nutrition" } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: r.date, channelId: "default" },
       })
     )
@@ -127,11 +129,12 @@ export async function scheduleNutritionReminders(
 export async function scheduleWorkoutReminders(settings: NotificationSettings, schedule: WorkoutReminderSchedule | null) {
   if (Platform.OS === "web") return;
   await cancelByPrefix(`${REMINDER_PREFIX}workout-`);
-  if (!settings.workoutReminder.enabled || !schedule || !(await ensurePermission())) return;
+  if (!settings.workoutReminder.enabled || !schedule) return;
+  if (!(await ensurePermission())) throw new Error(t('Chưa cấp quyền thông báo.'));
   const reminders = buildWorkoutReminders({ now: new Date(), time: settings.workoutReminder.time, schedule });
   await Promise.all(reminders.map((r) => Notifications.scheduleNotificationAsync({
     identifier: `${REMINDER_PREFIX}${r.id}`,
-    content: { title: r.title, body: r.body, data: { url: "/workout" } },
+    content: { title: r.title, body: r.body, sound: 'default', data: { url: "/workout" } },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: r.date, channelId: "default" },
   })));
 }
@@ -140,8 +143,9 @@ export async function scheduleReminders(
   settings: NotificationSettings, today: TodayNutrition | null, schedule: WorkoutReminderSchedule | null = null
 ) {
   if (Platform.OS === "web") return;
-  await scheduleWorkoutReminders(settings, schedule);
-  await scheduleNutritionReminders(settings, today);
+  const results = await Promise.allSettled([scheduleWorkoutReminders(settings, schedule), scheduleNutritionReminders(settings, today)]);
+  const failed = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+  if (failed) throw failed.reason;
 }
 
 let personalPlanQueue: Promise<void> = Promise.resolve();
@@ -162,7 +166,7 @@ export function schedulePersonalPlanReminders(data: import("@/types/personalPlan
       if (ticket !== personalPlanGeneration) return;
       await Notifications.scheduleNotificationAsync({
         identifier: `${REMINDER_PREFIX}${reminder.id}`,
-        content: { title: reminder.title, body: reminder.body, data: { url: "/plan" } },
+        content: { title: reminder.title, body: reminder.body, sound: 'default', data: { url: "/plan" } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminder.date, channelId: "default" },
       });
     }
