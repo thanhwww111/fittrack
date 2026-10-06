@@ -1,3 +1,4 @@
+import { localeTag , translate as t } from "@/i18n";
 import type { Macros, MealReminder } from "@/types/models";
 
 export interface NutritionReminder {
@@ -32,22 +33,22 @@ export function nextFreeReminderTime(items: MealReminder[]) {
 
 // Lỗi đầu tiên của danh sách (null = hợp lệ), cùng quy tắc với server
 export function validateMealReminders(items: MealReminder[]) {
-  if (items.length > MAX_MEAL_REMINDERS) return `Tối đa ${MAX_MEAL_REMINDERS} lần nhắc.`;
-  if (items.some((i) => !TIME_REGEX.test(i.time))) return "Giờ phải có dạng HH:mm, ví dụ 07:00.";
-  if (items.some((i) => !i.label.trim())) return "Đặt tên cho từng lần nhắc.";
-  if (new Set(items.map((i) => i.time)).size !== items.length) return "Hai lần nhắc không được trùng giờ.";
+  if (items.length > MAX_MEAL_REMINDERS) return t("Tối đa {value1} lần nhắc.", { value1: MAX_MEAL_REMINDERS });
+  if (items.some((i) => !TIME_REGEX.test(i.time))) return t("Giờ phải có dạng HH:mm, ví dụ 07:00.");
+  if (items.some((i) => !i.label.trim())) return t("Đặt tên cho từng lần nhắc.");
+  if (new Set(items.map((i) => i.time)).size !== items.length) return t("Hai lần nhắc không được trùng giờ.");
   return null;
 }
 
 // Biểu tượng + câu gợi ý theo khung giờ, vì tên lần nhắc do user tự đặt
 function styleFor(hour: number) {
-  if (hour < 10) return { emoji: "☀️", tip: "Bắt đầu bằng bữa sáng giàu protein nhé!" };
-  if (hour < 15) return { emoji: "🍱", tip: "Nạp bữa trưa đủ chất nhé!" };
-  if (hour < 17) return { emoji: "🍎", tip: "Một bữa phụ nhỏ giúp bạn đủ chất nhé!" };
-  return { emoji: "🌙", tip: "Ăn bữa tối để bù phần còn thiếu nhé!" };
+  if (hour < 10) return { emoji: "☀️", tip: t("Bắt đầu bằng bữa sáng giàu protein nhé!") };
+  if (hour < 15) return { emoji: "🍱", tip: t("Nạp bữa trưa đủ chất nhé!") };
+  if (hour < 17) return { emoji: "🍎", tip: t("Một bữa phụ nhỏ giúp bạn đủ chất nhé!") };
+  return { emoji: "🌙", tip: t("Ăn bữa tối để bù phần còn thiếu nhé!") };
 }
 
-const fmt = (n: number) => Math.round(n).toLocaleString("vi-VN");
+const fmt = (n: number) => Math.round(n).toLocaleString(localeTag());
 
 function dateKey(d: Date) {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -60,9 +61,9 @@ function missingText(target: Macros, consumed: Macros) {
   const calories = target.calories - consumed.calories;
   const protein = target.protein - consumed.protein;
   if (calories <= 0 && protein <= 0) return null;
-  if (calories <= 0) return `Đã đủ calo, còn thiếu ${fmt(protein)} g protein`;
-  if (protein <= 0) return `Còn thiếu ${fmt(calories)} kcal, protein đã đủ 💪`;
-  return `Còn thiếu ${fmt(calories)} kcal · ${fmt(protein)} g protein hôm nay`;
+  if (calories <= 0) return t("Đã đủ calo, còn thiếu {value1} g protein", { value1: fmt(protein) });
+  if (protein <= 0) return t("Còn thiếu {value1} kcal, protein đã đủ 💪", { value1: fmt(calories) });
+  return t("Còn thiếu {value1} kcal · {value2} g protein hôm nay", { value1: fmt(calories), value2: fmt(protein) });
 }
 
 // Lịch nhắc nạp dinh dưỡng cho hôm nay và các ngày tới. Nội dung thông báo cục bộ bị cố định lúc
@@ -85,8 +86,8 @@ export function buildNutritionReminders({ now, target, consumed, items, days }: 
         reminders.push({
           id,
           date,
-          title: "🍽️ Đừng quên ghi bữa ăn",
-          body: `Ghi lại ${item.label.toLowerCase()} để theo dõi calo và protein.`,
+          title: t("🍽️ Đừng quên ghi bữa ăn"),
+          body: t("Ghi lại {value1} để theo dõi calo và protein.", { value1: item.label.toLowerCase() }),
         });
         continue;
       }

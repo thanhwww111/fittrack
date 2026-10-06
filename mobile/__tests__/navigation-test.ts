@@ -18,11 +18,14 @@ describe("shared app navigation", () => {
   });
 
   it("selects tabs by dismissing instead of growing the stack and ignores the current root", () => {
-    const nav = { dismissTo: jest.fn() };
+    const nav = { dismissTo: jest.fn(), navigate: jest.fn() };
     selectTab(nav, "/food/add", "nutrition");
     expect(nav.dismissTo).toHaveBeenCalledWith("/(tabs)/nutrition");
     nav.dismissTo.mockClear();
     selectTab(nav, "/nutrition", "nutrition");
+    expect(nav.dismissTo).not.toHaveBeenCalled();
+    selectTab(nav, "/nutrition", "workout");
+    expect(nav.navigate).toHaveBeenCalledWith("/(tabs)/workout");
     expect(nav.dismissTo).not.toHaveBeenCalled();
   });
 });

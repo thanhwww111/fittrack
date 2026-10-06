@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { ScheduledWorkoutCard } from "@/components/workout/ScheduledWorkoutCard";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link, router, useFocusEffect } from "expo-router";
@@ -13,9 +14,13 @@ import { errorMessage } from "@/lib/formErrors";
 
 import { formatDate, formatDuration, formatVolume, formatWeight } from "@/lib/workout";
 import { useWorkoutStore } from "@/stores/workoutStore";
+import { useTrainingScheduleStore } from "@/stores/trainingScheduleStore";
 import type { PersonalRecord, WorkoutSession } from "@/types/models";
 
 export default function WorkoutDashboardScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [recent, setRecent] = useState<WorkoutSession[]>([]);
   const [records, setRecords] = useState<PersonalRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -47,13 +52,14 @@ export default function WorkoutDashboardScreen() {
 
   return (
     <ScrollView
+      testID="workout-dashboard"
       contentContainerStyle={styles.content}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={async () => {
             setRefreshing(true);
-            await load();
+            await Promise.all([load(), useTrainingScheduleStore.getState().load()]);
             setRefreshing(false);
           }}
         />
@@ -67,28 +73,28 @@ export default function WorkoutDashboardScreen() {
         <Link href="/workout/programs" asChild>
           <Pressable style={styles.linkButton}>
             <Ionicons name="calendar-outline" size={20} color={colors.primaryText} />
-            <Text style={styles.linkText}>Lịch tuần</Text>
+            <Text style={styles.linkText}>{t("Lịch tuần")}</Text>
           </Pressable>
         </Link>
         <Link href="/workout/history" asChild>
           <Pressable style={styles.linkButton}>
             <Ionicons name="time-outline" size={20} color={colors.primaryText} />
-            <Text style={styles.linkText}>Lịch sử</Text>
+            <Text style={styles.linkText}>{t("Lịch sử")}</Text>
           </Pressable>
         </Link>
       </View>
 
       {recent.length > 0 ? (
         <Button
-          title="✨ Phân tích 4 tuần bằng AI"
+          title={t("✨ Phân tích 4 tuần bằng AI")}
           variant="secondary"
           onPress={() => router.push("/ai/workout")}
         />
       ) : null}
 
-      <Card title="Buổi tập gần đây" icon="time">
+      <Card title={t("Buổi tập gần đây")} icon="time">
         {recent.length === 0 ? (
-          <Text style={styles.muted}>Chưa có buổi tập nào hoàn thành.</Text>
+          <Text style={styles.muted}>{t("Chưa có buổi tập nào hoàn thành.")}</Text>
         ) : (
           recent.map((s) => (
             <Pressable
@@ -108,15 +114,15 @@ export default function WorkoutDashboardScreen() {
         )}
       </Card>
 
-      <Card title="Kỷ lục cá nhân" icon="trophy">
+      <Card title={t("Kỷ lục cá nhân")} icon="trophy">
         {records.length === 0 ? (
-          <Text style={styles.muted}>Hoàn thành buổi tập đầu tiên để ghi nhận PR.</Text>
+          <Text style={styles.muted}>{t("Hoàn thành buổi tập đầu tiên để ghi nhận PR.")}</Text>
         ) : (
           records.map((r) => (
             <Pressable
               key={r.id}
               accessibilityRole="button"
-              accessibilityLabel={`Xem tiến bộ ${r.exerciseName}`}
+              accessibilityLabel={t("Xem tiến bộ {value1}", { value1: r.exerciseName })}
               onPress={() => router.push({ pathname: "/workout/exercise", params: { id: r.exerciseId } })}
               style={({ pressed }) => [styles.prRow, pressed && styles.pressed]}
             >

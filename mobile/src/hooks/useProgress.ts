@@ -1,14 +1,16 @@
 import { useFocusEffect } from "expo-router";
+import { translate as t } from "@/i18n";
 import { useCallback, useState } from "react";
 import { progressApi } from "@/api/progressApi";
 import { errorMessage } from "@/lib/formErrors";
 import { addDays } from "@/lib/nutrition";
 import type { GoalProgress, NutritionProgress, WeightProgress, WorkoutWeek } from "@/types/models";
+import { subscribeProfileRefresh } from "@/stores/profileStore";
 
 export const RANGES = [
-  { key: "1m", label: "1 tháng", days: 30, weeks: 4 },
-  { key: "3m", label: "3 tháng", days: 90, weeks: 12 },
-  { key: "6m", label: "6 tháng", days: 180, weeks: 26 },
+  { key: "1m", get label() { return t("1 tháng"); }, days: 30, weeks: 4 },
+  { key: "3m", get label() { return t("3 tháng"); }, days: 90, weeks: 12 },
+  { key: "6m", get label() { return t("6 tháng"); }, days: 180, weeks: 26 },
 ] as const;
 
 export type RangeKey = (typeof RANGES)[number]["key"];
@@ -53,6 +55,7 @@ export function useProgress(rangeKey: RangeKey) {
   useFocusEffect(
     useCallback(() => {
       load();
+      return subscribeProfileRefresh(() => { void load(); });
     }, [load])
   );
 

@@ -1,5 +1,6 @@
 import { Text, TextInput, View, type TextInputProps } from "react-native";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
+import { localizeMessage, useTranslation } from "@/i18n";
 
 interface TextFieldProps extends TextInputProps {
   label: string;
@@ -8,6 +9,7 @@ interface TextFieldProps extends TextInputProps {
 }
 
 export function TextField({ label, error, suffix, style, ...inputProps }: TextFieldProps) {
+  const { locale } = useTranslation();
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -20,7 +22,7 @@ export function TextField({ label, error, suffix, style, ...inputProps }: TextFi
         />
         {suffix ? <Text style={styles.suffix}>{suffix}</Text> : null}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={styles.error}>{localizeMessage(locale, error)}</Text> : null}
     </View>
   );
 }

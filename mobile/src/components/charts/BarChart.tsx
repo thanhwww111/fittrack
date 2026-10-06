@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "@/i18n";
 import { Pressable, Text, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Line, Path, Text as SvgText } from "react-native-svg";
 import { colors, spacing, themedStyles } from "@/constants/theme";
@@ -43,6 +44,8 @@ export function BarChart({
   color = colors.primary,
   accessibilityLabel,
 }: BarChartProps) {
+  "use no memo"; // formatTick reads the external language preference.
+  useTranslation();
   const [width, setWidth] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
 

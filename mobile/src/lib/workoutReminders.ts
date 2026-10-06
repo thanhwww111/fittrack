@@ -1,3 +1,4 @@
+import { translate as t } from "@/i18n";
 export interface WorkoutReminderSchedule {
   today: string;
   timezone: string;
@@ -32,15 +33,15 @@ export function buildWorkoutReminders(input: {
     return [{
       id: `workout-${day.date}`,
       date,
-      title: "💪 Lịch tập hôm nay",
-      body: `Hôm nay lịch tập của bạn là ${day.workout.templateName} · ${day.workout.exerciseCount} bài tập.`,
+      title: t("💪 Lịch tập hôm nay"),
+      body: t("Hôm nay lịch tập của bạn là {value1} · {value2} bài tập.", { value1: day.workout.templateName, value2: day.workout.exerciseCount }),
     }];
   }).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 28);
 }
 
 // Convert a calendar time in an IANA timezone without assuming the phone has that timezone.
 // Nonexistent DST wall times are skipped rather than delivered on the wrong day.
-function zonedDate(day: string, time: string, timezone: string): Date | null {
+export function zonedDate(day: string, time: string, timezone: string): Date | null {
   try {
     const target = Date.parse(`${day}T${time}:00Z`);
     if (!Number.isFinite(target)) return null;

@@ -40,6 +40,54 @@ it("shows rest instead of a pinned saved template", async () => {
   expect(screen.getByText("Ngày nghỉ")).toBeTruthy();
   expect(screen.queryByText("Bắt đầu buổi hôm nay")).toBeNull();
 });
+it("previews Monday Upper on a rest Sunday without allowing an early start", async () => {
+  useTrainingScheduleStore.setState({ data: { ...data, today: "2026-10-04", days: [
+    { date: "2026-10-04", status: "REST", workout: null, sessionId: null },
+    { ...data.days[0], date: "2026-10-05", status: "PLANNED" },
+  ] } });
+  await render(<ScheduledWorkoutCard />);
+  expect(screen.getByText("Lịch tập ngày mai")).toBeTruthy();
+  expect(screen.getByText("Upper")).toBeTruthy();
+  expect(screen.getByText(/Thứ 2 · 2026-10-05/)).toBeTruthy();
+  expect(screen.queryByText("Bắt đầu buổi hôm nay")).toBeNull();
+  expect(screen.queryByText("Tiếp tục buổi tập")).toBeNull();
+  expect(trainingScheduleApi.start).not.toHaveBeenCalled();
+});
+it("keeps Monday Upper available today even when another workout follows", async () => {
+  useTrainingScheduleStore.setState({ data: { ...data, today: "2026-10-05", days: [
+    { ...data.days[0], date: "2026-10-05", status: "PLANNED" },
+    { ...data.days[1], date: "2026-10-06", status: "PLANNED" },
+  ] } });
+  await render(<ScheduledWorkoutCard />);
+  expect(screen.getByText("Lịch tập hôm nay")).toBeTruthy();
+  expect(screen.getByText("Upper")).toBeTruthy();
+  expect(screen.getByText("Bắt đầu buổi hôm nay")).toBeTruthy();
+});
+it("previews tomorrow after completing today and retains today's history link", async () => {
+  useTrainingScheduleStore.setState({ data: { ...data, days: [
+    { ...data.days[1], status: "COMPLETED", sessionId: "done" },
+    { ...data.days[0], date: "2026-10-03", status: "PLANNED" },
+  ] } });
+  await render(<ScheduledWorkoutCard />);
+  expect(screen.getByText("Lịch tập ngày mai")).toBeTruthy();
+  expect(screen.getByText("Upper")).toBeTruthy();
+  expect(screen.queryByText("Bắt đầu buổi hôm nay")).toBeNull();
+  await fireEvent.press(screen.getByText("Xem buổi đã hoàn thành"));
+  expect(router.push).toHaveBeenCalledWith({ pathname: "/workout/session", params: { id: "done" } });
+});
+it("shows the actual next training date across rest days and the pending schedule name", async () => {
+  useTrainingScheduleStore.setState({ data: { ...data, today: "2026-10-03",
+    pending: { ...data.current!, name: "Lịch mới", effectiveFrom: "2026-10-04" }, days: [
+      { date: "2026-10-03", status: "REST", workout: null, sessionId: null },
+      { date: "2026-10-04", status: "REST", workout: null, sessionId: null },
+      { ...data.days[0], date: "2026-10-05", status: "PLANNED" },
+    ] } });
+  await render(<ScheduledWorkoutCard />);
+  expect(screen.getByText("Lịch tập Thứ 2 · 2026-10-05")).toBeTruthy();
+  expect(screen.getByText(/Lịch mới · Thứ 2 · 2026-10-05/)).toBeTruthy();
+  expect(screen.queryByText("Lịch tập ngày mai")).toBeNull();
+  expect(screen.queryByText("Bắt đầu buổi hôm nay")).toBeNull();
+});
 it("opens an already completed session instead of starting another", async () => {
   useTrainingScheduleStore.setState({ data: { ...data, days: [{ ...data.days[1], status: "COMPLETED", sessionId: "done" }] } });
   await render(<ScheduledWorkoutCard />);

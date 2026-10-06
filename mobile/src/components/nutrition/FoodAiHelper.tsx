@@ -1,3 +1,4 @@
+import { localeTag , translate as t, useTranslation } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
 import { aiApi } from "@/api/aiApi";
@@ -18,6 +19,9 @@ interface Props {
 }
 
 export function FoodAiHelper({ foodName, disabled, onApply }: Props) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [description, setDescription] = useState("");
   const [suggestions, setSuggestions] = useState<FoodNutritionEstimate[]>([]);
@@ -46,24 +50,24 @@ export function FoodAiHelper({ foodName, disabled, onApply }: Props) {
   }
 
   async function searchOnline() {
-    const query = `${description.trim()} dinh dưỡng calories protein carbs fat`;
+    const query = t("{value1} dinh dưỡng calories protein carbs fat", { value1: description.trim() });
     try {
       await Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
     } catch {
-      setError("Không mở được trình duyệt. Bạn có thể thử lại liên kết tìm kiếm.");
+      setError(t("Không mở được trình duyệt. Bạn có thể thử lại liên kết tìm kiếm."));
     }
   }
 
   if (!expanded) {
-    return <Button title="AI hỗ trợ dinh dưỡng" variant="secondary" disabled={disabled}
+    return <Button title={t("AI hỗ trợ dinh dưỡng")} variant="secondary" disabled={disabled}
       onPress={() => { setDescription(foodName); setExpanded(true); }} />;
   }
 
   return (
-    <Card title="AI hỗ trợ dinh dưỡng">
-      <Text style={styles.hint}>Mô tả món và lượng đã ăn, ví dụ: 1 miếng sandwich nhỏ có trứng, không sốt.</Text>
+    <Card title={t("AI hỗ trợ dinh dưỡng")}>
+      <Text style={styles.hint}>{t("Mô tả món và lượng đã ăn, ví dụ: 1 miếng sandwich nhỏ có trứng, không sốt.")}</Text>
       <TextField
-        label="Mô tả món ăn"
+        label={t("Mô tả món ăn")}
         value={description}
         onChangeText={(text) => {
           setDescription(text);
@@ -75,25 +79,25 @@ export function FoodAiHelper({ foodName, disabled, onApply }: Props) {
         multiline
         editable={!loading && !disabled}
       />
-      <Button title="Đề xuất dinh dưỡng" onPress={estimate} loading={loading}
+      <Button title={t("Đề xuất dinh dưỡng")} onPress={estimate} loading={loading}
         disabled={disabled || !description.trim()} />
       <ErrorBanner message={error} />
-      <Text style={styles.hint}>Dinh dưỡng ước tính bằng AI, chưa được xác minh từ nguồn bên ngoài. Kiểm tra khẩu phần và chỉnh lại nếu cần.</Text>
+      <Text style={styles.hint}>{t("Dinh dưỡng ước tính bằng AI, chưa được xác minh từ nguồn bên ngoài. Kiểm tra khẩu phần và chỉnh lại nếu cần.")}</Text>
       {suggestions.map((suggestion, index) => (
         <View key={index} style={styles.suggestion}>
           <Text style={styles.name}>{suggestion.name}</Text>
           <Text style={styles.hint}>Cho {formatServing(suggestion.servingSize, suggestion.servingUnit)} · {suggestion.description}</Text>
           <MacroChips values={suggestion} />
-          <Text style={styles.hint}>Chất xơ: {suggestion.fiber.toLocaleString("vi-VN")} g</Text>
-          <Button title={applied === index ? "Đã điền vào form" : "Dùng lựa chọn này"}
+          <Text style={styles.hint}>{t("Chất xơ: {value1} g", { value1: suggestion.fiber.toLocaleString(localeTag()) })}</Text>
+          <Button title={applied === index ? t("Đã điền vào form") : t("Dùng lựa chọn này")}
             variant="secondary" disabled={disabled || loading}
             onPress={() => { onApply(suggestion); setApplied(index); }} />
         </View>
       ))}
-      {applied !== null ? <Text style={styles.hint}>Đã điền thông tin bên dưới. Bạn có thể sửa rồi bấm “Tạo món” để lưu.</Text> : null}
+      {applied !== null ? <Text style={styles.hint}>{t("Đã điền thông tin bên dưới. Bạn có thể sửa rồi bấm “Tạo món” để lưu.")}</Text> : null}
       {description.trim() ? (
         <Pressable accessibilityRole="link" onPress={searchOnline} style={styles.searchLink}>
-          <Text style={styles.linkText}>Tìm dinh dưỡng món này trên Google</Text>
+          <Text style={styles.linkText}>{t("Tìm dinh dưỡng món này trên Google")}</Text>
         </Pressable>
       ) : null}
     </Card>

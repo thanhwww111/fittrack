@@ -9,6 +9,7 @@ export const MAX_RANGE_DAYS = 366;
 export const upsertMeasurementSchema = z.object({
   date: date.optional(),
   weight: z.number().min(20).max(500),
+  height: z.number().min(50).max(300).optional(),
   bodyFat: z.number().min(1).max(70).optional(),
   chest: circumference.optional(),
   waist: circumference.optional(),

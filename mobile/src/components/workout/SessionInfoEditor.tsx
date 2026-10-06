@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useState } from "react";
 import { View } from "react-native";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +17,9 @@ interface SessionInfoEditorProps {
 
 // Sửa tên + ghi chú buổi tập (vd "Vai hơi đau, giảm tạ tuần sau")
 export function SessionInfoEditor({ name: initialName, notes: initialNotes, onSave, onClose }: SessionInfoEditorProps) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [name, setName] = useState(initialName);
   const [notes, setNotes] = useState(initialNotes);
   const [nameError, setNameError] = useState<string>();
@@ -24,7 +28,7 @@ export function SessionInfoEditor({ name: initialName, notes: initialNotes, onSa
 
   async function handleSave() {
     if (!name.trim()) {
-      setNameError("Vui lòng nhập tên buổi tập");
+      setNameError(t("Vui lòng nhập tên buổi tập"));
       return;
     }
     setNameError(undefined);
@@ -40,21 +44,21 @@ export function SessionInfoEditor({ name: initialName, notes: initialNotes, onSa
   }
 
   return (
-    <Card title="Tên & ghi chú">
+    <Card title={t("Tên & ghi chú")}>
       <ErrorBanner message={error} />
-      <TextField label="Tên buổi tập" value={name} onChangeText={setName} error={nameError} maxLength={100} />
+      <TextField label={t("Tên buổi tập")} value={name} onChangeText={setName} error={nameError} maxLength={100} />
       <TextField
-        label="Ghi chú"
+        label={t("Ghi chú")}
         value={notes}
         onChangeText={setNotes}
-        placeholder="Cảm giác, chấn thương, điều cần nhớ lần sau…"
+        placeholder={t("Cảm giác, chấn thương, điều cần nhớ lần sau…")}
         multiline
         maxLength={1000}
         style={styles.notes}
       />
       <View style={styles.actions}>
-        <Button title="Huỷ" variant="secondary" onPress={onClose} style={styles.flex} />
-        <Button title="Lưu" onPress={handleSave} loading={saving} style={styles.flex} />
+        <Button title={t("Huỷ")} variant="secondary" onPress={onClose} style={styles.flex} />
+        <Button title={t("Lưu")} onPress={handleSave} loading={saving} style={styles.flex} />
       </View>
     </Card>
   );

@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { parseNumber } from "@/lib/formErrors";
@@ -18,6 +19,9 @@ export function NumberStepper({
   value, onChangeText, label, min, max, decimal = false,
   positive = false, disabled = false, error = false,
 }: NumberStepperProps) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const parsed = parseNumber(value);
   const current = parsed !== null && Number.isFinite(parsed) ? parsed : null;
   function nextValue(direction: number) {
@@ -34,7 +38,7 @@ export function NumberStepper({
           <Pressable
             key={direction}
             accessibilityRole="button"
-            accessibilityLabel={`${direction < 0 ? "Giảm" : "Tăng"} ${label}`}
+            accessibilityLabel={`${direction < 0 ? t("Giảm") : t("Tăng")} ${label}`}
             accessibilityState={{ disabled: blocked }}
             disabled={blocked}
             onPress={() => onChangeText(String(next))}

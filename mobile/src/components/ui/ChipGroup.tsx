@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
+import { useTranslation } from "@/i18n";
 
 export interface ChipOption<T extends string> {
   value: T;
@@ -15,6 +16,8 @@ interface ChipGroupProps<T extends string> {
 
 // Chọn một giá trị trong enum (giới tính, mục tiêu, mức vận động...)
 export function ChipGroup<T extends string>({ label, options, value, onChange }: ChipGroupProps<T>) {
+  "use no memo"; // Option label getters read the external language preference.
+  useTranslation();
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>

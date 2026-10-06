@@ -1,3 +1,4 @@
+import { localeTag , translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -11,23 +12,29 @@ import { errorMessage } from "@/lib/formErrors";
 import { measurementSummary } from "@/lib/measurements";
 import { formatDayLabel } from "@/lib/nutrition";
 import type { BodyMeasurement } from "@/types/models";
+import { subscribeProfileRefresh } from "@/stores/profileStore";
 
-const fmt = (n: number) => n.toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+const fmt = (n: number) => n.toLocaleString(localeTag(), { maximumFractionDigits: 1 });
 
 // Toàn bộ lịch sử đo, mới nhất lên đầu. Bấm vào một dòng để sửa hoặc xoá.
 export default function MeasurementsScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [items, setItems] = useState<BodyMeasurement[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      measurementApi
+      const load = () => measurementApi
         .list()
         .then((list) => {
           setItems([...list].reverse());
           setError(null);
         })
         .catch((err) => setError(errorMessage(err)));
+      void load();
+      return subscribeProfileRefresh(() => { void load(); });
     }, [])
   );
 
@@ -71,15 +78,13 @@ export default function MeasurementsScreen() {
           items === null ? (
             error ? null : <ActivityIndicator color={colors.primary} style={styles.loading} />
           ) : (
-            <Text style={styles.empty}>
-              Chưa có lần đo nào. Ghi cân nặng và các vòng đo để theo dõi thay đổi của cơ thể.
-            </Text>
+            <Text style={styles.empty}>{t("Chưa có lần đo nào. Ghi cân nặng và các vòng đo để theo dõi thay đổi của cơ thể.")}</Text>
           )
         }
       />
       <View style={styles.footer}>
         <Button
-          title="+ Ghi số đo"
+          title={t("+ Ghi số đo")}
           onPress={() => router.push({ pathname: "/measurements/edit", params: { date: today } })}
         />
       </View>

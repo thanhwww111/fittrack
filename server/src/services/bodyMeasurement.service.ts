@@ -33,7 +33,7 @@ export function crossedGoal(
   return false;
 }
 
-export async function upsertMeasurement(userId: string, input: UpsertMeasurementInput) {
+export async function upsertMeasurement(userId: string, input: UpsertMeasurementInput, preserveOtherValues = false) {
   const today = todayInTimezone(await getUserTimezone(userId));
   const date = input.date ?? today;
   if (date > today) {
@@ -51,11 +51,7 @@ export async function upsertMeasurement(userId: string, input: UpsertMeasurement
     { userId, date },
     {
       $set: {
-        bodyFat: null,
-        chest: null,
-        waist: null,
-        arm: null,
-        thigh: null,
+        ...(preserveOtherValues ? {} : { bodyFat: null, chest: null, waist: null, arm: null, thigh: null }),
         ...values,
       },
     },

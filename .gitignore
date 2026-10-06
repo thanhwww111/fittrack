@@ -9,6 +9,11 @@ node_modules/
 # Build output
 dist/
 build/
+dist-ai-pt/
+
+# Local agent state and temporary test data
+.serena/
+.tmp/
 
 # Expo / React Native
 .expo/

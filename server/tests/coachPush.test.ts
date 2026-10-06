@@ -1,0 +1,97 @@
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { useTestDatabase } from './helpers/db';
+import { createAuthedUser } from './helpers/auth';
+import { coachTick } from '../src/services/coachPush.service';
+import { updateSettings, claimBudget } from '../src/services/coach.service';
+import { CoachPushJobModel, CoachBudgetModel } from '../src/models/coach.model';
+import { PushDeviceModel } from '../src/models/pushDevice.model';
+import { coachPushClient } from '../src/services/push/coachPushClient';
+import { UserProfileModel } from '../src/models/userProfile.model';
+import { PersonalPlanModel, PersonalPlanStateModel } from '../src/models/personalPlan.model';
+useTestDatabase();
+afterEach(() => vi.restoreAllMocks());
+describe('durable coach push', () => {
+  it('sends before reminders using the current AI activity time duration and focus', async () => {
+    const { userId: id } = await createAuthedUser();
+    await updateSettings(id, { enabled: true, language: 'en', tone: 'FIRM' });
+    await PushDeviceModel.create({ userId: id, token: 'ExponentPushToken[plan-reminder]', platform: 'android' });
+    const plan = await PersonalPlanModel.create({ userId: id, requestId: 'reminder-plan', state: 'PUBLISHED', startDate: '2026-10-06', endDate: '2026-10-12', days: [{ date: '2026-10-06', activity: { id: 'ai-activity', sport: 'WALKING', time: '11:00', plannedMinutes: 20, focus: 'Comfortable recovery walk', steps: [] }, meals: [], totals: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 } }] });
+    await PersonalPlanStateModel.create({ userId: id, activations: [{ planId: plan.id, effectiveFrom: '2026-10-06', requestId: 'apply-reminder', planRevision: 0 }] });
+    const notifications: { body: string; data: Record<string, unknown> }[] = [];
+    vi.spyOn(coachPushClient, 'send').mockImplementation(async (tokens, payload) => { notifications.push(payload); return tokens.map(token => ({ token, status: 'accepted', ticketId: `ticket-${payload.data.kind}` })); });
+    await coachTick(new Date('2026-10-06T03:40:00Z'));
+    const before = notifications.find(n => n.data.kind === 'BEFORE');
+    expect(before).toBeDefined();
+    expect(before!.body).toContain('Walking at 11:00, 20 minutes.');
+    expect(before!.body).toContain('Comfortable recovery walk');
+    expect(before!.data.url).toBe('/plan/coach');
+  });
+  it('claims day budget atomically and retries the same job without consuming another slot', async () => {
+    const { userId: id } = await createAuthedUser();
+    const claims = await Promise.all(Array.from({ length: 10 }, (_, i) => claimBudget(id, '2026-10-06', 'PUSH', 3, `event-${i}`)));
+    expect(claims.filter(Boolean)).toHaveLength(3);
+    expect((await CoachBudgetModel.findOne({ userId: id }))!.used).toBe(3);
+    expect(await claimBudget(id, '2026-10-06', 'PUSH', 3, `event-${claims.findIndex(Boolean)}`)).toBe(true);
+  });
+  it('deduplicates concurrent ticks, records accepted tickets and then receipts', async () => {
+    const { userId: id } = await createAuthedUser();
+    await updateSettings(id, { enabled: true });
+    await PushDeviceModel.create({ userId: id, token: 'ExponentPushToken[coach]', platform: 'android' });
+    vi.spyOn(coachPushClient, 'send').mockImplementation(async tokens => tokens.map(token => ({ token, status: 'accepted' as const, ticketId: 'ticket-1' })));
+    vi.spyOn(coachPushClient, 'receipts').mockResolvedValue({ 'ticket-1': { status: 'ok' } });
+    const now = new Date('2026-10-06T05:00:00Z');
+    await Promise.all([coachTick(now), coachTick(now)]);
+    expect(await CoachPushJobModel.countDocuments({ state: 'ACCEPTED' })).toBe(1);
+    await coachTick(new Date(now.getTime() + 16 * 60000));
+    expect(await CoachPushJobModel.countDocuments({ state: 'RECEIPT_OK' })).toBe(1);
+    expect((await CoachPushJobModel.findOne())!.openedAt).toBeUndefined();
+  });
+  it('suppresses quiet/snoozed pushes and removes invalid tokens', async () => {
+    const { userId: id } = await createAuthedUser();
+    await updateSettings(id, { enabled: true });
+    await PushDeviceModel.create({ userId: id, token: 'ExponentPushToken[invalid]', platform: 'android' });
+    vi.spyOn(coachPushClient, 'send').mockImplementation(async tokens => tokens.map(token => ({ token, status: 'invalid' as const })));
+    await coachTick(new Date('2026-10-06T16:00:00Z'));
+    expect(await CoachPushJobModel.countDocuments()).toBe(0);
+    await coachTick(new Date('2026-10-06T05:00:00Z'));
+    expect(await PushDeviceModel.countDocuments()).toBe(0);
+    expect(await CoachPushJobModel.countDocuments({ state: 'FAILED' })).toBe(1);
+  });
+  it('retries transient ticket errors within expiry without a second day claim', async () => {
+    const { userId: id } = await createAuthedUser();
+    await updateSettings(id, { enabled: true });
+    await PushDeviceModel.create({ userId: id, token: 'ExponentPushToken[retry]', platform: 'android' });
+    vi.spyOn(coachPushClient, 'send').mockResolvedValueOnce([{ token: 'ExponentPushToken[retry]', status: 'transient' }]).mockResolvedValue([{ token: 'ExponentPushToken[retry]', status: 'accepted', ticketId: 'retry-ticket' }]);
+    const now = new Date('2026-10-06T05:00:00Z');
+    await coachTick(now);
+    expect(await CoachPushJobModel.countDocuments({ state: 'RETRY' })).toBe(1);
+    await coachTick(new Date(now.getTime() + 3 * 60000));
+    expect(await CoachPushJobModel.countDocuments({ state: 'ACCEPTED' })).toBe(1);
+    expect((await CoachBudgetModel.findOne({ channel: 'PUSH' }))!.used).toBe(1);
+  });
+  it('isolates malformed profile timezones and suppresses stale plan activity jobs', async () => {
+    const { userId: id } = await createAuthedUser(); const { userId: bad } = await createAuthedUser();
+    await updateSettings(id, { enabled: true }); await updateSettings(bad, { enabled: true });
+    await UserProfileModel.updateOne({ userId: bad }, { $set: { timezone: 'Invalid/Zone' } });
+    const now = new Date('2026-10-06T05:00:00Z');
+    await CoachPushJobModel.create({ userId: id, key: 'BEFORE:old:activity', kind: 'BEFORE', date: '2026-10-06', planId: 'old', activityId: 'activity', dueAt: now, expiresAt: new Date(now.getTime() + 3600000) });
+    await PushDeviceModel.create({ userId: id, token: 'ExponentPushToken[healthy]', platform: 'android' });
+    vi.spyOn(coachPushClient, 'send').mockResolvedValue([{ token: 'ExponentPushToken[healthy]', status: 'accepted', ticketId: 'healthy' }]);
+    expect((await coachTick(now)).userErrors).toBe(1);
+    expect(await CoachPushJobModel.countDocuments({ state: 'SUPPRESSED' })).toBe(1);
+    expect(await CoachPushJobModel.countDocuments({ state: 'ACCEPTED' })).toBe(1);
+  });
+  it('retries transient receipts and retains previous provider tickets', async () => {
+    const { userId: id } = await createAuthedUser();
+    await updateSettings(id, { enabled: true });
+    await PushDeviceModel.create({ userId: id, token: 'ExponentPushToken[receipt]', platform: 'android' });
+    vi.spyOn(coachPushClient, 'send').mockResolvedValueOnce([{ token: 'ExponentPushToken[receipt]', status: 'accepted', ticketId: 'old-ticket' }]).mockResolvedValue([{ token: 'ExponentPushToken[receipt]', status: 'accepted', ticketId: 'new-ticket' }]);
+    vi.spyOn(coachPushClient, 'receipts').mockResolvedValue({ 'old-ticket': { status: 'error', message: 'Busy', details: { error: 'MessageRateExceeded' } } });
+    const now = new Date('2026-10-06T05:00:00Z');
+    await coachTick(now); await coachTick(new Date(now.getTime() + 16 * 60000));
+    const job = await CoachPushJobModel.findOne();
+    expect(job!.tickets).toContainEqual(expect.objectContaining({ ticketId: 'new-ticket' }));
+    expect((job!.toObject() as any).ticketHistory).toContainEqual(expect.objectContaining({ ticketId: 'old-ticket' }));
+    expect((await CoachBudgetModel.findOne({ channel: 'PUSH' }))!.used).toBe(1);
+  });
+});

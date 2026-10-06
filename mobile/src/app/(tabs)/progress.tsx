@@ -1,3 +1,4 @@
+import { localeTag , translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -14,13 +15,16 @@ import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { RANGES, useProgress, type RangeKey } from "@/hooks/useProgress";
 import { formatVolume } from "@/lib/workout";
 
-const fmt = (n: number) => n.toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+const fmt = (n: number) => n.toLocaleString(localeTag(), { maximumFractionDigits: 1 });
 
 function daysBetween(from: string, to: string) {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 }
 
 export default function ProgressScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [rangeKey, setRangeKey] = useState<RangeKey>("1m");
   const { data, error, isRefreshing, refresh, reload } = useProgress(rangeKey);
 
@@ -73,17 +77,14 @@ export default function ProgressScreen() {
           <GoalProgressCard goal={data.goal} />
 
           <ChartCard
-            title="Cân nặng"
+            title={t("Cân nặng")}
             subtitle={`${shortDate(weight!.from)} – ${shortDate(weight!.to)}`}
             headline={
               weight!.summary.current !== null ? (
                 <View style={styles.headline}>
                   <Text style={styles.hero}>{fmt(weight!.summary.current)} kg</Text>
                   {change !== null && weightPoints.length > 1 ? (
-                    <Text style={styles.delta}>
-                      {change > 0 ? "+" : ""}
-                      {fmt(change)} kg trong kỳ
-                    </Text>
+                    <Text style={styles.delta}>{t("{value1} {value2} kg trong kỳ", { value1: change > 0 ? "+" : "", value2: fmt(change) })}</Text>
                   ) : null}
                 </View>
               ) : null
@@ -92,7 +93,7 @@ export default function ProgressScreen() {
               <LineChart
                 points={weightPoints}
                 formatValue={(v) => `${fmt(v)} kg`}
-                accessibilityLabel={`Biểu đồ cân nặng, ${weightPoints.length} lần đo`}
+                accessibilityLabel={t("Biểu đồ cân nặng, {value1} lần đo", { value1: weightPoints.length })}
               />
             }
             rows={[...weight!.points].reverse().map((p) => ({
@@ -100,7 +101,7 @@ export default function ProgressScreen() {
               label: shortDate(p.date),
               value: `${fmt(p.weight)} kg`,
             }))}
-            emptyText="Chưa có lần đo nào trong khoảng này. Nhập cân nặng bên dưới để bắt đầu."
+            emptyText={t("Chưa có lần đo nào trong khoảng này. Nhập cân nặng bên dưới để bắt đầu.")}
           />
 
           <Card>
@@ -115,52 +116,52 @@ export default function ProgressScreen() {
               style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
             >
               <Ionicons name="body-outline" size={20} color={colors.primary} />
-              <Text style={styles.linkText}>Số đo cơ thể & lịch sử cân nặng</Text>
+              <Text style={styles.linkText}>{t("Số đo cơ thể & lịch sử cân nặng")}</Text>
               <Ionicons name="chevron-forward" size={18} color={colors.primary} />
             </Pressable>
           </Card>
 
           <ChartCard
-            title="Volume tập theo tuần"
-            subtitle="Tổng kg × rep của các buổi đã hoàn thành"
+            title={t("Volume tập theo tuần")}
+            subtitle={t("Tổng kg × rep của các buổi đã hoàn thành")}
             chart={
               <BarChart
                 bars={weeks.map((w) => ({
                   key: w.weekStart,
                   label: shortDate(w.weekStart),
-                  detail: `Tuần ${shortDate(w.weekStart)} · ${w.sessions} buổi`,
+                  detail: t("Tuần {value1} · {value2} buổi", { value1: shortDate(w.weekStart), value2: w.sessions }),
                   value: w.totalVolume,
                 }))}
                 formatValue={formatVolume}
-                accessibilityLabel={`Biểu đồ volume ${weeks.length} tuần gần nhất`}
+                accessibilityLabel={t("Biểu đồ volume {value1} tuần gần nhất", { value1: weeks.length })}
               />
             }
             rows={
               hasWorkout
                 ? [...weeks].reverse().map((w) => ({
                     key: w.weekStart,
-                    label: `Tuần ${shortDate(w.weekStart)} (${w.sessions} buổi)`,
+                    label: t("Tuần {value1} ({value2} buổi)", { value1: shortDate(w.weekStart), value2: w.sessions }),
                     value: formatVolume(w.totalVolume),
                   }))
                 : []
             }
-            emptyText="Chưa có buổi tập nào hoàn thành trong khoảng này."
+            emptyText={t("Chưa có buổi tập nào hoàn thành trong khoảng này.")}
           />
 
           <ChartCard
-            title="Calo 7 ngày qua"
+            title={t("Calo 7 ngày qua")}
             subtitle={
               latestTarget
-                ? `Đường kẻ ngang: mục tiêu ${fmt(latestTarget.calories)} kcal/ngày`
+                ? t("Đường kẻ ngang: mục tiêu {value1} kcal/ngày", { value1: fmt(latestTarget.calories) })
                 : undefined
             }
             headline={
               hasNutrition ? (
                 <View style={styles.stats}>
-                  <Stat label="TB kcal/ngày" value={fmt(nutrition!.summary.averages.calories)} />
+                  <Stat label={t("TB kcal/ngày")} value={fmt(nutrition!.summary.averages.calories)} />
                   <Stat label="TB protein" value={`${fmt(nutrition!.summary.averages.protein)} g`} />
                   <Stat
-                    label="Ngày đủ protein"
+                    label={t("Ngày đủ protein")}
                     value={`${nutrition!.summary.daysProteinGoalMet}/${nutrition!.summary.loggedDays}`}
                   />
                 </View>
@@ -176,7 +177,7 @@ export default function ProgressScreen() {
                 }))}
                 reference={latestTarget ? { value: latestTarget.calories } : null}
                 formatValue={(v) => `${fmt(v)} kcal`}
-                accessibilityLabel="Biểu đồ calo 7 ngày qua"
+                accessibilityLabel={t("Biểu đồ calo 7 ngày qua")}
               />
             }
             rows={
@@ -186,11 +187,11 @@ export default function ProgressScreen() {
                     label: shortDate(d.date),
                     value: d.logged
                       ? `${fmt(d.consumed.calories)}${d.target ? ` / ${fmt(d.target.calories)}` : ""} kcal`
-                      : "Chưa ghi",
+                      : t("Chưa ghi"),
                   }))
                 : []
             }
-            emptyText="Chưa ghi món ăn nào trong 7 ngày qua."
+            emptyText={t("Chưa ghi món ăn nào trong 7 ngày qua.")}
           />
         </>
       ) : null}
@@ -199,6 +200,9 @@ export default function ProgressScreen() {
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <View style={styles.stat}>
       <Text style={styles.statValue}>{value}</Text>

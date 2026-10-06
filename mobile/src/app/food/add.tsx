@@ -1,3 +1,7 @@
+import { personalPlanApi } from "@/api/personalPlanApi";
+import { usePersonalPlanStore } from "@/stores/personalPlanStore";
+import { foodVersion } from "@/lib/personalPlan";
+import { localeTag , translate as t, useTranslation } from "@/i18n";
 import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -19,13 +23,16 @@ import type { Food, MealType } from "@/types/models";
 const MAX_QUANTITY = 10000;
 
 export default function AddFoodScreen() {
-  const params = useLocalSearchParams<{ foodId: string; mealType?: string; date?: string }>();
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
+  const params = useLocalSearchParams<{ foodId: string; mealType?: string; date?: string; quantity?: string; planId?: string; planItemId?: string }>();
   const addLog = useNutritionStore((s) => s.addLog);
 
   const [food, setFood] = useState<Food | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const draftKey = `add-${params.foodId}-${params.date ?? "today"}-${params.mealType ?? "default"}`;
-  const [quantity, setQuantity] = useDraftState(draftKey + "quantity", "");
+  const draftKey = `add-${params.planId ?? "regular"}-${params.planItemId ?? "item"}-${params.foodId}-${params.date ?? "today"}-${params.mealType ?? "default"}`;
+  const [quantity, setQuantity] = useDraftState(draftKey + "quantity", params.planId && params.quantity ? params.quantity : "");
   const [mealType, setMealType] = useDraftState<MealType>(draftKey + "mealType",
     isMealType(params.mealType) ? params.mealType : mealTypeForHour(new Date().getHours())
   );
@@ -77,18 +84,24 @@ export default function AddFoodScreen() {
 
   async function handleAdd() {
     if (amount === null || Number.isNaN(amount) || amount <= 0) {
-      setQuantityError("Khối lượng phải lớn hơn 0");
+      setQuantityError(t("Khối lượng phải lớn hơn 0"));
       return;
     }
     if (amount > MAX_QUANTITY) {
-      setQuantityError(`Tối đa ${MAX_QUANTITY.toLocaleString("vi-VN")}`);
+      setQuantityError(t("Tối đa {value1}", { value1: MAX_QUANTITY.toLocaleString(localeTag()) }));
       return;
     }
     setQuantityError(undefined);
     setFormError(null);
     setSaving(true);
     try {
-      await addLog({ foodId: food!.id, mealType, quantity: amount, date: params.date });
+      if (params.planId && params.planItemId) {
+        const log = await personalPlanApi.logItem(params.planId, params.planItemId, { mealType, quantity: amount, foodVersion: foodVersion(food!) });
+        await useNutritionStore.getState().load(log.date);
+        await usePersonalPlanStore.getState().load();
+      } else {
+        await addLog({ foodId: food!.id, mealType, quantity: amount, date: params.date });
+      }
       // Quay thẳng về tab Dinh dưỡng, bỏ qua màn tìm kiếm
       clearFormDrafts(draftKey);
       router.dismissTo("/nutrition");
@@ -100,9 +113,9 @@ export default function AddFoodScreen() {
 
   async function handleDelete() {
     const ok = await confirmAction({
-      title: "Xoá món này?",
-      message: `"${food!.name}" sẽ không còn trong danh sách tìm kiếm. Các lần đã ghi vẫn được giữ.`,
-      confirmText: "Xoá",
+      title: t("Xoá món này?"),
+      message: t("\"{value1}\" sẽ không còn trong danh sách tìm kiếm. Các lần đã ghi vẫn được giữ.", { value1: food!.name }),
+      confirmText: t("Xoá"),
       destructive: true,
     });
     if (!ok) return;
@@ -124,7 +137,7 @@ export default function AddFoodScreen() {
           <Text style={[styles.name, styles.flex]}>{food.name}</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={favorite ? "Bỏ khỏi yêu thích" : "Thêm vào yêu thích"}
+            accessibilityLabel={favorite ? t("Bỏ khỏi yêu thích") : t("Thêm vào yêu thích")}
             accessibilityState={{ selected: favorite }}
             hitSlop={10}
             onPress={toggleFavorite}
@@ -132,12 +145,18 @@ export default function AddFoodScreen() {
             <Ionicons name={favorite ? "star" : "star-outline"} size={24} color={colors.carbs} />
           </Pressable>
         </View>
-        <Text style={styles.muted}>Mỗi {formatServing(food.servingSize, food.servingUnit)}</Text>
+        <Text style={styles.muted}>{t("Mỗi {value1}", { value1: formatServing(food.servingSize, food.servingUnit) })}</Text>
         <MacroChips values={food} />
-        {food.fiber > 0 ? <Text style={styles.muted}>Chất xơ: {food.fiber} g</Text> : null}
+        {food.fiber > 0 ? <Text style={styles.muted}>{t("Chất xơ: {value1} g", { value1: food.fiber })}</Text> : null}
       </Card>
 
       <ErrorBanner message={formError} />
+      {params.planId && formError ? <Button title={t("Tải lại món")} variant="secondary" loading={saving} onPress={async () => {
+        setSaving(true);
+        try { setFood(await foodApi.get(params.foodId)); setFormError(null); }
+        catch (e) { setFormError(errorMessage(e)); }
+        finally { setSaving(false); }
+      }} /> : null}
 
       <QuantityForm
         quantity={quantity}
@@ -149,18 +168,18 @@ export default function AddFoodScreen() {
         preview={preview}
       />
 
-      <Button title="Thêm vào nhật ký" onPress={handleAdd} loading={saving} />
+      <Button title={t("Thêm vào nhật ký")} onPress={handleAdd} loading={saving} />
 
       {food.isCustom ? (
         <View style={styles.ownerActions}>
           <Button
-            title="Sửa món"
+            title={t("Sửa món")}
             variant="secondary"
             style={styles.flex}
             onPress={() => router.push({ pathname: "/food/create", params: { id: food.id } })}
           />
           <Button
-            title="Xoá món"
+            title={t("Xoá món")}
             variant="danger"
             style={styles.flex}
             loading={deleting}

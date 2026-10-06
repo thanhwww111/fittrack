@@ -4,8 +4,12 @@ import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, themedStyles } from "@/constants/theme";
 import { activeTab, APP_TABS, selectTab } from "@/lib/navigation";
+import { useTranslation } from "@/i18n";
 
 export function AppFooter() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const path = usePathname();
   const insets = useSafeAreaInsets();
   const selected = activeTab(path);
@@ -19,7 +23,7 @@ export function AppFooter() {
       disabled={blocked} onPress={() => selectTab(router, path, tab.name)} style={styles.item}>
       <Ionicons name={selected === tab.name ? tab.focusedIcon : tab.icon} size={23}
         color={selected === tab.name ? colors.primary : colors.textMuted} />
-      <Text numberOfLines={1} style={[styles.label, selected === tab.name && { color: colors.primary }]}>{tab.title}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.label, selected === tab.name && { color: colors.primary }]}>{tab.title}</Text>
     </Pressable>)}
   </View>;
 }

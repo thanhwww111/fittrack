@@ -16,7 +16,7 @@ const workoutTemplateSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     name: { type: String, required: true, trim: true, maxlength: 100 },
-    suggestedKey: { type: String, enum: ["push", "pull", "legs"] },
+    suggestedKey: { type: String, enum: ["push", "pull", "legs", "upper", "lower"] },
     exercises: {
       type: [templateExerciseSchema],
       validate: [(v: unknown[]) => v.length > 0, "Workout template needs at least one exercise"],

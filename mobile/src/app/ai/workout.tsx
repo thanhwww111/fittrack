@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { aiApi } from "@/api/aiApi";
@@ -11,6 +12,9 @@ import { shortDate } from "@/components/charts/scale";
 import type { WorkoutAnalysis } from "@/types/models";
 
 export default function AiWorkoutScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [analysis, setAnalysis] = useState<WorkoutAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,12 +34,9 @@ export default function AiWorkoutScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Card>
-        <Text style={styles.muted}>
-          AI đọc các buổi tập đã hoàn thành trong 4 tuần gần nhất (set tốt nhất mỗi bài, volume mỗi
-          tuần) và đưa ra nhận xét cùng gợi ý cho tuần tới. Cần ít nhất 2 buổi tập.
-        </Text>
+        <Text style={styles.muted}>{t("AI đọc các buổi tập đã hoàn thành trong 4 tuần gần nhất (set tốt nhất mỗi bài, volume mỗi tuần) và đưa ra nhận xét cùng gợi ý cho tuần tới. Cần ít nhất 2 buổi tập.")}</Text>
         <Button
-          title={analysis ? "Phân tích lại" : "✨ Phân tích 4 tuần"}
+          title={analysis ? t("Phân tích lại") : t("✨ Phân tích 4 tuần")}
           onPress={handleAnalyze}
           loading={loading}
         />
@@ -46,19 +47,19 @@ export default function AiWorkoutScreen() {
       {loading ? (
         <View style={styles.loading}>
           <ActivityIndicator color={colors.primary} />
-          <Text style={styles.muted}>AI đang xem lại các buổi tập của bạn…</Text>
+          <Text style={styles.muted}>{t("AI đang xem lại các buổi tập của bạn…")}</Text>
         </View>
       ) : null}
 
       {analysis && !loading ? (
         <>
-          <Card title="Tổng quan" icon="sparkles">
+          <Card title={t("Tổng quan")} icon="sparkles">
             <Text style={styles.body}>{analysis.summary}</Text>
             <View style={styles.weeks}>
               {analysis.weeks.map((w) => (
                 <View key={w.weekStart} style={styles.week}>
-                  <Text style={styles.weekLabel}>Tuần {shortDate(w.weekStart)}</Text>
-                  <Text style={styles.weekValue}>{w.sessions} buổi</Text>
+                  <Text style={styles.weekLabel}>{t("Tuần {value1}", { value1: shortDate(w.weekStart) })}</Text>
+                  <Text style={styles.weekValue}>{t("{value1} buổi", { value1: w.sessions })}</Text>
                   <Text style={styles.weekLabel}>{formatVolume(w.volume)}</Text>
                 </View>
               ))}
@@ -66,7 +67,7 @@ export default function AiWorkoutScreen() {
           </Card>
 
           {analysis.highlights.length > 0 ? (
-            <Card title="Điểm nổi bật" icon="star">
+            <Card title={t("Điểm nổi bật")} icon="star">
               {analysis.highlights.map((h, i) => (
                 <Text key={i} style={styles.body}>
                   🏅 {h}
@@ -76,7 +77,7 @@ export default function AiWorkoutScreen() {
           ) : null}
 
           {analysis.suggestions.length > 0 ? (
-            <Card title="Gợi ý cho tuần tới" icon="bulb">
+            <Card title={t("Gợi ý cho tuần tới")} icon="bulb">
               {analysis.suggestions.map((s, i) => (
                 <Text key={i} style={styles.body}>
                   → {s}
@@ -85,9 +86,7 @@ export default function AiWorkoutScreen() {
             </Card>
           ) : null}
 
-          <Text style={styles.disclaimer}>
-            Nhận xét do AI tạo từ số liệu của bạn, chỉ mang tính tham khảo.
-          </Text>
+          <Text style={styles.disclaimer}>{t("Nhận xét do AI tạo từ số liệu của bạn, chỉ mang tính tham khảo.")}</Text>
         </>
       ) : null}
     </ScrollView>

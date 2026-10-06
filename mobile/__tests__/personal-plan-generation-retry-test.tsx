@@ -1,0 +1,23 @@
+import { render, fireEvent, screen } from '@testing-library/react-native';
+import PlanScreen from '@/app/(tabs)/plan';
+import { personalPlanApi } from '@/api/personalPlanApi';
+import { ApiError } from '@/api/client';
+import { clearAllFormDrafts } from '@/hooks/useDraftState';
+jest.mock('expo-router', () => ({ router: { push: jest.fn() }, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
+jest.mock('@/api/personalPlanApi', () => ({ personalPlanApi: { createDraft: jest.fn() } }));
+jest.mock('@/stores/profileStore', () => ({ subscribeProfileRefresh: () => () => {} }));
+const mockLoad = jest.fn();
+jest.mock('@/stores/personalPlanStore', () => ({ usePersonalPlanStore: () => ({ data: null, survey: { revision: 1 }, isLoading: false, error: null, load: mockLoad }) }));
+jest.mock('@/stores/authStore', () => ({ useAuthStore: Object.assign((selector: (s: unknown) => unknown) => selector({ user: { id: 'alice' } }), { getState: () => ({ user: { id: 'alice' } }) }) }));
+beforeEach(() => { jest.clearAllMocks(); clearAllFormDrafts(); });
+it('keeps a timed-out paid generation request across the theme stack remount', async () => {
+  jest.mocked(personalPlanApi.createDraft).mockRejectedValue(new ApiError('Request timed out'));
+  const view = await render(<PlanScreen key='light' />);
+  await fireEvent.press(screen.getByText('Tạo bản nháp 7 ngày'));
+  await screen.findByText('Server phản hồi quá lâu, thử lại sau.');
+  await view.rerender(<PlanScreen key='dark' />);
+  await fireEvent.press(screen.getByText('Tạo bản nháp 7 ngày'));
+  await screen.findByText('Server phản hồi quá lâu, thử lại sau.');
+  const calls = jest.mocked(personalPlanApi.createDraft).mock.calls;
+  expect(calls).toHaveLength(2); expect(calls[0][0]).toBe(calls[1][0]);
+});

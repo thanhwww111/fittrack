@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, spacing, themedStyles } from "@/constants/theme";
+import { LanguagePicker } from "@/components/ui/LanguagePicker";
 
 interface AuthFormProps {
   title: string;
@@ -19,6 +20,7 @@ export function AuthForm({ title, subtitle, children, footer }: AuthFormProps) {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <LanguagePicker />
           <View style={styles.header}>
             <Text style={styles.brand}>FitTrack</Text>
             <Text style={styles.title}>{title}</Text>

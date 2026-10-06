@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
@@ -8,6 +9,9 @@ import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { useWorkoutStore } from "@/stores/workoutStore";
 
 export default function TemplatesScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const templates = useWorkoutStore((s) => s.templates);
   const error = useWorkoutStore((s) => s.error);
 
@@ -32,11 +36,8 @@ export default function TemplatesScreen() {
           >
             <Ionicons name="calendar-outline" size={24} color={colors.primary} />
             <View style={styles.flex}>
-              <Text style={styles.name}>Lịch tập theo tuần</Text>
-              <Text style={styles.muted}>
-                Đề xuất sẵn Push/Pull/Legs, Upper/Lower, Full Body. Tạo xong có ngay template cho
-                từng buổi.
-              </Text>
+              <Text style={styles.name}>{t("Lịch tập theo tuần")}</Text>
+              <Text style={styles.muted}>{t("Đề xuất sẵn Push/Pull/Legs, Upper/Lower, Full Body. Tạo xong có ngay template cho từng buổi.")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.primary} />
           </Pressable>
@@ -49,21 +50,16 @@ export default function TemplatesScreen() {
           >
             <View style={styles.flex}>
               <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.muted}>
-                {item.exercises.length} bài ·{" "}
-                {item.exercises.reduce((n, e) => n + e.targetSets, 0)} set
-              </Text>
+              <Text style={styles.muted}>{t("{value1} bài ·  {value2} set", { value1: item.exercises.length, value2: item.exercises.reduce((n, e) => n + e.targetSets, 0) })}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </Pressable>
         )}
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            Chưa có template nào. Tạo template để lưu sẵn bài tập và số set × rep cho mỗi buổi.
-          </Text>
+          <Text style={styles.empty}>{t("Chưa có template nào. Tạo template để lưu sẵn bài tập và số set × rep cho mỗi buổi.")}</Text>
         }
       />
-      <Button title="Tạo template mới" onPress={() => router.push("/workout/template")} />
+      <Button title={t("Tạo template mới")} onPress={() => router.push("/workout/template")} />
     </View>
   );
 }

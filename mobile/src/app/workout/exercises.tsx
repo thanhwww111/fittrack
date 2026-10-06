@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -19,6 +20,9 @@ import { errorMessage } from "@/lib/formErrors";
 import { EQUIPMENT_LABELS, MUSCLE_LABELS, MUSCLE_ORDER } from "@/lib/workout";
 import { useExercisePickerStore } from "@/stores/exercisePickerStore";
 import type { Exercise, MuscleGroup } from "@/types/models";
+import { ExerciseNote } from "@/components/workout/ExerciseNote";
+import { ExerciseGuideButton } from "@/components/workout/ExerciseGuideButton";
+import { matchesExercise } from "@/lib/exerciseNames";
 
 interface Results {
   key: string | null; // bộ lọc mà `items` đang ứng với
@@ -26,6 +30,9 @@ interface Results {
 }
 
 export default function ExercisePickerScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const onPick = useExercisePickerStore((s) => s.onPick);
   const selectedIds = useExercisePickerStore((s) => s.selectedIds);
 
@@ -41,10 +48,10 @@ export default function ExercisePickerScreen() {
   useEffect(() => {
     let cancelled = false;
     exerciseApi
-      .list({ muscleGroup: muscle ?? undefined, search: search || undefined })
+      .list({ muscleGroup: muscle ?? undefined })
       .then((items) => {
         if (!cancelled) {
-          setResults({ key, items });
+          setResults({ key, items: items.filter(item => matchesExercise(item, search)) });
           setError(null);
         }
       })
@@ -71,11 +78,11 @@ export default function ExercisePickerScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Tìm bài tập"
+          placeholder={t("Tìm bài tập")}
           placeholderTextColor={colors.textMuted}
           style={styles.searchInput}
           autoCorrect={false}
-          accessibilityLabel="Tìm bài tập"
+          accessibilityLabel={t("Tìm bài tập")}
         />
       </View>
 
@@ -96,7 +103,7 @@ export default function ExercisePickerScreen() {
               style={[styles.filter, selected && styles.filterSelected]}
             >
               <Text style={[styles.filterText, selected && styles.filterTextSelected]}>
-                {m ? MUSCLE_LABELS[m] : "Tất cả"}
+                {m ? MUSCLE_LABELS[m] : t("Tất cả")}
               </Text>
             </Pressable>
           );
@@ -125,6 +132,7 @@ export default function ExercisePickerScreen() {
           renderItem={({ item }) => {
             const already = selectedIds.includes(item.id);
             return (
+              <View>
               <Pressable
                 accessibilityRole="button"
                 disabled={already}
@@ -134,11 +142,12 @@ export default function ExercisePickerScreen() {
                 <View style={styles.flex}>
                   <Text style={styles.name}>
                     {item.name}
-                    {item.isCustom ? <Text style={styles.badge}>  · Của bạn</Text> : null}
+                    {item.isCustom ? <Text style={styles.badge}>{t("· Của bạn")}</Text> : null}
                   </Text>
                   <Text style={styles.muted}>
                     {MUSCLE_LABELS[item.muscleGroup]} · {EQUIPMENT_LABELS[item.equipment]}
                   </Text>
+                  <ExerciseNote name={item.name} isCustom={item.isCustom} />
                 </View>
                 <Ionicons
                   name={already ? "checkmark-circle" : "add-circle-outline"}
@@ -146,9 +155,11 @@ export default function ExercisePickerScreen() {
                   color={already ? colors.success : colors.primary}
                 />
               </Pressable>
+              <ExerciseGuideButton name={item.name} isCustom={item.isCustom} />
+              </View>
             );
           }}
-          ListEmptyComponent={<Text style={styles.empty}>Không tìm thấy bài tập nào.</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>{t("Không tìm thấy bài tập nào.")}</Text>}
           ListFooterComponent={
             <Pressable
               accessibilityRole="button"
@@ -156,7 +167,7 @@ export default function ExercisePickerScreen() {
               style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}
             >
               <Ionicons name="add" size={18} color={colors.primary} />
-              <Text style={styles.createText}>Không có bài bạn cần? Tạo bài tập mới</Text>
+              <Text style={styles.createText}>{t("Không có bài bạn cần? Tạo bài tập mới")}</Text>
             </Pressable>
           }
         />

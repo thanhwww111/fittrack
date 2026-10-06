@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useState } from "react";
 import { View } from "react-native";
 import { exerciseApi } from "@/api/workoutApi";
@@ -13,12 +14,12 @@ import type { Equipment, Exercise, MuscleGroup } from "@/types/models";
 
 const MUSCLE_OPTIONS: ChipOption<MuscleGroup>[] = MUSCLE_ORDER.map((m) => ({
   value: m,
-  label: MUSCLE_LABELS[m],
+  get label() { return MUSCLE_LABELS[m]; },
 }));
 
 const EQUIPMENT_OPTIONS: ChipOption<Equipment>[] = (
   Object.keys(EQUIPMENT_LABELS) as Equipment[]
-).map((e) => ({ value: e, label: EQUIPMENT_LABELS[e] }));
+).map((e) => ({ value: e, get label() { return EQUIPMENT_LABELS[e]; } }));
 
 interface CreateExerciseFormProps {
   // Có `exercise` = sửa bài tự tạo đã có, không có = tạo mới
@@ -37,6 +38,9 @@ export function CreateExerciseForm({
   onSaved,
   onCancel,
 }: CreateExerciseFormProps) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [name, setName] = useState(exercise?.name ?? initialName);
   const [muscle, setMuscle] = useState<MuscleGroup | null>(exercise?.muscleGroup ?? initialMuscle);
   const [equipment, setEquipment] = useState<Equipment | null>(exercise?.equipment ?? null);
@@ -45,9 +49,9 @@ export function CreateExerciseForm({
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit() {
-    if (!name.trim()) return setError("Vui lòng nhập tên bài tập");
-    if (!muscle) return setError("Chọn nhóm cơ chính");
-    if (!equipment) return setError("Chọn dụng cụ");
+    if (!name.trim()) return setError(t("Vui lòng nhập tên bài tập"));
+    if (!muscle) return setError(t("Chọn nhóm cơ chính"));
+    if (!equipment) return setError(t("Chọn dụng cụ"));
 
     setError(null);
     setSaving(true);
@@ -61,13 +65,13 @@ export function CreateExerciseForm({
   }
 
   return (
-    <Card title={exercise ? "Sửa bài tập" : "Tạo bài tập mới"}>
+    <Card title={exercise ? t("Sửa bài tập") : t("Tạo bài tập mới")}>
       <ErrorBanner message={error} />
-      <TextField label="Tên bài tập" value={name} onChangeText={setName} maxLength={100} />
-      <ChipGroup label="Nhóm cơ" options={MUSCLE_OPTIONS} value={muscle} onChange={setMuscle} />
-      <ChipGroup label="Dụng cụ" options={EQUIPMENT_OPTIONS} value={equipment} onChange={setEquipment} />
+      <TextField label={t("Tên bài tập")} value={name} onChangeText={setName} maxLength={100} />
+      <ChipGroup label={t("Nhóm cơ")} options={MUSCLE_OPTIONS} value={muscle} onChange={setMuscle} />
+      <ChipGroup label={t("Dụng cụ")} options={EQUIPMENT_OPTIONS} value={equipment} onChange={setEquipment} />
       <TextField
-        label="Hướng dẫn / ghi chú (không bắt buộc)"
+        label={t("Hướng dẫn / ghi chú (không bắt buộc)")}
         value={description}
         onChangeText={setDescription}
         multiline
@@ -75,9 +79,9 @@ export function CreateExerciseForm({
         style={styles.description}
       />
       <View style={styles.actions}>
-        <Button title="Huỷ" variant="secondary" onPress={onCancel} style={styles.flex} />
+        <Button title={t("Huỷ")} variant="secondary" onPress={onCancel} style={styles.flex} />
         <Button
-          title={exercise ? "Lưu" : "Tạo và chọn"}
+          title={exercise ? t("Lưu") : t("Tạo và chọn")}
           onPress={handleSubmit}
           loading={saving}
           style={styles.flex}

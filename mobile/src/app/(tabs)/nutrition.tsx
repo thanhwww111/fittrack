@@ -1,3 +1,4 @@
+import { localeTag , translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link, router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -25,9 +26,12 @@ import { addDays, DEFAULT_MEALS, formatDayLabel, formatServing, mealLabel } from
 import { useNutritionStore } from "@/stores/nutritionStore";
 import type { FoodLog, MealType } from "@/types/models";
 
-const fmt = (n: number) => n.toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+const fmt = (n: number) => n.toLocaleString(localeTag(), { maximumFractionDigits: 1 });
 
 export default function NutritionScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const { today, selectedDate, summary, logs, isLoading, error, load, reload } = useNutritionStore();
   const [copying, setCopying] = useState<MealType | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -59,9 +63,9 @@ export default function NutritionScreen() {
   async function copyPrevious(mealType: MealType) {
     const fromDate = addDays(selectedDate!, -1);
     const ok = await confirmAction({
-      title: `Chép ${mealLabel(mealType, meals).toLowerCase()} ngày ${formatDayLabel(fromDate, today!).toLowerCase()}?`,
-      message: "Các món của bữa đó sẽ được thêm vào bữa này.",
-      confirmText: "Chép",
+      title: t("Chép {value1} ngày {value2}?", { value1: mealLabel(mealType, meals).toLowerCase(), value2: formatDayLabel(fromDate, today!).toLowerCase() }),
+      message: t("Các món của bữa đó sẽ được thêm vào bữa này."),
+      confirmText: t("Chép"),
     });
     if (!ok) return;
     setCopying(mealType);
@@ -69,11 +73,11 @@ export default function NutritionScreen() {
     try {
       const res = await mealCopyApi.copy({ fromDate, fromMealType: mealType, toDate: selectedDate! });
       await reload();
-      setNotice(`Đã chép ${res.items.length} món vào ${mealLabel(mealType, meals).toLowerCase()}.`);
+      setNotice(t("Đã chép {value1} món vào {value2}.", { value1: res.items.length, value2: mealLabel(mealType, meals).toLowerCase() }));
     } catch (err) {
       setNotice(
         err instanceof ApiError && err.status === 404
-          ? `${mealLabel(mealType, meals)} ngày ${formatDayLabel(fromDate, today!).toLowerCase()} chưa có món nào.`
+          ? t("{value1} ngày {value2} chưa có món nào.", { value1: mealLabel(mealType, meals), value2: formatDayLabel(fromDate, today!).toLowerCase() })
           : errorMessage(err)
       );
     } finally {
@@ -90,7 +94,7 @@ export default function NutritionScreen() {
     >
       <View style={styles.dateBar}>
         <Pressable
-          accessibilityLabel="Ngày trước"
+          accessibilityLabel={t("Ngày trước")}
           hitSlop={12}
           onPress={() => load(addDays(selectedDate, -1))}
         >
@@ -98,7 +102,7 @@ export default function NutritionScreen() {
         </Pressable>
         <Text style={styles.dateText}>{formatDayLabel(selectedDate, today)}</Text>
         <Pressable
-          accessibilityLabel="Ngày sau"
+          accessibilityLabel={t("Ngày sau")}
           hitSlop={12}
           disabled={isToday}
           onPress={() => load(addDays(selectedDate, 1))}
@@ -112,7 +116,7 @@ export default function NutritionScreen() {
       </View>
 
       <ErrorBanner message={error} />
-      <Button title="Lịch sử theo ngày" variant="secondary" onPress={() => router.push("/history")} />
+      <Button title={t("Lịch sử theo ngày")} variant="secondary" onPress={() => router.push("/history")} />
 
       <Card>
         {summary.target ? (
@@ -121,7 +125,7 @@ export default function NutritionScreen() {
               <View>
                 <Text style={styles.bigNumber}>{fmt(Math.abs(remaining!.calories))}</Text>
                 <Text style={styles.muted}>
-                  {remaining!.calories >= 0 ? "kcal còn lại" : "kcal vượt mục tiêu"}
+                  {remaining!.calories >= 0 ? t("kcal còn lại") : t("kcal vượt mục tiêu")}
                 </Text>
               </View>
               <View style={styles.alignEnd}>
@@ -132,7 +136,7 @@ export default function NutritionScreen() {
             <MacroBars consumed={summary.consumed} target={summary.target} />
             {isToday ? (
               <Button
-                title="✨ Gợi ý món cho phần còn lại"
+                title={t("✨ Gợi ý món cho phần còn lại")}
                 variant="secondary"
                 onPress={() => router.push("/ai/meal")}
               />
@@ -144,12 +148,12 @@ export default function NutritionScreen() {
             <MacroChips values={summary.consumed} />
             <Text style={styles.muted}>
               {isToday
-                ? "Chưa có mục tiêu dinh dưỡng. Thiết lập ở Hồ sơ để theo dõi phần còn lại."
-                : "Ngày này chưa có mục tiêu dinh dưỡng."}
+                ? t("Chưa có mục tiêu dinh dưỡng. Thiết lập ở Hồ sơ để theo dõi phần còn lại.")
+                : t("Ngày này chưa có mục tiêu dinh dưỡng.")}
             </Text>
             {isToday ? (
               <Link href="/profile" asChild>
-                <Button title="Thiết lập mục tiêu" onPress={() => {}} variant="secondary" />
+                <Button title={t("Thiết lập mục tiêu")} onPress={() => {}} variant="secondary" />
               </Link>
             ) : null}
           </>
@@ -195,6 +199,9 @@ function MealSection({
   onCopyPrevious: () => void;
   copying: boolean;
 }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <Card>
       <View style={styles.mealHeader}>
@@ -222,35 +229,35 @@ function MealSection({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Thêm món vào ${mealName}`}
+        accessibilityLabel={t("Thêm món vào {value1}", { value1: mealName })}
         onPress={onAdd}
         style={({ pressed }) => [styles.addRow, pressed && styles.pressed]}
       >
         <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-        <Text style={styles.addText}>Thêm món</Text>
+        <Text style={styles.addText}>{t("Thêm món")}</Text>
       </Pressable>
 
       <View style={styles.extraRow}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Bữa mẫu cho ${mealName}`}
+          accessibilityLabel={t("Bữa mẫu cho {value1}", { value1: mealName })}
           onPress={onTemplates}
           hitSlop={6}
           style={({ pressed }) => [styles.extraButton, pressed && styles.pressed]}
         >
           <Ionicons name="bookmark-outline" size={16} color={colors.textMuted} />
-          <Text style={styles.extraText}>Bữa mẫu</Text>
+          <Text style={styles.extraText}>{t("Bữa mẫu")}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Chép ${mealName} ngày trước`}
+          accessibilityLabel={t("Chép {value1} ngày trước", { value1: mealName })}
           onPress={onCopyPrevious}
           disabled={copying}
           hitSlop={6}
           style={({ pressed }) => [styles.extraButton, (pressed || copying) && styles.pressed]}
         >
           <Ionicons name="copy-outline" size={16} color={colors.textMuted} />
-          <Text style={styles.extraText}>{copying ? "Đang chép…" : "Chép ngày trước"}</Text>
+          <Text style={styles.extraText}>{copying ? t("Đang chép…") : t("Chép ngày trước")}</Text>
         </Pressable>
       </View>
     </Card>

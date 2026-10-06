@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
@@ -27,13 +28,16 @@ function rescale(log: FoodLog, quantity: number): NutritionValues | null {
 }
 
 export default function FoodLogDetailScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const { logId } = useLocalSearchParams<{ logId: string }>();
   const log = useNutritionStore((s) => s.logs.find((l) => l.id === logId));
 
   if (!log) {
     return (
       <View style={styles.center}>
-        <Text style={styles.muted}>Không tìm thấy món này, có thể đã bị xoá.</Text>
+        <Text style={styles.muted}>{t("Không tìm thấy món này, có thể đã bị xoá.")}</Text>
       </View>
     );
   }
@@ -42,6 +46,9 @@ export default function FoodLogDetailScreen() {
 }
 
 function LogEditor({ log }: { log: FoodLog }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const updateLog = useNutritionStore((s) => s.updateLog);
   const deleteLog = useNutritionStore((s) => s.deleteLog);
 
@@ -58,7 +65,7 @@ function LogEditor({ log }: { log: FoodLog }) {
 
   async function handleSave() {
     if (amount === null || Number.isNaN(amount) || amount <= 0) {
-      setQuantityError("Khối lượng phải lớn hơn 0");
+      setQuantityError(t("Khối lượng phải lớn hơn 0"));
       return;
     }
     setQuantityError(undefined);
@@ -89,9 +96,9 @@ function LogEditor({ log }: { log: FoodLog }) {
 
   async function confirmDelete() {
     const ok = await confirmAction({
-      title: "Xoá món này?",
-      message: `${log.foodName} sẽ bị xoá khỏi nhật ký.`,
-      confirmText: "Xoá",
+      title: t("Xoá món này?"),
+      message: t("{value1} sẽ bị xoá khỏi nhật ký.", { value1: log.foodName }),
+      confirmText: t("Xoá"),
       destructive: true,
     });
     if (ok) remove();
@@ -101,9 +108,7 @@ function LogEditor({ log }: { log: FoodLog }) {
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Card>
         <Text style={styles.name}>{log.foodName}</Text>
-        <Text style={styles.muted}>
-          Đã ghi {formatServing(log.quantity, log.servingUnit)} · {log.calories} kcal
-        </Text>
+        <Text style={styles.muted}>{t("Đã ghi {value1} · {value2} kcal", { value1: formatServing(log.quantity, log.servingUnit), value2: log.calories })}</Text>
       </Card>
 
       <ErrorBanner message={formError} />
@@ -118,8 +123,8 @@ function LogEditor({ log }: { log: FoodLog }) {
         preview={preview}
       />
 
-      <Button title="Lưu thay đổi" onPress={handleSave} loading={saving} disabled={!changed} />
-      <Button title="Xoá món" onPress={confirmDelete} loading={deleting} variant="danger" />
+      <Button title={t("Lưu thay đổi")} onPress={handleSave} loading={saving} disabled={!changed} />
+      <Button title={t("Xoá món")} onPress={confirmDelete} loading={deleting} variant="danger" />
     </ScrollView>
   );
 }

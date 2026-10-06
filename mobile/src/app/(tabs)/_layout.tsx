@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Tabs } from "expo-router/js-tabs";
 import type { ComponentProps } from "react";
@@ -16,18 +17,25 @@ interface TabIconProps {
 }
 
 function TabIcon({ name, focusedName, focused, color, size }: TabIconProps) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return <Ionicons name={focused ? focusedName : name} size={size} color={color as string} />;
 }
 
 const TABS: { name: string; title: string; icon: IconName; focusedIcon: IconName }[] = [
-  { name: "index", title: "Trang chủ", icon: "home-outline", focusedIcon: "home" },
-  { name: "nutrition", title: "Dinh dưỡng", icon: "nutrition-outline", focusedIcon: "nutrition" },
-  { name: "workout", title: "Tập luyện", icon: "barbell-outline", focusedIcon: "barbell" },
-  { name: "progress", title: "Tiến độ", icon: "stats-chart-outline", focusedIcon: "stats-chart" },
-  { name: "profile", title: "Cá nhân", icon: "person-outline", focusedIcon: "person" },
+  { name: "index", get title() { return t("Trang chủ"); }, icon: "home-outline", focusedIcon: "home" },
+  { name: "nutrition", get title() { return t("Dinh dưỡng"); }, icon: "nutrition-outline", focusedIcon: "nutrition" },
+  { name: "workout", get title() { return t("Tập luyện"); }, icon: "barbell-outline", focusedIcon: "barbell" },
+  { name: "plan", get title() { return t("Kế hoạch"); }, icon: "calendar-outline", focusedIcon: "calendar" },
+  { name: "progress", get title() { return t("Tiến độ"); }, icon: "stats-chart-outline", focusedIcon: "stats-chart" },
+  { name: "profile", get title() { return t("Cá nhân"); }, icon: "person-outline", focusedIcon: "person" },
 ];
 
 export default function TabsLayout() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <Tabs
       tabBar={() => null}

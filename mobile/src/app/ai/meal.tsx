@@ -1,3 +1,4 @@
+import { localeTag , translate as t, useTranslation } from "@/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
@@ -25,9 +26,12 @@ import { isMealType, mealLabel, mealTypeForHour } from "@/lib/nutrition";
 import { useMeals } from "@/hooks/useMeals";
 import type { MealSuggestion, MealSuggestionResult, MealType } from "@/types/models";
 
-const fmt = (n: number) => Math.max(0, Math.round(n)).toLocaleString("vi-VN");
+const fmt = (n: number) => Math.max(0, Math.round(n)).toLocaleString(localeTag());
 
 export default function AiMealScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const params = useLocalSearchParams<{ mealType?: string }>();
   const { meals, error: mealError } = useMeals();
   const [mealType, setMealType] = useState<MealType>(
@@ -59,10 +63,10 @@ export default function AiMealScreen() {
   // Lưu gợi ý thành món tự tạo "1 phần" với macro AI ước tính, rồi ghi vào bữa đang chọn
   async function logSuggestion(suggestion: MealSuggestion, index: number) {
     const ok = await confirmAction({
-      title: `Ghi "${suggestion.name}" vào ${mealLabel(mealType, meals).toLowerCase()}?`,
+      title: t("Ghi \"{value1}\" vào {value2}?", { value1: suggestion.name, value2: mealLabel(mealType, meals).toLowerCase() }),
       message:
-        "Món sẽ được lưu vào danh sách món của bạn (1 phần) với số liệu AI ước tính. Bạn có thể sửa lại sau.",
-      confirmText: "Ghi vào nhật ký",
+        t("Món sẽ được lưu vào danh sách món của bạn (1 phần) với số liệu AI ước tính. Bạn có thể sửa lại sau."),
+      confirmText: t("Ghi vào nhật ký"),
     });
     if (!ok) return;
 
@@ -95,16 +99,16 @@ export default function AiMealScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Card>
           <ErrorBanner message={mealError} />
-          <ChipGroup label="Gợi ý cho" options={meals.map((meal) => ({ value: meal.id, label: meal.name }))} value={mealType} onChange={setMealType} />
+          <ChipGroup label={t("Gợi ý cho")} options={meals.map((meal) => ({ value: meal.id, label: meal.name }))} value={mealType} onChange={setMealType} />
           <TextField
-            label="Sở thích (không bắt buộc)"
+            label={t("Sở thích (không bắt buộc)")}
             value={preferences}
             onChangeText={setPreferences}
-            placeholder="Ví dụ: không ăn cay, trong tủ có trứng và ức gà"
+            placeholder={t("Ví dụ: không ăn cay, trong tủ có trứng và ức gà")}
             maxLength={200}
           />
           <Button
-            title={result ? "Gợi ý lại" : "✨ Gợi ý món"}
+            title={result ? t("Gợi ý lại") : t("✨ Gợi ý món")}
             onPress={handleSuggest}
             loading={loading}
           />
@@ -115,16 +119,13 @@ export default function AiMealScreen() {
         {loading ? (
           <View style={styles.loading}>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.muted}>AI đang tính toán theo phần calo còn lại của bạn…</Text>
+            <Text style={styles.muted}>{t("AI đang tính toán theo phần calo còn lại của bạn…")}</Text>
           </View>
         ) : null}
 
         {result && !loading ? (
           <>
-            <Text style={styles.remaining}>
-              Còn lại hôm nay: {fmt(result.remaining.calories)} kcal · protein{" "}
-              {fmt(result.remaining.protein)} g
-            </Text>
+            <Text style={styles.remaining}>{t("Còn lại hôm nay: {value1} kcal · protein  {value2} g", { value1: fmt(result.remaining.calories), value2: fmt(result.remaining.protein) })}</Text>
             {result.suggestions.map((s, i) => (
               <SuggestionCard
                 key={`${s.name}-${i}`}
@@ -134,10 +135,7 @@ export default function AiMealScreen() {
                 onLog={() => logSuggestion(s, i)}
               />
             ))}
-            <Text style={styles.disclaimer}>
-              Calo và macro do AI ước tính, có thể sai lệch. Khi ghi vào nhật ký, hãy chọn món và
-              khối lượng thực tế để số liệu chính xác.
-            </Text>
+            <Text style={styles.disclaimer}>{t("Calo và macro do AI ước tính, có thể sai lệch. Khi ghi vào nhật ký, hãy chọn món và khối lượng thực tế để số liệu chính xác.")}</Text>
           </>
         ) : null}
       </ScrollView>
@@ -156,12 +154,15 @@ function SuggestionCard({
   logging: boolean;
   disabled: boolean;
 }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <Card>
       <View style={styles.cardHeader}>
         <Text style={styles.name}>{suggestion.name}</Text>
         <Text style={[styles.badge, suggestion.fitsRemaining ? styles.badgeOk : styles.badgeOver]}>
-          {suggestion.fitsRemaining ? "Vừa phần còn lại" : "Vượt calo còn lại"}
+          {suggestion.fitsRemaining ? t("Vừa phần còn lại") : t("Vượt calo còn lại")}
         </Text>
       </View>
       {suggestion.description ? <Text style={styles.muted}>{suggestion.description}</Text> : null}
@@ -174,7 +175,7 @@ function SuggestionCard({
         ))}
       </View>
       <Button
-        title="Ghi vào nhật ký"
+        title={t("Ghi vào nhật ký")}
         variant="secondary"
         onPress={onLog}
         loading={logging}

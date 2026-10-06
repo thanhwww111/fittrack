@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -20,8 +21,13 @@ import {
 } from "@/lib/workout";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import type { WorkoutSession } from "@/types/models";
+import { ExerciseNote } from "@/components/workout/ExerciseNote";
+import { ExerciseGuideButton } from "@/components/workout/ExerciseGuideButton";
 
 export default function SessionDetailScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const lastCompletion = useWorkoutStore((s) => s.lastCompletion);
 
@@ -51,9 +57,9 @@ export default function SessionDetailScreen() {
 
   async function handleDelete() {
     const ok = await confirmAction({
-      title: "Xoá buổi tập này?",
-      message: "Buổi tập sẽ bị xoá khỏi lịch sử. Kỷ lục cá nhân được tính lại từ các buổi còn lại.",
-      confirmText: "Xoá",
+      title: t("Xoá buổi tập này?"),
+      message: t("Buổi tập sẽ bị xoá khỏi lịch sử. Kỷ lục cá nhân được tính lại từ các buổi còn lại."),
+      confirmText: t("Xoá"),
       destructive: true,
     });
     if (!ok) return;
@@ -77,7 +83,7 @@ export default function SessionDetailScreen() {
         {!editing ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Sửa tên và ghi chú"
+            accessibilityLabel={t("Sửa tên và ghi chú")}
             hitSlop={8}
             onPress={() => setEditing(true)}
           >
@@ -102,14 +108,14 @@ export default function SessionDetailScreen() {
       ) : null}
 
       <View style={styles.stats}>
-        <Stat label="Thời gian" value={formatDuration(session.duration)} />
+        <Stat label={t("Thời gian")} value={formatDuration(session.duration)} />
         <Stat label="Volume" value={formatVolume(session.totalVolume)} />
-        <Stat label="Số set" value={String(sets)} />
+        <Stat label={t("Số set")} value={String(sets)} />
       </View>
 
       {newRecords.length > 0 ? (
         <View style={styles.prCard}>
-          <Text style={styles.prTitle}>🏆 {newRecords.length} kỷ lục mới!</Text>
+          <Text style={styles.prTitle}>{t("🏆 {value1} kỷ lục mới!", { value1: newRecords.length })}</Text>
           {newRecords.map((r) => (
             <Text key={r.exerciseId} style={styles.prText}>
               {r.exerciseName}: {r.improved.map((f) => RECORD_LABELS[f]).join(", ")}
@@ -122,7 +128,7 @@ export default function SessionDetailScreen() {
         <Card key={e.exerciseId}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Xem tiến bộ ${e.exerciseName}`}
+            accessibilityLabel={t("Xem tiến bộ {value1}", { value1: e.exerciseName })}
             onPress={() => router.push({ pathname: "/workout/exercise", params: { id: e.exerciseId } })}
             style={({ pressed }) => [styles.exerciseHeader, pressed && styles.pressed]}
           >
@@ -130,25 +136,28 @@ export default function SessionDetailScreen() {
             <Text style={styles.muted}>{formatVolume(setVolume(e.sets))}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </Pressable>
+          <ExerciseNote name={e.exerciseName} />
+          <ExerciseGuideButton name={e.exerciseName} />
           {e.sets.map((s) => (
             <View key={s.setNumber} style={styles.setRow}>
               <Text style={styles.setNumber}>{s.setNumber}</Text>
-              <Text style={styles.setValue}>
-                {s.weight > 0 ? formatWeight(s.weight) : "Bodyweight"} × {s.reps}
-              </Text>
+              <Text style={styles.setValue}>{t("{value1} × {value2}", { value1: s.weight > 0 ? formatWeight(s.weight) : "Bodyweight", value2: s.reps })}</Text>
             </View>
           ))}
         </Card>
       ))}
 
       {session.status !== "IN_PROGRESS" ? (
-        <Button title="Xoá buổi tập" variant="danger" onPress={handleDelete} loading={deleting} />
+        <Button title={t("Xoá buổi tập")} variant="danger" onPress={handleDelete} loading={deleting} />
       ) : null}
     </ScrollView>
   );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <View style={styles.stat}>
       <Text style={styles.statValue}>{value}</Text>

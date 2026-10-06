@@ -1,3 +1,4 @@
+import { translate as t } from "@/i18n";
 import { goalApi } from "@/api/profileApi";
 import { useProfileStore } from "@/stores/profileStore";
 import type { Macros } from "@/types/models";
@@ -25,9 +26,9 @@ export async function promptTargetRecalculation() {
     if (!needed || !current || !suggested) return false;
 
     const ok = await confirmAction({
-      title: "Cập nhật mục tiêu dinh dưỡng?",
-      message: `Hồ sơ của bạn đã thay đổi, mục tiêu tự tính mới:\n${describeTargetChange(current, suggested)}`,
-      confirmText: "Cập nhật",
+      title: t("Cập nhật mục tiêu dinh dưỡng?"),
+      message: t("Hồ sơ của bạn đã thay đổi, mục tiêu tự tính mới:\n{value1}", { value1: describeTargetChange(current, suggested) }),
+      confirmText: t("Cập nhật"),
     });
     if (!ok) return false;
 

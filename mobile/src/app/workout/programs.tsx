@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { ScrollView, Text } from "react-native";
@@ -13,6 +14,9 @@ import { scheduleRequestId } from "@/lib/trainingSchedule";
 import { useTrainingScheduleStore } from "@/stores/trainingScheduleStore";
 import type { WeeklyProgram } from "@/types/models";
 export default function ProgramsScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [programs,setPrograms] = useState<WeeklyProgram[]>([]);
   const [error,setError] = useState<string|null>(null);
   const [notice,setNotice] = useState<string|null>(null);
@@ -29,19 +33,19 @@ export default function ProgramsScreen() {
     setBusy(true); setError(null);
     const key=requests.current.get(id)??scheduleRequestId(); requests.current.set(id,key);
     try { const result=await useTrainingScheduleStore.getState().apply(id,key);
-      requests.current.delete(id); setNotice(`Đã áp dụng từ ${result.pending?.effectiveFrom??result.current?.effectiveFrom}.`);
+      requests.current.delete(id); setNotice(t("Đã áp dụng từ {value1}.", { value1: result.pending?.effectiveFrom??result.current?.effectiveFrom }));
     } catch(e) { setError(errorMessage(e)); } finally {setBusy(false);}
   }
   return <ScrollView contentContainerStyle={{padding:spacing.lg,gap:spacing.lg}}>
     <ErrorBanner message={error}/>
     {notice?<Text style={{color:colors.success}}>{notice}</Text>:null}
-    <Text style={{color:colors.text}}>Đang áp dụng: {data?.current?.name??"Chưa chọn lịch"}. {data?.current?"Đổi lịch có hiệu lực từ ngày mai.":"Lịch đầu tiên bắt đầu hôm nay."}</Text>
-    {data?.pending?<Text style={{color:colors.textMuted}}>Sắp áp dụng: {data.pending.name}, từ {data.pending.effectiveFrom}.</Text>:null}
+    <Text style={{color:colors.text}}>{t("Đang áp dụng: {value1}. {value2}", { value1: data?.current?.name??t("Chưa chọn lịch"), value2: data?.current?t("Đổi lịch có hiệu lực từ ngày mai."):t("Lịch đầu tiên bắt đầu hôm nay.") })}</Text>
+    {data?.pending?<Text style={{color:colors.textMuted}}>{t("Sắp áp dụng: {value1}, từ {value2}.", { value1: data.pending.name, value2: data.pending.effectiveFrom })}</Text>:null}
     {programs.map(p=><Card key={p.id} title={p.name}>
-      {p.days.map(d=><Text key={d.dayOfWeek} style={{color:colors.text}}>{dayName(d.dayOfWeek)} · {d.templateName??"Buổi đã xóa"}</Text>)}
-      <Button title={`Áp dụng ${p.name}`} onPress={()=>apply(p.id)} disabled={busy}/>
-      <Button title="Sửa lịch và bài tập" variant="secondary" onPress={()=>router.push({pathname:"/workout/program",params:{id:p.id}})}/>
+      {p.days.map(d=><Text key={d.dayOfWeek} style={{color:colors.text}}>{dayName(d.dayOfWeek)} · {d.templateName??t("Buổi đã xóa")}</Text>)}
+      <Button title={t("Áp dụng {value1}", { value1: p.name })} onPress={()=>apply(p.id)} disabled={busy}/>
+      <Button title={t("Sửa lịch và bài tập")} variant="secondary" onPress={()=>router.push({pathname:"/workout/program",params:{id:p.id}})}/>
     </Card>)}
-    <Card title="Chọn lịch tuần đề xuất"><ScheduleSelection onApplied={load}/></Card>
+    <Card title={t("Chọn lịch tuần đề xuất")}><ScheduleSelection onApplied={load}/></Card>
   </ScrollView>;
 }

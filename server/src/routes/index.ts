@@ -1,3 +1,5 @@
+import personalPlanRoutes from "./personalPlan.routes";
+import { coachRoutes, coachInternalRoutes } from './coach.routes';
 import mealRoutes from "./meal.routes";
 import { Router } from "express";
 import mongoose from "mongoose";
@@ -48,10 +50,13 @@ router.use("/workout-sessions", workoutSessionRoutes);
 router.use("/personal-records", personalRecordRoutes);
 router.use("/weekly-programs", weeklyProgramRoutes);
 router.use("/training-schedule", trainingScheduleRoutes);
+router.use("/personal-plan", personalPlanRoutes);
 router.use("/body-measurements", bodyMeasurementRoutes);
 router.use("/progress", progressRoutes);
 router.use("/ai", aiRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/internal", internalRoutes);
+router.use('/coach', coachRoutes);
+router.use('/internal', coachInternalRoutes);
 
 export default router;

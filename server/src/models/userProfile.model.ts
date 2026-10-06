@@ -11,6 +11,8 @@ const userProfileSchema = new Schema(
     age: { type: Number, min: 10, max: 120, default: null },
     height: { type: Number, min: 50, max: 300, default: null }, // cm
     currentWeight: { type: Number, min: 20, max: 500, default: null }, // kg
+    measurementsConfirmedAt: { type: Date, default: null },
+    trainingMode: { type: String, enum: ["GYM", "OTHER"], default: "GYM" },
     activityLevel: { type: String, enum: ACTIVITY_LEVELS, default: null },
     goalType: { type: String, enum: GOAL_TYPES, default: null },
     goalWeight: { type: Number, min: 20, max: 500, default: null }, // kg

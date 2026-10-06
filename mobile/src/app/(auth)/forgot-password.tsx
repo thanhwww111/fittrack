@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Text } from "react-native";
@@ -11,6 +12,9 @@ import { errorMessage, validateEmail } from "@/lib/formErrors";
 
 // Bước 1: nhập email để nhận mã 6 số
 export default function ForgotPasswordScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const params = useLocalSearchParams<{ email?: string }>();
   const [email, setEmail] = useState(params.email ?? "");
   const [emailError, setEmailError] = useState<string>();
@@ -36,12 +40,10 @@ export default function ForgotPasswordScreen() {
 
   return (
     <AuthForm
-      title="Quên mật khẩu"
-      subtitle="Nhập email đã đăng ký, FitTrack sẽ gửi cho bạn mã 6 số để đặt lại mật khẩu."
+      title={t("Quên mật khẩu")}
+      subtitle={t("Nhập email đã đăng ký, FitTrack sẽ gửi cho bạn mã 6 số để đặt lại mật khẩu.")}
       footer={
-        <Link href="/login" style={styles.link}>
-          Quay lại đăng nhập
-        </Link>
+        <Link href="/login" style={styles.link}>{t("Quay lại đăng nhập")}</Link>
       }
     >
       <ErrorBanner message={formError} />
@@ -57,8 +59,8 @@ export default function ForgotPasswordScreen() {
         returnKeyType="send"
         onSubmitEditing={handleSubmit}
       />
-      <Button title="Gửi mã" onPress={handleSubmit} loading={sending} />
-      <Text style={styles.muted}>Không thấy email? Kiểm tra thư mục Spam hoặc Quảng cáo.</Text>
+      <Button title={t("Gửi mã")} onPress={handleSubmit} loading={sending} />
+      <Text style={styles.muted}>{t("Không thấy email? Kiểm tra thư mục Spam hoặc Quảng cáo.")}</Text>
     </AuthForm>
   );
 }

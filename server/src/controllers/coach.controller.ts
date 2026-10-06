@@ -1,0 +1,13 @@
+import type { RequestHandler } from 'express';
+import * as service from '../services/coach.service';
+import { coachTick, opened } from '../services/coachPush.service';
+const respond = (fn: (userId: string, body: any) => Promise<unknown>): RequestHandler => async (req, res) => { res.json({ success: true, data: await fn(req.user!.id, req.body) }); };
+export const settings = respond(service.settings);
+export const updateSettings = respond(service.updateSettings);
+export const overview = respond(service.overview);
+export const messages = respond(service.messages);
+export const chat = respond(service.chat);
+export const checkIn = respond(service.checkIn);
+export const review = respond(service.review);
+export const open = respond(opened);
+export const tick: RequestHandler = async (_req,res) => { res.json({ success: true, data: await coachTick() }); };

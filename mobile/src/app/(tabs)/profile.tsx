@@ -1,4 +1,6 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
+import { LanguagePicker } from "@/components/ui/LanguagePicker";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -38,6 +40,9 @@ type Field = NumberField | "gender" | "goalType" | "activityLevel";
 const toText = (value: number | null) => (value == null ? "" : String(value));
 
 export default function ProfileScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const profile = useProfileStore((s) => s.profile);
   const isLoading = useProfileStore((s) => s.isLoading);
   const loadError = useProfileStore((s) => s.error);
@@ -53,6 +58,7 @@ export default function ProfileScreen() {
   if (!profile) {
     return (
       <View style={styles.center}>
+        <LanguagePicker />
         {isLoading ? <ActivityIndicator color={colors.primary} /> : <ErrorBanner message={loadError} />}
       </View>
     );
@@ -63,6 +69,9 @@ export default function ProfileScreen() {
 }
 
 function ProfileForm({ profile }: { profile: UserProfile }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const updateProfile = useProfileStore((s) => s.updateProfile);
@@ -112,7 +121,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
     setNotice(null);
     if (Object.keys(nextErrors).length > 0) return;
     if (Object.keys(input).length === 0) {
-      setFormError("Bạn chưa nhập thông tin nào.");
+      setFormError(t("Bạn chưa nhập thông tin nào."));
       return;
     }
 
@@ -121,7 +130,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
       await updateProfile(input);
       clearFormDrafts(draftKey);
       const updated = await promptTargetRecalculation();
-      setNotice(updated ? "Đã lưu hồ sơ và cập nhật mục tiêu dinh dưỡng." : "Đã lưu hồ sơ.");
+      setNotice(updated ? t("Đã lưu hồ sơ và cập nhật mục tiêu dinh dưỡng.") : t("Đã lưu hồ sơ."));
     } catch (err) {
       setErrors(fieldErrorsFrom(err));
       setFormError(errorMessage(err));
@@ -136,7 +145,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
     setCalculating(true);
     try {
       await recalculateTarget();
-      setNotice("Đã cập nhật mục tiêu dinh dưỡng.");
+      setNotice(t("Đã cập nhật mục tiêu dinh dưỡng."));
     } catch (err) {
       setFormError(errorMessage(err));
     } finally {
@@ -153,9 +162,10 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <LanguagePicker />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Tài khoản & bảo mật"
+          accessibilityLabel={t("Tài khoản & bảo mật")}
           onPress={() => router.push("/settings/account")}
           style={styles.userRow}
         >
@@ -169,8 +179,8 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
         <ErrorBanner message={formError} />
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-        <Card title="Thông tin cơ thể" icon="body">
-          <ChipGroup label="Giới tính" options={GENDER_OPTIONS} value={gender} onChange={setGender} />
+        <Card title={t("Thông tin cơ thể")} icon="body">
+          <ChipGroup label={t("Giới tính")} options={GENDER_OPTIONS} value={gender} onChange={setGender} />
           {(["age", "height", "currentWeight"] as const).map((key) => (
             <TextField
               key={key}
@@ -184,11 +194,11 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
           ))}
         </Card>
 
-        <Card title="Mục tiêu" icon="flag">
-          <ChipGroup label="Mục tiêu" options={GOAL_OPTIONS} value={goalType} onChange={setGoalType} />
+        <Card title={t("Mục tiêu")} icon="flag">
+          <ChipGroup label={t("Mục tiêu")} options={GOAL_OPTIONS} value={goalType} onChange={setGoalType} />
           {errors.goalType ? <Text style={styles.error}>{errors.goalType}</Text> : null}
           <ChipGroup
-            label="Mức độ vận động"
+            label={t("Mức độ vận động")}
             options={ACTIVITY_OPTIONS}
             value={activityLevel}
             onChange={setActivityLevel}
@@ -209,9 +219,9 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
           ))}
         </Card>
 
-        <Button title="Lưu hồ sơ" onPress={handleSave} loading={saving} />
+        <Button title={t("Lưu hồ sơ")} onPress={handleSave} loading={saving} />
 
-        <Card title="Mục tiêu dinh dưỡng mỗi ngày" icon="nutrition">
+        <Card title={t("Mục tiêu dinh dưỡng mỗi ngày")} icon="nutrition">
           {editingTarget ? (
             <ManualTargetForm
               initial={currentTarget}
@@ -219,7 +229,7 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
               onSubmit={async (macros) => {
                 await setManualTarget(macros);
                 setEditingTarget(false);
-                setNotice("Đã lưu mục tiêu dinh dưỡng bạn tự nhập.");
+                setNotice(t("Đã lưu mục tiêu dinh dưỡng bạn tự nhập."));
               }}
             />
           ) : (
@@ -233,24 +243,22 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
                     <Macro label="Fat" value={currentTarget.fat} unit="g" />
                   </View>
                   <Text style={styles.source}>
-                    {currentTarget.source === "MANUAL" ? "Bạn tự nhập" : "Tự tính từ hồ sơ"}
+                    {currentTarget.source === "MANUAL" ? t("Bạn tự nhập") : t("Tự tính từ hồ sơ")}
                   </Text>
                 </>
               ) : (
-                <Text style={styles.muted}>
-                  Chưa có mục tiêu. Lưu hồ sơ đầy đủ rồi bấm tính tự động, hoặc tự nhập số của bạn.
-                </Text>
+                <Text style={styles.muted}>{t("Chưa có mục tiêu. Lưu hồ sơ đầy đủ rồi bấm tính tự động, hoặc tự nhập số của bạn.")}</Text>
               )}
               <View style={styles.targetActions}>
                 <Button
-                  title={currentTarget ? "Tính lại từ hồ sơ" : "Tính tự động"}
+                  title={currentTarget ? t("Tính lại từ hồ sơ") : t("Tính tự động")}
                   onPress={handleRecalculate}
                   loading={calculating}
                   variant="secondary"
                   style={styles.flex}
                 />
                 <Button
-                  title="Tự nhập"
+                  title={t("Tự nhập")}
                   onPress={() => {
                     setNotice(null);
                     setEditingTarget(true);
@@ -264,17 +272,17 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
         </Card>
 
         <Button
-          title="👤 Tài khoản & bảo mật"
+          title={t("👤 Tài khoản & bảo mật")}
           variant="secondary"
           onPress={() => router.push("/settings/account")}
         />
         <Button
-          title="🔔 Cài đặt thông báo"
+          title={t("🔔 Cài đặt thông báo")}
           variant="secondary"
           onPress={() => router.push("/settings/notifications")}
         />
         <Button
-          title="Đăng xuất"
+          title={t("Đăng xuất")}
           onPress={async () => {
             // Gỡ máy khỏi danh sách nhận push trước, lúc còn access token
             await useNotificationStore.getState().unregisterDevice();
@@ -288,6 +296,9 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
 }
 
 function Macro({ label, value, unit }: { label: string; value: number; unit: string }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <View style={styles.macro}>
       <Text style={styles.macroValue}>{value}</Text>

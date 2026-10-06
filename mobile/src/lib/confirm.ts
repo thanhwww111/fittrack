@@ -1,3 +1,4 @@
+import { translate as t } from "@/i18n";
 import { Alert, Platform } from "react-native";
 
 interface ConfirmOptions {
@@ -18,7 +19,7 @@ export function confirmAction({ title, message, confirmText, destructive }: Conf
       title,
       message,
       [
-        { text: "Huỷ", style: "cancel", onPress: () => resolve(false) },
+        { text: t("Huỷ"), style: "cancel", onPress: () => resolve(false) },
         {
           text: confirmText,
           style: destructive ? "destructive" : "default",

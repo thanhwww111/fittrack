@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { Link } from "expo-router";
 import { useState } from "react";
 import { Text } from "react-native";
@@ -12,6 +13,9 @@ import { useAuthStore } from "@/stores/authStore";
 type Field = "email" | "password";
 
 export default function LoginScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const login = useAuthStore((s) => s.login);
 
   const [email, setEmail] = useState("");
@@ -23,7 +27,7 @@ export default function LoginScreen() {
   async function handleSubmit() {
     const nextErrors: FieldErrors<Field> = {
       email: validateEmail(email),
-      password: password ? undefined : "Vui lòng nhập mật khẩu",
+      password: password ? undefined : t("Vui lòng nhập mật khẩu"),
     };
     setErrors(nextErrors);
     setFormError(null);
@@ -41,14 +45,12 @@ export default function LoginScreen() {
 
   return (
     <AuthForm
-      title="Đăng nhập"
-      subtitle="Theo dõi dinh dưỡng và buổi tập của bạn"
+      title={t("Đăng nhập")}
+      subtitle={t("Theo dõi dinh dưỡng và buổi tập của bạn")}
       footer={
         <>
-          <Text style={styles.muted}>Chưa có tài khoản?</Text>
-          <Link href="/register" style={styles.link}>
-            Đăng ký
-          </Link>
+          <Text style={styles.muted}>{t("Chưa có tài khoản?")}</Text>
+          <Link href="/register" style={styles.link}>{t("Đăng ký")}</Link>
         </>
       }
     >
@@ -65,7 +67,7 @@ export default function LoginScreen() {
         placeholder="ban@example.com"
       />
       <TextField
-        label="Mật khẩu"
+        label={t("Mật khẩu")}
         value={password}
         onChangeText={setPassword}
         error={errors.password}
@@ -75,13 +77,11 @@ export default function LoginScreen() {
         returnKeyType="go"
         onSubmitEditing={handleSubmit}
       />
-      <Button title="Đăng nhập" onPress={handleSubmit} loading={submitting} />
+      <Button title={t("Đăng nhập")} onPress={handleSubmit} loading={submitting} />
       <Link
         href={{ pathname: "/forgot-password", params: email.trim() ? { email: email.trim() } : {} }}
         style={[styles.link, styles.center]}
-      >
-        Quên mật khẩu?
-      </Link>
+      >{t("Quên mật khẩu?")}</Link>
     </AuthForm>
   );
 }

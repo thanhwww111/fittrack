@@ -1,3 +1,4 @@
+import { localeTag } from "@/i18n";
 // Tính trục cho biểu đồ: làm tròn về số "đẹp" (1, 2, 2.5, 5 × 10^n)
 
 function niceStep(rough: number) {
@@ -37,8 +38,8 @@ export function niceAxis(values: number[], { includeZero = false, tickCount = 3 
 }
 
 export function formatTick(value: number) {
-  if (Math.abs(value) >= 10000) return `${Math.round(value / 1000).toLocaleString("vi-VN")}k`;
-  return value.toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+  if (Math.abs(value) >= 10000) return `${Math.round(value / 1000).toLocaleString(localeTag())}k`;
+  return value.toLocaleString(localeTag(), { maximumFractionDigits: 1 });
 }
 
 // "2026-09-25" → "25/9"

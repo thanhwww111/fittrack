@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { accountApi } from "@/api/authApi";
@@ -18,6 +19,9 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 
 export default function AccountScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -33,6 +37,9 @@ export default function AccountScreen() {
 }
 
 function NameForm() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const [name, setName] = useState(user?.name ?? "");
@@ -43,7 +50,7 @@ function NameForm() {
 
   async function handleSave() {
     if (!name.trim()) {
-      setError("Vui lòng nhập tên");
+      setError(t("Vui lòng nhập tên"));
       return;
     }
     setError(undefined);
@@ -51,7 +58,7 @@ function NameForm() {
     setSaving(true);
     try {
       setUser(await accountApi.updateMe({ name: name.trim() }));
-      setNotice("Đã đổi tên.");
+      setNotice(t("Đã đổi tên."));
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -67,7 +74,7 @@ function NameForm() {
       if (!avatar) return;
       setUploading(true);
       setUser(await accountApi.updateMe({ avatar }));
-      setNotice("Đã đổi ảnh đại diện.");
+      setNotice(t("Đã đổi ảnh đại diện."));
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -87,28 +94,28 @@ function NameForm() {
   }
 
   return (
-    <Card title="Thông tin tài khoản" icon="person">
+    <Card title={t("Thông tin tài khoản")} icon="person">
       <View style={styles.avatarRow}>
         <Avatar name={user?.name} uri={user?.avatar} size={72} />
         <View style={styles.avatarActions}>
           <Button
-            title={user?.avatar ? "Đổi ảnh" : "Chọn ảnh đại diện"}
+            title={user?.avatar ? t("Đổi ảnh") : t("Chọn ảnh đại diện")}
             variant="secondary"
             onPress={changeAvatar}
             loading={uploading}
           />
           {user?.avatar ? (
             <Pressable accessibilityRole="button" onPress={removeAvatar} disabled={uploading} hitSlop={6}>
-              <Text style={styles.removeText}>Gỡ ảnh</Text>
+              <Text style={styles.removeText}>{t("Gỡ ảnh")}</Text>
             </Pressable>
           ) : null}
         </View>
       </View>
       <Text style={styles.muted}>Email: {user?.email}</Text>
-      <TextField label="Tên hiển thị" value={name} onChangeText={setName} error={error} maxLength={100} />
+      <TextField label={t("Tên hiển thị")} value={name} onChangeText={setName} error={error} maxLength={100} />
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
       <Button
-        title="Lưu tên"
+        title={t("Lưu tên")}
         variant="secondary"
         onPress={handleSave}
         loading={saving}
@@ -121,6 +128,9 @@ function NameForm() {
 type PasswordField = "currentPassword" | "newPassword" | "confirmPassword";
 
 function PasswordForm() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const replaceSession = useAuthStore((s) => s.replaceSession);
   const [values, setValues] = useState<Record<PasswordField, string>>({
     currentPassword: "",
@@ -136,12 +146,12 @@ function PasswordForm() {
 
   async function handleSubmit() {
     const next: FieldErrors<PasswordField> = {
-      currentPassword: values.currentPassword ? undefined : "Nhập mật khẩu hiện tại",
+      currentPassword: values.currentPassword ? undefined : t("Nhập mật khẩu hiện tại"),
       newPassword:
         validatePassword(values.newPassword) ??
-        (values.newPassword === values.currentPassword ? "Mật khẩu mới phải khác mật khẩu cũ" : undefined),
+        (values.newPassword === values.currentPassword ? t("Mật khẩu mới phải khác mật khẩu cũ") : undefined),
       confirmPassword:
-        values.newPassword === values.confirmPassword ? undefined : "Mật khẩu nhập lại không khớp",
+        values.newPassword === values.confirmPassword ? undefined : t("Mật khẩu nhập lại không khớp"),
     };
     setErrors(next);
     setFormError(null);
@@ -156,10 +166,10 @@ function PasswordForm() {
       });
       await replaceSession(result);
       setValues({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      setNotice("Đã đổi mật khẩu. Các thiết bị khác đã được đăng xuất.");
+      setNotice(t("Đã đổi mật khẩu. Các thiết bị khác đã được đăng xuất."));
     } catch (err) {
       const fields = fieldErrorsFrom(err) as FieldErrors<PasswordField>;
-      if (fields.currentPassword) fields.currentPassword = "Mật khẩu hiện tại không đúng";
+      if (fields.currentPassword) fields.currentPassword = t("Mật khẩu hiện tại không đúng");
       setErrors(fields);
       if (!fields.currentPassword) setFormError(errorMessage(err));
     } finally {
@@ -168,10 +178,10 @@ function PasswordForm() {
   }
 
   return (
-    <Card title="Đổi mật khẩu" icon="key">
+    <Card title={t("Đổi mật khẩu")} icon="key">
       <ErrorBanner message={formError} />
       <TextField
-        label="Mật khẩu hiện tại"
+        label={t("Mật khẩu hiện tại")}
         value={values.currentPassword}
         onChangeText={set("currentPassword")}
         error={errors.currentPassword}
@@ -180,17 +190,17 @@ function PasswordForm() {
         textContentType="password"
       />
       <TextField
-        label="Mật khẩu mới"
+        label={t("Mật khẩu mới")}
         value={values.newPassword}
         onChangeText={set("newPassword")}
         error={errors.newPassword}
         secureTextEntry
         autoComplete="new-password"
         textContentType="newPassword"
-        placeholder="Tối thiểu 8 ký tự"
+        placeholder={t("Tối thiểu 8 ký tự")}
       />
       <TextField
-        label="Nhập lại mật khẩu mới"
+        label={t("Nhập lại mật khẩu mới")}
         value={values.confirmPassword}
         onChangeText={set("confirmPassword")}
         error={errors.confirmPassword}
@@ -199,12 +209,15 @@ function PasswordForm() {
         textContentType="newPassword"
       />
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-      <Button title="Đổi mật khẩu" onPress={handleSubmit} loading={saving} />
+      <Button title={t("Đổi mật khẩu")} onPress={handleSubmit} loading={saving} />
     </Card>
   );
 }
 
 function DeleteAccount() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const clearLocalSession = useAuthStore((s) => s.clearLocalSession);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
@@ -212,14 +225,14 @@ function DeleteAccount() {
 
   async function handleDelete() {
     if (!password) {
-      setError("Nhập mật khẩu để xác nhận");
+      setError(t("Nhập mật khẩu để xác nhận"));
       return;
     }
     const ok = await confirmAction({
-      title: "Xoá vĩnh viễn tài khoản?",
+      title: t("Xoá vĩnh viễn tài khoản?"),
       message:
-        "Toàn bộ nhật ký ăn uống, buổi tập, số đo và cài đặt sẽ bị xoá và không thể khôi phục.",
-      confirmText: "Xoá tài khoản",
+        t("Toàn bộ nhật ký ăn uống, buổi tập, số đo và cài đặt sẽ bị xoá và không thể khôi phục."),
+      confirmText: t("Xoá tài khoản"),
       destructive: true,
     });
     if (!ok) return;
@@ -233,18 +246,16 @@ function DeleteAccount() {
       await clearLocalSession();
     } catch (err) {
       const fields = fieldErrorsFrom(err);
-      setError(fields.password ? "Mật khẩu không đúng" : errorMessage(err));
+      setError(fields.password ? t("Mật khẩu không đúng") : errorMessage(err));
       setDeleting(false);
     }
   }
 
   return (
-    <Card title="Xoá tài khoản" icon="trash">
-      <Text style={styles.muted}>
-        Xoá vĩnh viễn tài khoản và mọi dữ liệu của bạn trên FitTrack. Không thể hoàn tác.
-      </Text>
+    <Card title={t("Xoá tài khoản")} icon="trash">
+      <Text style={styles.muted}>{t("Xoá vĩnh viễn tài khoản và mọi dữ liệu của bạn trên FitTrack. Không thể hoàn tác.")}</Text>
       <TextField
-        label="Mật khẩu"
+        label={t("Mật khẩu")}
         value={password}
         onChangeText={setPassword}
         error={error}
@@ -252,7 +263,7 @@ function DeleteAccount() {
         autoComplete="current-password"
         textContentType="password"
       />
-      <Button title="Xoá tài khoản" variant="danger" onPress={handleDelete} loading={deleting} />
+      <Button title={t("Xoá tài khoản")} variant="danger" onPress={handleDelete} loading={deleting} />
     </Card>
   );
 }

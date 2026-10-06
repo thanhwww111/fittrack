@@ -1,3 +1,4 @@
+import { translate as t } from "@/i18n";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 
@@ -28,6 +29,6 @@ export async function pickAvatar(): Promise<string | null> {
   context.release();
   image.release();
 
-  if (!result.base64) throw new Error("Không đọc được ảnh");
+  if (!result.base64) throw new Error(t("Không đọc được ảnh"));
   return `data:image/jpeg;base64,${result.base64}`;
 }

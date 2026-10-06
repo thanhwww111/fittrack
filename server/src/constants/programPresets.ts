@@ -63,11 +63,6 @@ const LEGS: PresetWorkout = {
 };
 
 // Buổi gợi ý độc lập: chỉ tạo mẫu khi người dùng chọn để lưu vào lịch.
-export const SUGGESTED_WORKOUTS = [
-  { key: "push" as const, ...PUSH, name: "Ngực vai tay sau" },
-  { key: "pull" as const, ...PULL, name: "Lưng xô tay trước" },
-  { key: "legs" as const, ...LEGS, name: "Chân bụng" },
-];
 
 export const PROGRAM_PRESETS: ProgramPreset[] = [
   {
@@ -184,3 +179,11 @@ export const PROGRAM_PRESETS: ProgramPreset[] = [
 export function findPreset(key: string) {
   return PROGRAM_PRESETS.find((p) => p.key === key);
 }
+
+export const SUGGESTED_WORKOUTS = [
+  { key: "push" as const, ...PUSH, name: "Ngực vai tay sau" },
+  { key: "pull" as const, ...PULL, name: "Lưng xô tay trước" },
+  { key: "legs" as const, ...LEGS, name: "Chân bụng" },
+  { key: "upper" as const, ...findPreset("upper-lower-4")!.workouts.upperA, name: "Upper (thân trên)" },
+  { key: "lower" as const, ...findPreset("upper-lower-4")!.workouts.lowerA, name: "Lower (thân dưới)" },
+];

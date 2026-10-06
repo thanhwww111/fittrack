@@ -40,6 +40,8 @@ function assertGoalWeightConsistent(profile: {
 
 export async function updateProfile(userId: string, input: UpdateProfileInput) {
   const profile = await getProfileDocument(userId);
+  const firstMeasurements = (profile.height == null || profile.currentWeight == null)
+    && input.height != null && input.currentWeight != null;
 
   assertGoalWeightConsistent({
     goalType: input.goalType ?? profile.goalType,
@@ -55,6 +57,7 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
   const weight = input.currentWeight ?? profile.currentWeight;
 
   profile.set(input);
+  if (firstMeasurements) profile.measurementsConfirmedAt = new Date();
   if (weight != null && goalWeight != null && (goalChanged || profile.startWeight == null)) {
     profile.startWeight = weight;
     profile.goalStartDate = todayInTimezone(profile.timezone);

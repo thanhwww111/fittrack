@@ -80,3 +80,11 @@ export const useProfileStore = create<ProfileState>()((set) => ({
 
   reset: () => set(initialState),
 }));
+
+// A weekly check-in overlays the current screen, so navigation focus does not
+// change after saving. Focused data screens subscribe to refresh their totals.
+export function subscribeProfileRefresh(refresh: () => void) {
+  return useProfileStore.subscribe((state, previous) => {
+    if (state.profile?.updatedAt !== previous.profile?.updatedAt || state.currentTarget !== previous.currentTarget) refresh();
+  });
+}

@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -32,6 +33,9 @@ interface Loaded {
 
 // Ghi / sửa số đo của một ngày. Đổi ngày bằng ← → để sửa lần đo cũ hoặc ghi bù.
 export default function EditMeasurementScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const params = useLocalSearchParams<{ date?: string }>();
   const today = localToday();
   const [date, setDate] = useState(params.date && params.date <= today ? params.date : today);
@@ -65,12 +69,12 @@ export default function EditMeasurementScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.dateBar}>
-          <Pressable accessibilityLabel="Ngày trước" hitSlop={12} onPress={() => setDate(addDays(date, -1))}>
+          <Pressable accessibilityLabel={t("Ngày trước")} hitSlop={12} onPress={() => setDate(addDays(date, -1))}>
             <Ionicons name="chevron-back" size={24} color={colors.primary} />
           </Pressable>
           <Text style={styles.dateText}>{formatDayLabel(date, today)}</Text>
           <Pressable
-            accessibilityLabel="Ngày sau"
+            accessibilityLabel={t("Ngày sau")}
             hitSlop={12}
             disabled={isToday}
             onPress={() => setDate(addDays(date, 1))}
@@ -94,6 +98,9 @@ export default function EditMeasurementScreen() {
 const toText = (value: number | null | undefined) => (value == null ? "" : String(value));
 
 function MeasurementForm({ date, measurement }: { date: string; measurement: BodyMeasurement | null }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const draftKey = `measure-${date}`;
   const [values, setValues] = useDraftState<Record<MeasurementField, string>>(draftKey + "values", () => ({
     weight: toText(measurement?.weight),
@@ -115,9 +122,9 @@ function MeasurementForm({ date, measurement }: { date: string; measurement: Bod
     for (const field of MEASUREMENT_FIELDS) {
       const value = parseNumber(values[field.key]);
       if (value === null) {
-        if (field.required) nextErrors[field.key] = "Bắt buộc";
+        if (field.required) nextErrors[field.key] = t("Bắt buộc");
       } else if (Number.isNaN(value) || value < field.min || value > field.max) {
-        nextErrors[field.key] = `Nhập từ ${field.min} đến ${field.max}`;
+        nextErrors[field.key] = t("Nhập từ {value1} đến {value2}", { value1: field.min, value2: field.max });
       } else {
         input[field.key] = value;
       }
@@ -142,9 +149,9 @@ function MeasurementForm({ date, measurement }: { date: string; measurement: Bod
 
   async function handleDelete() {
     const ok = await confirmAction({
-      title: "Xoá lần đo này?",
-      message: "Cân nặng và các số đo của ngày này sẽ bị xoá.",
-      confirmText: "Xoá",
+      title: t("Xoá lần đo này?"),
+      message: t("Cân nặng và các số đo của ngày này sẽ bị xoá."),
+      confirmText: t("Xoá"),
       destructive: true,
     });
     if (!ok) return;
@@ -165,7 +172,7 @@ function MeasurementForm({ date, measurement }: { date: string; measurement: Bod
         {MEASUREMENT_FIELDS.map((field) => (
           <TextField
             key={field.key}
-            label={field.required ? field.label : `${field.label} (không bắt buộc)`}
+            label={field.required ? field.label : t("{value1} (không bắt buộc)", { value1: field.label })}
             suffix={field.unit}
             value={values[field.key]}
             onChangeText={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
@@ -173,11 +180,11 @@ function MeasurementForm({ date, measurement }: { date: string; measurement: Bod
             keyboardType="decimal-pad"
           />
         ))}
-        <Text style={styles.hint}>Đo vòng eo ngang rốn, đo vào buổi sáng trước khi ăn để số ổn định.</Text>
+        <Text style={styles.hint}>{t("Đo vòng eo ngang rốn, đo vào buổi sáng trước khi ăn để số ổn định.")}</Text>
       </Card>
-      <Button title={measurement ? "Lưu thay đổi" : "Lưu số đo"} onPress={handleSave} loading={saving} />
+      <Button title={measurement ? t("Lưu thay đổi") : t("Lưu số đo")} onPress={handleSave} loading={saving} />
       {measurement ? (
-        <Button title="Xoá lần đo" variant="danger" onPress={handleDelete} loading={deleting} />
+        <Button title={t("Xoá lần đo")} variant="danger" onPress={handleDelete} loading={deleting} />
       ) : null}
     </>
   );

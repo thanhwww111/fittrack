@@ -4,6 +4,8 @@ import { nutritionApi } from "@/api/nutritionApi";
 import { progressApi } from "@/api/progressApi";
 import { sessionApi } from "@/api/workoutApi";
 import { errorMessage } from "@/lib/formErrors";
+import { useTrainingScheduleStore } from "@/stores/trainingScheduleStore";
+import { subscribeProfileRefresh } from "@/stores/profileStore";
 import type { DailyNutrition, WeeklySummary, WorkoutSession } from "@/types/models";
 
 interface DashboardData {
@@ -37,12 +39,13 @@ export function useDashboard() {
   useFocusEffect(
     useCallback(() => {
       load().finally(() => setIsLoading(false));
+      return subscribeProfileRefresh(() => { void load(); });
     }, [load])
   );
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
-    await load();
+    await Promise.all([load(), useTrainingScheduleStore.getState().load()]);
     setIsRefreshing(false);
   }, [load]);
 

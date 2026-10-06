@@ -1,0 +1,81 @@
+import { render, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import CoachScreen from '@/app/plan/coach';
+import { coachApi } from '@/api/coachApi';
+import { personalPlanApi } from '@/api/personalPlanApi';
+import { useCoachStore, defaultCoachSettings } from '@/stores/coachStore';
+import { router } from 'expo-router';
+import { ApiError } from '@/api/client';
+import { clearAllFormDrafts } from '@/hooks/useDraftState';
+jest.mock('expo-router', () => ({ router: { push: jest.fn() }, useFocusEffect: (cb: any) => require('react').useEffect(cb, [cb]) }));
+jest.mock('@/api/coachApi', () => ({ coachApi: { overview: jest.fn(), messages: jest.fn(), saveSettings: jest.fn(), send: jest.fn(), checkIn: jest.fn(), review: jest.fn() } }));
+jest.mock('@/api/personalPlanApi', () => ({ personalPlanApi: { createDraft: jest.fn() } }));
+jest.mock('@/stores/authStore', () => ({ useAuthStore: Object.assign((selector: any) => selector({ user: { id: 'alice' }, isAuthenticated: true }), { getState: () => ({ user: { id: 'alice' }, isAuthenticated: true }) }) }));
+jest.mock('@/stores/notificationStore', () => ({ useNotificationStore: (selector: any) => selector({ push: { token: null, reason: 'denied' }, error: null }) }));
+jest.mock('@/stores/personalPlanStore', () => ({ usePersonalPlanStore: (selector: any) => selector({ survey: { revision: 1 } }) }));
+beforeEach(() => {
+  jest.clearAllMocks(); clearAllFormDrafts(); useCoachStore.getState().reset();
+  jest.mocked(coachApi.overview).mockResolvedValue({ settings: defaultCoachSettings, today: '2026-10-06', dailyAdvice: 'Take a gentle walk', weeklyReview: null, recentMessages: [] });
+  jest.mocked(coachApi.messages).mockResolvedValue([{ id: 'u1', role: 'user', content: 'My previous question', createdAt: '2026-10-05T01:00:00Z' }]);
+  jest.mocked(coachApi.saveSettings).mockImplementation(async value => value);
+});
+it.each(['DRAFT', 'DAILY', 'WEEKLY'] as const)('retains %s identity through a remount after an unknown outcome', async kind => {
+  const api = kind === 'DRAFT' ? personalPlanApi.createDraft : coachApi.review;
+  jest.mocked(api).mockRejectedValue(new ApiError('Request timed out'));
+  const title = kind === 'DRAFT' ? 'Tạo bản nháp AI tiếp theo' : kind === 'DAILY' ? 'Phân tích hôm nay' : 'Đánh giá tuần với AI';
+  const view = await render(<CoachScreen key='light' />);
+  await screen.findByText('My previous question');
+  await fireEvent.press(screen.getByText(title));
+  await screen.findByText('Server phản hồi quá lâu, thử lại sau.');
+  await view.rerender(<CoachScreen key='dark' />);
+  await screen.findByText('My previous question');
+  await fireEvent.press(screen.getByText(title));
+  await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+  expect(jest.mocked(api).mock.calls[0][0]).toBe(jest.mocked(api).mock.calls[1][0]);
+});
+it('shows persisted chat, permission status and explicitly saves opt-in', async () => {
+  await render(<CoachScreen />);
+  await screen.findByText('My previous question');
+  expect(screen.getByText('Take a gentle walk')).toBeTruthy();
+  expect(screen.getByText('Chưa cấp quyền thông báo.')).toBeTruthy();
+  await fireEvent(screen.getByLabelText('Nhận nhắc nhở từ PT'), 'valueChange', true);
+  await fireEvent.press(screen.getByText('Lưu cài đặt PT'));
+  await waitFor(() => expect(coachApi.saveSettings).toHaveBeenCalledWith(expect.objectContaining({ enabled: true })));
+});
+it('keeps retry request identity and shows unavailable errors', async () => {
+  jest.mocked(coachApi.send).mockRejectedValue(new ApiError('AI unavailable', 503));
+  await render(<CoachScreen />); await screen.findByText('My previous question');
+  await fireEvent.changeText(screen.getByLabelText('Tin nhắn cho PT'), 'Help me');
+  await fireEvent.press(screen.getByText('Gửi tin nhắn'));
+  await screen.findByText('AI unavailable');
+  await fireEvent.press(screen.getByText('Gửi tin nhắn'));
+  await waitFor(() => expect(coachApi.send).toHaveBeenCalledTimes(2));
+  expect(jest.mocked(coachApi.send).mock.calls[0][0]).toBe(jest.mocked(coachApi.send).mock.calls[1][0]);
+});
+it('opens the returned draft for review without applying it', async () => {
+  jest.mocked(personalPlanApi.createDraft).mockResolvedValue({ id: 'draft1' } as any);
+  await render(<CoachScreen />); await screen.findByText('My previous question');
+  await fireEvent.press(screen.getByText('Tạo bản nháp AI tiếp theo'));
+  await waitFor(() => expect(router.push).toHaveBeenCalledWith({ pathname: '/plan/draft', params: { id: 'draft1' } }));
+});
+it('allows an explicit new attempt for a confirmed failed request without changing unknown-outcome retries', async () => {
+  jest.mocked(coachApi.send).mockRejectedValue(new ApiError('Request failed', 409, { code: 'COACH_REQUEST_FAILED' }));
+  await render(<CoachScreen />); await screen.findByText('My previous question');
+  await fireEvent.changeText(screen.getByLabelText('Tin nhắn cho PT'), 'Help');
+  await fireEvent.press(screen.getByText('Gửi tin nhắn'));
+  await fireEvent.press(await screen.findByText('Bắt đầu yêu cầu AI mới'));
+  await fireEvent.press(screen.getByText('Gửi tin nhắn'));
+  await waitFor(() => expect(coachApi.send).toHaveBeenCalledTimes(2));
+  expect(jest.mocked(coachApi.send).mock.calls[0][0]).not.toBe(jest.mocked(coachApi.send).mock.calls[1][0]);
+});
+it('keeps draft identity after unknown outcome and replaces it only for a confirmed failure', async () => {
+  jest.mocked(personalPlanApi.createDraft).mockRejectedValueOnce(new ApiError('Request timed out')).mockRejectedValueOnce(new ApiError('AI failed', 502, { code: 'PLAN_GENERATION_FAILED' })).mockResolvedValue({ id: 'new-plan' } as any);
+  await render(<CoachScreen />); await screen.findByText('My previous question');
+  await fireEvent.press(screen.getByText('Tạo bản nháp AI tiếp theo'));
+  await screen.findByText('Server phản hồi quá lâu, thử lại sau.');
+  await fireEvent.press(screen.getByText('Tạo bản nháp AI tiếp theo'));
+  await fireEvent.press(await screen.findByText('Bắt đầu yêu cầu AI mới'));
+  await fireEvent.press(screen.getByText('Tạo bản nháp AI tiếp theo'));
+  await waitFor(() => expect(personalPlanApi.createDraft).toHaveBeenCalledTimes(3));
+  const calls = jest.mocked(personalPlanApi.createDraft).mock.calls;
+  expect(calls[0][0]).toBe(calls[1][0]); expect(calls[2][0]).not.toBe(calls[1][0]);
+});

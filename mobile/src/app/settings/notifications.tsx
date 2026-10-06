@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useState } from "react";
@@ -25,15 +26,17 @@ import type { MealReminder, NotificationSettings } from "@/types/models";
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const PUSH_NOTES: Record<string, string> = {
-  "expo-go":
-    "Bạn đang dùng Expo Go: lịch nhắc vẫn hoạt động, nhưng thông báo từ server (PR, mục tiêu, báo cáo tuần) cần bản build của app.",
-  simulator: "Máy ảo không nhận được thông báo từ server, hãy thử trên điện thoại thật.",
-  "no-project": "App chưa được liên kết với EAS (thiếu projectId) nên chưa nhận được thông báo từ server.",
-  denied: "Bạn đã tắt quyền thông báo. Bật lại trong Cài đặt của điện thoại để nhận thông báo.",
-  error: "Không đăng ký được thông báo từ server, thử mở lại app sau.",
+  get "expo-go"() { return t("Bạn đang dùng Expo Go: lịch nhắc vẫn hoạt động, nhưng thông báo từ server (PR, mục tiêu, báo cáo tuần) cần bản build của app."); },
+  get simulator() { return t("Máy ảo không nhận được thông báo từ server, hãy thử trên điện thoại thật."); },
+  get "no-project"() { return t("App chưa được liên kết với EAS (thiếu projectId) nên chưa nhận được thông báo từ server."); },
+  get denied() { return t("Bạn đã tắt quyền thông báo. Bật lại trong Cài đặt của điện thoại để nhận thông báo."); },
+  get error() { return t("Không đăng ký được thông báo từ server, thử mở lại app sau."); },
 };
 
 export default function NotificationSettingsScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const settings = useNotificationStore((s) => s.settings);
   const syncError = useNotificationStore((s) => s.error);
 
@@ -55,6 +58,9 @@ export default function NotificationSettingsScreen() {
 }
 
 function SettingsForm({ settings }: { settings: NotificationSettings }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const update = useNotificationStore((s) => s.update);
   const push = useNotificationStore((s) => s.push);
 
@@ -73,11 +79,11 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
     setMeals({ items: mealItems.map((item, i) => (i === index ? { ...item, ...patch } : item)) });
   const removeMealItem = (index: number) => setMeals({ items: mealItems.filter((_, i) => i !== index) });
   const addMealItem = () =>
-    setMeals({ items: [...mealItems, { time: nextFreeReminderTime(mealItems), label: "Bữa phụ" }] });
+    setMeals({ items: [...mealItems, { time: nextFreeReminderTime(mealItems), label: t("Bữa phụ") }] });
 
   async function handleSave() {
     if (!TIME_REGEX.test(draft.workoutReminder.time)) {
-      setError("Giờ nhắc tập phải có dạng HH:mm, ví dụ 07:00.");
+      setError(t("Giờ nhắc tập phải có dạng HH:mm, ví dụ 07:00."));
       return;
     }
     const mealError = validateMealReminders(mealItems);
@@ -97,7 +103,7 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
       }
       await update(draft);
       clearFormDrafts(draftKey);
-      setNotice("Đã lưu cài đặt thông báo.");
+      setNotice(t("Đã lưu cài đặt thông báo."));
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -118,17 +124,17 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
         <ErrorBanner message={error} />
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-        <Card title="Nhắc tập" icon="barbell">
+        <Card title={t("Nhắc tập")} icon="barbell">
           <SwitchRow
-            label="Nhắc tôi đi tập"
+            label={t("Nhắc tôi đi tập")}
             value={draft.workoutReminder.enabled}
             onChange={(enabled) => setWorkout({ enabled })}
           />
           {draft.workoutReminder.enabled ? (
             <>
-              <Text style={styles.hint}>Ngày nhắc tự theo lịch đang áp dụng, không nhắc ngày nghỉ. Mở app để cập nhật lịch nhắc cho 28 ngày tới.</Text>
+              <Text style={styles.hint}>{t("Ngày nhắc tự theo lịch đang áp dụng, không nhắc ngày nghỉ. Mở app để cập nhật lịch nhắc cho 28 ngày tới.")}</Text>
               <TimeRow
-                label="Lúc"
+                label={t("Lúc")}
                 value={draft.workoutReminder.time}
                 onChange={(time) => setWorkout({ time })}
               />
@@ -136,12 +142,10 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
           ) : null}
         </Card>
 
-        <Card title="Nhắc nạp dinh dưỡng" icon="restaurant">
-          <Text style={styles.hint}>
-            Mỗi bữa FitTrack báo bạn còn thiếu bao nhiêu calo và protein hôm nay. Đủ rồi thì thôi nhắc.
-          </Text>
+        <Card title={t("Nhắc nạp dinh dưỡng")} icon="restaurant">
+          <Text style={styles.hint}>{t("Mỗi bữa FitTrack báo bạn còn thiếu bao nhiêu calo và protein hôm nay. Đủ rồi thì thôi nhắc.")}</Text>
           <SwitchRow
-            label="Nhắc tôi ăn đủ calo & protein"
+            label={t("Nhắc tôi ăn đủ calo & protein")}
             value={draft.mealReminders.enabled}
             onChange={(enabled) => setMeals({ enabled })}
           />
@@ -157,34 +161,34 @@ function SettingsForm({ settings }: { settings: NotificationSettings }) {
                 />
               ))}
               {mealItems.length === 0 ? (
-                <Text style={styles.hint}>Chưa có lần nhắc nào. Thêm một lần nhắc bên dưới.</Text>
+                <Text style={styles.hint}>{t("Chưa có lần nhắc nào. Thêm một lần nhắc bên dưới.")}</Text>
               ) : null}
               {mealItems.length < MAX_MEAL_REMINDERS ? (
-                <Button title="+ Thêm lần nhắc" variant="secondary" onPress={addMealItem} />
+                <Button title={t("+ Thêm lần nhắc")} variant="secondary" onPress={addMealItem} />
               ) : null}
             </>
           ) : null}
         </Card>
 
-        <Card title="Thông báo từ FitTrack" icon="notifications">
+        <Card title={t("Thông báo từ FitTrack")} icon="notifications">
           <SwitchRow
-            label="🏆 Khi phá kỷ lục cá nhân"
+            label={t("🏆 Khi phá kỷ lục cá nhân")}
             value={draft.prAlerts}
             onChange={(prAlerts) => setDraft((d) => ({ ...d, prAlerts }))}
           />
           <SwitchRow
-            label="🎯 Khi đạt cân nặng mục tiêu"
+            label={t("🎯 Khi đạt cân nặng mục tiêu")}
             value={draft.goalAlerts}
             onChange={(goalAlerts) => setDraft((d) => ({ ...d, goalAlerts }))}
           />
           <SwitchRow
-            label="📊 Tổng kết tuần (sáng thứ Hai)"
+            label={t("📊 Tổng kết tuần (sáng thứ Hai)")}
             value={draft.weeklyReport}
             onChange={(weeklyReport) => setDraft((d) => ({ ...d, weeklyReport }))}
           />
         </Card>
 
-        <Button title="Lưu cài đặt" onPress={handleSave} loading={saving} />
+        <Button title={t("Lưu cài đặt")} onPress={handleSave} loading={saving} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -199,6 +203,9 @@ function SwitchRow({
   value: boolean;
   onChange: (value: boolean) => void;
 }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -224,16 +231,19 @@ function MealReminderRow({
   onChange: (patch: Partial<MealReminder>) => void;
   onRemove: () => void;
 }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const invalid = !TIME_REGEX.test(item.time);
   return (
     <View style={styles.row}>
       <TextInput
         value={item.label}
         onChangeText={(label) => onChange({ label })}
-        placeholder="Tên, ví dụ Bữa phụ"
+        placeholder={t("Tên, ví dụ Bữa phụ")}
         placeholderTextColor={colors.textMuted}
         maxLength={30}
-        accessibilityLabel="Tên lần nhắc"
+        accessibilityLabel={t("Tên lần nhắc")}
         style={[styles.labelInput, !item.label.trim() && styles.timeInvalid]}
       />
       <TextInput
@@ -243,12 +253,12 @@ function MealReminderRow({
         placeholderTextColor={colors.textMuted}
         keyboardType="numbers-and-punctuation"
         maxLength={5}
-        accessibilityLabel={`Giờ nhắc ${item.label}`}
+        accessibilityLabel={t("Giờ nhắc {value1}", { value1: item.label })}
         style={[styles.timeInput, invalid && styles.timeInvalid]}
       />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Xoá lần nhắc ${item.label}`}
+        accessibilityLabel={t("Xoá lần nhắc {value1}", { value1: item.label })}
         hitSlop={8}
         onPress={onRemove}
         style={({ pressed }) => [styles.removeButton, pressed && { opacity: 0.6 }]}
@@ -268,6 +278,9 @@ function TimeRow({
   value: string;
   onChange: (value: string) => void;
 }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const invalid = !TIME_REGEX.test(value);
   return (
     <View style={styles.row}>
@@ -279,7 +292,7 @@ function TimeRow({
         placeholderTextColor={colors.textMuted}
         keyboardType="numbers-and-punctuation"
         maxLength={5}
-        accessibilityLabel={`Giờ ${label}`}
+        accessibilityLabel={t("Giờ {value1}", { value1: label })}
         style={[styles.timeInput, invalid && styles.timeInvalid]}
       />
     </View>

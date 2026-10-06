@@ -50,5 +50,5 @@ const styles = themedStyles(() => ({
     alignItems: "center",
     justifyContent: "center",
   },
-  title: { flex: 1, fontSize: 17, fontWeight: "800", color: colors.text, letterSpacing: -0.2 },
+  title: { flex: 1, minWidth: 0, fontSize: 17, fontWeight: "800", color: colors.text, letterSpacing: -0.2 },
 }));

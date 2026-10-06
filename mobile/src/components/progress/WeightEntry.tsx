@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { measurementApi } from "@/api/progressApi";
@@ -15,6 +16,9 @@ interface WeightEntryProps {
 
 // Ghi cân nặng hôm nay. Nhập lại trong ngày thì server ghi đè bản ghi cũ.
 export function WeightEntry({ initialWeight, onSaved }: WeightEntryProps) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [value, setValue] = useState(initialWeight != null ? String(initialWeight) : "");
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -23,7 +27,7 @@ export function WeightEntry({ initialWeight, onSaved }: WeightEntryProps) {
   async function handleSave() {
     const weight = parseNumber(value);
     if (weight === null || Number.isNaN(weight) || weight < 20 || weight > 500) {
-      setError("Nhập cân nặng từ 20 đến 500 kg");
+      setError(t("Nhập cân nặng từ 20 đến 500 kg"));
       return;
     }
     setError(undefined);
@@ -52,7 +56,7 @@ export function WeightEntry({ initialWeight, onSaved }: WeightEntryProps) {
       <View style={styles.row}>
         <View style={styles.flex}>
           <TextField
-            label="Cân nặng hôm nay"
+            label={t("Cân nặng hôm nay")}
             suffix="kg"
             value={value}
             onChangeText={(text) => {
@@ -64,9 +68,9 @@ export function WeightEntry({ initialWeight, onSaved }: WeightEntryProps) {
             selectTextOnFocus
           />
         </View>
-        <Button title="Lưu" onPress={handleSave} loading={saving} style={styles.button} />
+        <Button title={t("Lưu")} onPress={handleSave} loading={saving} style={styles.button} />
       </View>
-      {saved ? <Text style={styles.saved}>Đã lưu cân nặng hôm nay.</Text> : null}
+      {saved ? <Text style={styles.saved}>{t("Đã lưu cân nặng hôm nay.")}</Text> : null}
     </View>
   );
 }

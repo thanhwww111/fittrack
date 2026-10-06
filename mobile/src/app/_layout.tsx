@@ -1,3 +1,4 @@
+import { translate as t , useTranslation } from "@/i18n";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router, usePathname, type Theme } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -6,7 +7,7 @@ import { useEffect, useMemo } from "react";
 import { ActivityIndicator, AppState, useColorScheme, View } from "react-native";
 import { colors, setActiveScheme, type ColorScheme } from "@/constants/theme";
 import { useNotificationNavigation } from "@/hooks/useNotificationNavigation";
-import { configureNotifications } from "@/lib/notifications";
+import { configureNotifications, schedulePersonalPlanReminders } from "@/lib/notifications";
 import { isProfileComplete } from "@/lib/profileForm";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotificationStore } from "@/stores/notificationStore";
@@ -16,6 +17,11 @@ import { useTrainingScheduleStore } from "@/stores/trainingScheduleStore";
 import { AppFooter } from "@/components/navigation/AppFooter";
 import { BackButton } from "@/components/navigation/BackButton";
 import "@/stores/resetOnLogout";
+import { useLanguageStore } from "@/stores/languageStore";
+import { needsGymSchedule } from "@/lib/personalPlan";
+import { usePersonalPlanStore } from "@/stores/personalPlanStore";
+import { useCoachStore } from "@/stores/coachStore";
+import { WeeklyCheckInGate } from "@/components/profile/WeeklyCheckInGate";
 
 // Giữ splash cho đến khi biết user đã đăng nhập hay chưa, tránh nháy màn Login
 SplashScreen.preventAutoHideAsync();
@@ -38,7 +44,15 @@ function navigationTheme(scheme: ColorScheme): Theme {
 }
 
 export default function RootLayout() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  const { locale } = useTranslation();
+  const languageReady = useLanguageStore(s => s.hydrated);
   const pathname = usePathname();
+  const authUserId = useAuthStore(s => s.user?.id);
+  const planData = usePersonalPlanStore(s => s.data);
+  const planSurvey = usePersonalPlanStore(s => s.survey);
+  const coachSettings = useCoachStore(s => s.settings);
   const schedule = useTrainingScheduleStore((s) => s.data);
   const scheduleError = useTrainingScheduleStore((s) => s.error);
   const status = useAuthStore((s) => s.status);
@@ -52,16 +66,16 @@ export default function RootLayout() {
   // Lỗi mạng khi tải hồ sơ thì vẫn cho vào app (tab Cá nhân sẽ báo lỗi), không khoá user
   const profileSettled = !isAuthenticated || profile !== null || profileError !== null;
   const needsOnboarding =
-    isAuthenticated && profile !== null && (onboardingActive || !isProfileComplete(profile) || (schedule !== null && !schedule.current));
+    isAuthenticated && profile !== null && (onboardingActive || !isProfileComplete(profile) || (schedule !== null && needsGymSchedule(profile.trainingMode, !!schedule.current)));
   const profileComplete = profile !== null && isProfileComplete(profile);
 
   useEffect(() => {
-    if (isAuthenticated && profileComplete) void useTrainingScheduleStore.getState().load();
-  }, [isAuthenticated, profileComplete]);
+    if (isAuthenticated && profileComplete) { void useTrainingScheduleStore.getState().load(); void usePersonalPlanStore.getState().load(); }
+  }, [isAuthenticated, profileComplete, authUserId]);
   useEffect(() => {
-    if (isAuthenticated && profileComplete && schedule && !schedule.current
+    if (isAuthenticated && profileComplete && schedule && needsGymSchedule(profile?.trainingMode, !!schedule.current)
       && pathname !== "/onboarding" && !pathname.startsWith("/workout/")) router.replace("/onboarding");
-  }, [isAuthenticated, profileComplete, schedule, pathname]);
+  }, [isAuthenticated, profileComplete, schedule, pathname, profile?.trainingMode]);
 
   const preference = useThemeStore((s) => s.preference);
   const themeReady = useThemeStore((s) => s.hydrated);
@@ -76,6 +90,7 @@ export default function RootLayout() {
   useEffect(() => {
     bootstrap();
     useThemeStore.getState().hydrate();
+    void useLanguageStore.getState().hydrate();
   }, [bootstrap]);
 
   useEffect(() => {
@@ -83,11 +98,13 @@ export default function RootLayout() {
     SystemUI.setBackgroundColorAsync(colors.background).catch(() => {});
   }, [scheme]);
 
-  const ready = status !== "loading" && themeReady;
+  const ready = status !== "loading" && themeReady && languageReady;
 
   useEffect(() => {
     if (isAuthenticated) useProfileStore.getState().fetchProfile();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authUserId]);
+
+  useEffect(() => { if (isAuthenticated) void useCoachStore.getState().load(); }, [isAuthenticated, authUserId]);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
@@ -96,7 +113,7 @@ export default function RootLayout() {
   // Mỗi lần vào phiên: đồng bộ cài đặt thông báo, lịch nhắc và push token
   useEffect(() => {
     if (isAuthenticated) useNotificationStore.getState().syncOnLogin();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, locale]);
 
   // Quay lại app (có thể đã sang ngày mới): cập nhật nhắc "còn thiếu bao nhiêu calo/protein"
   useEffect(() => {
@@ -106,10 +123,14 @@ export default function RootLayout() {
         void useNotificationStore.getState().refreshNutritionReminders();
         void useNotificationStore.getState().refreshWorkoutReminders();
         void useTrainingScheduleStore.getState().load();
+        void usePersonalPlanStore.getState().load();
+        void useCoachStore.getState().load();
       }
     });
     return () => sub.remove();
   }, [isAuthenticated]);
+
+  useEffect(() => { void schedulePersonalPlanReminders(isAuthenticated ? planData : null, isAuthenticated && coachSettings !== null && !coachSettings.enabled && !!planSurvey?.remindersEnabled); }, [isAuthenticated, authUserId, planData, planSurvey?.remindersEnabled, coachSettings, locale]);
 
   useNotificationNavigation(isAuthenticated);
 
@@ -135,6 +156,7 @@ export default function RootLayout() {
         key={scheme}
         screenOptions={{
           headerShown: false,
+          headerBackVisible: false,
           headerLeft: () => <BackButton />,
           contentStyle: { backgroundColor: colors.background },
         }}
@@ -147,17 +169,18 @@ export default function RootLayout() {
         <Stack.Protected guard={isAuthenticated && (!needsOnboarding || profileComplete)}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="food" />
+          <Stack.Screen name="plan" />
           <Stack.Screen name="workout" />
           <Stack.Screen name="ai" />
           <Stack.Screen name="measurements" />
-          <Stack.Screen name="history" options={{ headerShown: true, title: "Lịch sử theo ngày", headerBackTitle: "Quay lại" }} />
+          <Stack.Screen name="history" options={{ headerShown: true, title: t("Lịch sử theo ngày"), headerBackTitle: t("Quay lại") }} />
           <Stack.Screen
             name="settings/account"
-            options={{ headerShown: true, title: "Tài khoản & bảo mật", headerBackTitle: "Quay lại" }}
+            options={{ headerShown: true, title: t("Tài khoản & bảo mật"), headerBackTitle: t("Quay lại") }}
           />
           <Stack.Screen
             name="settings/notifications"
-            options={{ headerShown: true, title: "Thông báo", headerBackTitle: "Quay lại" }}
+            options={{ headerShown: true, title: t("Thông báo"), headerBackTitle: t("Quay lại") }}
           />
         </Stack.Protected>
 
@@ -165,7 +188,8 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
       </Stack>
-      {isAuthenticated && !needsOnboarding && (schedule?.current || scheduleError) ? <AppFooter /> : null}
+      {isAuthenticated && !needsOnboarding && (profile?.trainingMode === "OTHER" || schedule?.current || scheduleError) ? <AppFooter /> : null}
+      {isAuthenticated && profileComplete && !needsOnboarding && profile ? <WeeklyCheckInGate key={profile.userId} profile={profile} /> : null}
       </View>
     </ThemeProvider>
   );

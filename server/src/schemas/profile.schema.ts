@@ -5,6 +5,7 @@ import { isValidTimezone } from "../utils/date";
 export const updateProfileSchema = z
   .object({
     gender: z.enum(GENDERS),
+    trainingMode: z.enum(["GYM", "OTHER"]),
     age: z.number().int().min(10).max(120),
     height: z.number().min(50).max(300),
     currentWeight: z.number().min(20).max(500),
@@ -20,3 +21,9 @@ export const updateProfileSchema = z
   .refine((data) => Object.keys(data).length > 0, "At least one field is required");
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export const weeklyCheckInSchema = z.object({
+  weight: z.number().min(20).max(500),
+  height: z.number().min(50).max(300),
+});
+export type WeeklyCheckInInput = z.infer<typeof weeklyCheckInSchema>;

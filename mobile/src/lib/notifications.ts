@@ -143,3 +143,29 @@ export async function scheduleReminders(
   await scheduleWorkoutReminders(settings, schedule);
   await scheduleNutritionReminders(settings, today);
 }
+
+let personalPlanQueue: Promise<void> = Promise.resolve();
+let personalPlanGeneration = 0;
+export function schedulePersonalPlanReminders(data: import("@/types/personalPlan").PersonalPlanResponse | null, enabled: boolean) {
+  const ticket = ++personalPlanGeneration;
+  personalPlanQueue = personalPlanQueue.catch(() => {}).then(async () => {
+    if (Platform.OS === "web" || ticket !== personalPlanGeneration) return;
+    await cancelByPrefix(`${REMINDER_PREFIX}plan-`);
+    if (!enabled || !data || ticket !== personalPlanGeneration || !(await ensurePermission())) return;
+    const { buildPersonalPlanReminders } = await import("./personalPlanReminders");
+    const configuredData = { ...data,
+      upcoming: data.upcoming?.map(plan => ({ ...plan, surveySnapshot: { ...plan.surveySnapshot, remindersEnabled: true } })),
+      current: data.current ? { ...data.current, surveySnapshot: { ...data.current.surveySnapshot, remindersEnabled: true } } : null,
+      pending: data.pending ? { ...data.pending, surveySnapshot: { ...data.pending.surveySnapshot, remindersEnabled: true } } : null,
+    };
+    for (const reminder of buildPersonalPlanReminders(configuredData)) {
+      if (ticket !== personalPlanGeneration) return;
+      await Notifications.scheduleNotificationAsync({
+        identifier: `${REMINDER_PREFIX}${reminder.id}`,
+        content: { title: reminder.title, body: reminder.body, data: { url: "/plan" } },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminder.date, channelId: "default" },
+      });
+    }
+  });
+  return personalPlanQueue.catch(() => {});
+}

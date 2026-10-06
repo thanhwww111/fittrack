@@ -27,6 +27,15 @@ async function createTemplate(auth: Record<string, string>, name: string) {
 }
 
 describe("POST /api/workout-templates/suggestions/:key/apply", () => {
+  it.each([["upper", "Upper (thân trên)", "Bench Press", 6], ["lower", "Lower (thân dưới)", "Squat", 4]])(
+    "creates %s with the existing Upper/Lower exercises", async (key, name, firstName, count) => {
+      const { auth } = await createAuthedUser();
+      const res = await request(app).post(`/api/workout-templates/suggestions/${key}/apply`).set(auth);
+      expect(res.status).toBe(200);
+      expect(res.body.data.name).toBe(name);
+      expect(res.body.data.exercises).toHaveLength(Number(count));
+      expect((await ExerciseModel.findById(res.body.data.exercises[0].exerciseId))?.name).toBe(firstName);
+    });
   it("materializes only the selected workout with real PPL exercises, without a program", async () => {
     const { auth, userId } = await createAuthedUser();
     const res = await request(app).post("/api/workout-templates/suggestions/pull/apply").set(auth);

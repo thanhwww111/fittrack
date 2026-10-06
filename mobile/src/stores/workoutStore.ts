@@ -8,6 +8,7 @@ import {
   type TemplateInput,
 } from "@/api/workoutApi";
 import { errorMessage } from "@/lib/formErrors";
+import { useTrainingScheduleStore } from "./trainingScheduleStore";
 import type {
   Exercise,
   NewRecord,
@@ -161,6 +162,7 @@ export const useWorkoutStore = create<WorkoutState>()((set, get) => ({
       prAlert: null,
       lastCompletion: { sessionId: result.session.id, newRecords: result.newRecords },
     });
+    await useTrainingScheduleStore.getState().load();
     return result;
   },
 
@@ -168,6 +170,7 @@ export const useWorkoutStore = create<WorkoutState>()((set, get) => ({
     const session = requireActive(get().activeSession);
     await sessionApi.cancel(session.id);
     set({ activeSession: null, pendingExercises: [], prAlert: null });
+    await useTrainingScheduleStore.getState().load();
   },
 
   updateInfo: async (input) => {

@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
@@ -14,6 +15,8 @@ import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/formErrors";
 import { EQUIPMENT_LABELS, formatDate, formatVolume, formatWeight, MUSCLE_LABELS } from "@/lib/workout";
 import type { ExerciseHistory } from "@/types/models";
+import { ExerciseNote } from "@/components/workout/ExerciseNote";
+import { ExerciseGuideButton } from "@/components/workout/ExerciseGuideButton";
 
 const DAY_MS = 86_400_000;
 const shortDay = (iso: string) => {
@@ -23,6 +26,9 @@ const shortDay = (iso: string) => {
 
 // Tiến bộ của một bài tập: kỷ lục, biểu đồ theo thời gian, các buổi đã tập
 export default function ExerciseDetailScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [data, setData] = useState<ExerciseHistory | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,9 +71,9 @@ export default function ExerciseDetailScreen() {
 
   async function handleDelete() {
     const ok = await confirmAction({
-      title: "Xoá bài tập này?",
-      message: "Các buổi tập cũ vẫn giữ tên bài. Bài đang nằm trong template thì cần gỡ khỏi template trước.",
-      confirmText: "Xoá",
+      title: t("Xoá bài tập này?"),
+      message: t("Các buổi tập cũ vẫn giữ tên bài. Bài đang nằm trong template thì cần gỡ khỏi template trước."),
+      confirmText: t("Xoá"),
       destructive: true,
     });
     if (!ok) return;
@@ -79,7 +85,7 @@ export default function ExerciseDetailScreen() {
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 409
-          ? `Bài tập đang nằm trong template: ${err.message.split(": ")[1] ?? ""}. Gỡ khỏi template rồi thử lại.`
+          ? t("Bài tập đang nằm trong template: {value1}. Gỡ khỏi template rồi thử lại.", { value1: err.message.split(": ")[1] ?? "" })
           : errorMessage(err)
       );
       setDeleting(false);
@@ -105,14 +111,16 @@ export default function ExerciseDetailScreen() {
         <Card>
           <Text style={styles.meta}>
             {MUSCLE_LABELS[exercise.muscleGroup]} · {EQUIPMENT_LABELS[exercise.equipment]}
-            {exercise.isCustom ? " · Của bạn" : ""}
+            {exercise.isCustom ? t(" · Của bạn") : ""}
           </Text>
+          <ExerciseNote name={exercise.name} isCustom={exercise.isCustom} />
+          <ExerciseGuideButton name={exercise.name} isCustom={exercise.isCustom} />
           {exercise.description ? <Text style={styles.body}>{exercise.description}</Text> : null}
           {exercise.isCustom ? (
             <View style={styles.actions}>
-              <Button title="Sửa" variant="secondary" onPress={() => setEditing(true)} style={styles.flex} />
+              <Button title={t("Sửa")} variant="secondary" onPress={() => setEditing(true)} style={styles.flex} />
               <Button
-                title="Xoá"
+                title={t("Xoá")}
                 variant="danger"
                 onPress={handleDelete}
                 loading={deleting}
@@ -124,19 +132,19 @@ export default function ExerciseDetailScreen() {
       )}
 
       <View style={styles.stats}>
-        <Stat label="Tạ nặng nhất" value={record && record.maxWeight > 0 ? formatWeight(record.maxWeight) : "—"} />
-        <Stat label="1RM ước tính" value={record && record.estimatedOneRepMax > 0 ? formatWeight(record.estimatedOneRepMax) : "—"} />
-        <Stat label="Nhiều rep nhất" value={record ? String(record.maxReps) : "—"} />
+        <Stat label={t("Tạ nặng nhất")} value={record && record.maxWeight > 0 ? formatWeight(record.maxWeight) : "—"} />
+        <Stat label={t("1RM ước tính")} value={record && record.estimatedOneRepMax > 0 ? formatWeight(record.estimatedOneRepMax) : "—"} />
+        <Stat label={t("Nhiều rep nhất")} value={record ? String(record.maxReps) : "—"} />
       </View>
 
       <ChartCard
-        title={useReps ? "Số rep tốt nhất mỗi buổi" : "1RM ước tính mỗi buổi"}
-        subtitle={useReps ? undefined : "Tính từ set tốt nhất theo công thức Epley"}
+        title={useReps ? t("Số rep tốt nhất mỗi buổi") : t("1RM ước tính mỗi buổi")}
+        subtitle={useReps ? undefined : t("Tính từ set tốt nhất theo công thức Epley")}
         chart={
           <LineChart
             points={points}
             formatValue={formatPoint}
-            accessibilityLabel={`Biểu đồ tiến bộ ${exercise.name}, ${points.length} buổi`}
+            accessibilityLabel={t("Biểu đồ tiến bộ {value1}, {value2} buổi", { value1: exercise.name, value2: points.length })}
           />
         }
         rows={entries.map((e) => ({
@@ -144,10 +152,10 @@ export default function ExerciseDetailScreen() {
           label: shortDay(e.date),
           value: formatPoint(useReps ? e.best.maxReps : e.best.estimatedOneRepMax),
         }))}
-        emptyText="Chưa tập bài này trong buổi nào đã hoàn thành."
+        emptyText={t("Chưa tập bài này trong buổi nào đã hoàn thành.")}
       />
 
-      {entries.length > 0 ? <Text style={styles.sectionTitle}>Các buổi gần đây</Text> : null}
+      {entries.length > 0 ? <Text style={styles.sectionTitle}>{t("Các buổi gần đây")}</Text> : null}
       {entries.map((e) => (
         <Pressable
           key={e.sessionId}
@@ -160,7 +168,7 @@ export default function ExerciseDetailScreen() {
             <Text style={styles.muted}>{formatDate(e.date)}</Text>
           </View>
           <Text style={styles.body}>
-            {e.sets.map((s) => `${s.weight > 0 ? formatWeight(s.weight) : "BW"}×${s.reps}`).join("  ·  ")}
+            {e.sets.map((s) => t("{value1}×{value2}", { value1: s.weight > 0 ? formatWeight(s.weight) : "BW", value2: s.reps })).join("  ·  ")}
           </Text>
           <Text style={styles.muted}>Volume {formatVolume(e.volume)}</Text>
         </Pressable>
@@ -170,6 +178,9 @@ export default function ExerciseDetailScreen() {
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <View style={styles.stat}>
       <Text style={styles.statValue}>{value}</Text>

@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
@@ -11,6 +12,9 @@ import type { WorkoutSession } from "@/types/models";
 const PAGE_SIZE = 20;
 
 export default function WorkoutHistoryScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [items, setItems] = useState<WorkoutSession[]>([]);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState<number | null>(null);
@@ -68,10 +72,7 @@ export default function WorkoutHistoryScreen() {
                 <Text style={styles.name}>{item.name}</Text>
                 <Text style={styles.date}>{formatDate(item.completedAt ?? item.startedAt)}</Text>
               </View>
-              <Text style={styles.muted}>
-                {item.exercises.length} bài · {sets} set · {formatVolume(item.totalVolume)} ·{" "}
-                {formatDuration(item.duration)}
-              </Text>
+              <Text style={styles.muted}>{t("{value1} bài · {value2} set · {value3} ·  {value4}", { value1: item.exercises.length, value2: sets, value3: formatVolume(item.totalVolume), value4: formatDuration(item.duration) })}</Text>
               <Text style={styles.exerciseList} numberOfLines={1}>
                 {item.exercises.map((e) => e.exerciseName).join(", ")}
               </Text>
@@ -82,7 +83,7 @@ export default function WorkoutHistoryScreen() {
           total === null ? (
             <ActivityIndicator color={colors.primary} style={styles.loading} />
           ) : (
-            <Text style={styles.empty}>Chưa có buổi tập nào hoàn thành.</Text>
+            <Text style={styles.empty}>{t("Chưa có buổi tập nào hoàn thành.")}</Text>
           )
         }
         ListFooterComponent={

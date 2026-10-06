@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, usePathname, type Href } from "expo-router";
 import { useEffect } from "react";
@@ -6,7 +7,10 @@ import { colors, getActiveScheme, radius, spacing } from "@/constants/theme";
 import { useThemeStore } from "@/stores/themeStore";
 
 // Nút ☀️/🌙 trên header các tab: bấm để đổi giao diện Sáng ↔ Tối ở bất kỳ tab nào
-export function ThemeToggleButton() {
+export function ThemeToggleButton({ inline = false }: { inline?: boolean }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const pathname = usePathname();
   const dark = getActiveScheme() === "dark";
 
@@ -21,11 +25,11 @@ export function ThemeToggleButton() {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={dark ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+      accessibilityLabel={dark ? t("Chuyển sang giao diện sáng") : t("Chuyển sang giao diện tối")}
       hitSlop={8}
       onPress={() => useThemeStore.getState().toggle(dark ? "dark" : "light", pathname)}
       style={({ pressed }) => ({
-        marginRight: spacing.lg,
+        marginRight: inline ? 0 : spacing.lg,
         width: 38,
         height: 38,
         borderRadius: radius.pill,

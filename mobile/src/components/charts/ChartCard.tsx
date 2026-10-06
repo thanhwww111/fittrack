@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Card } from "@/components/ui/Card";
@@ -20,6 +21,9 @@ interface ChartCardProps {
 
 // Khung biểu đồ + nút chuyển sang dạng bảng (cho trình đọc màn hình và để xem số chính xác)
 export function ChartCard({ title, subtitle, headline, chart, rows, emptyText }: ChartCardProps) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [showTable, setShowTable] = useState(false);
   const empty = rows.length === 0;
 
@@ -36,7 +40,7 @@ export function ChartCard({ title, subtitle, headline, chart, rows, emptyText }:
             hitSlop={8}
             onPress={() => setShowTable((v) => !v)}
           >
-            <Text style={styles.toggle}>{showTable ? "Biểu đồ" : "Bảng"}</Text>
+            <Text style={styles.toggle}>{showTable ? t("Biểu đồ") : t("Bảng")}</Text>
           </Pressable>
         ) : null}
       </View>

@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { Link } from "expo-router";
 import { useState } from "react";
 import { Text } from "react-native";
@@ -19,6 +20,9 @@ import { useAuthStore } from "@/stores/authStore";
 type Field = "name" | "email" | "password" | "confirmPassword";
 
 export default function RegisterScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const register = useAuthStore((s) => s.register);
 
   const [name, setName] = useState("");
@@ -31,10 +35,10 @@ export default function RegisterScreen() {
 
   async function handleSubmit() {
     const nextErrors: FieldErrors<Field> = {
-      name: name.trim() ? undefined : "Vui lòng nhập tên",
+      name: name.trim() ? undefined : t("Vui lòng nhập tên"),
       email: validateEmail(email),
       password: validatePassword(password),
-      confirmPassword: password === confirmPassword ? undefined : "Mật khẩu nhập lại không khớp",
+      confirmPassword: password === confirmPassword ? undefined : t("Mật khẩu nhập lại không khớp"),
     };
     setErrors(nextErrors);
     setFormError(null);
@@ -45,7 +49,7 @@ export default function RegisterScreen() {
       await register({ name: name.trim(), email: email.trim(), password });
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setErrors({ email: "Email này đã được đăng ký" });
+        setErrors({ email: t("Email này đã được đăng ký") });
       } else {
         setErrors(fieldErrorsFrom(err));
         setFormError(errorMessage(err));
@@ -56,20 +60,18 @@ export default function RegisterScreen() {
 
   return (
     <AuthForm
-      title="Tạo tài khoản"
-      subtitle="Chỉ mất một phút để bắt đầu"
+      title={t("Tạo tài khoản")}
+      subtitle={t("Chỉ mất một phút để bắt đầu")}
       footer={
         <>
-          <Text style={styles.muted}>Đã có tài khoản?</Text>
-          <Link href="/login" style={styles.link}>
-            Đăng nhập
-          </Link>
+          <Text style={styles.muted}>{t("Đã có tài khoản?")}</Text>
+          <Link href="/login" style={styles.link}>{t("Đăng nhập")}</Link>
         </>
       }
     >
       <ErrorBanner message={formError} />
       <TextField
-        label="Tên"
+        label={t("Tên")}
         value={name}
         onChangeText={setName}
         error={errors.name}
@@ -87,17 +89,17 @@ export default function RegisterScreen() {
         textContentType="emailAddress"
       />
       <TextField
-        label="Mật khẩu"
+        label={t("Mật khẩu")}
         value={password}
         onChangeText={setPassword}
         error={errors.password}
         secureTextEntry
         autoComplete="new-password"
         textContentType="newPassword"
-        placeholder="Tối thiểu 8 ký tự"
+        placeholder={t("Tối thiểu 8 ký tự")}
       />
       <TextField
-        label="Nhập lại mật khẩu"
+        label={t("Nhập lại mật khẩu")}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         error={errors.confirmPassword}
@@ -107,7 +109,7 @@ export default function RegisterScreen() {
         returnKeyType="go"
         onSubmitEditing={handleSubmit}
       />
-      <Button title="Đăng ký" onPress={handleSubmit} loading={submitting} />
+      <Button title={t("Đăng ký")} onPress={handleSubmit} loading={submitting} />
     </AuthForm>
   );
 }

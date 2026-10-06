@@ -1,3 +1,4 @@
+import { localeTag , translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -24,10 +25,13 @@ import { useMeals } from "@/hooks/useMeals";
 import { useNutritionStore } from "@/stores/nutritionStore";
 import type { MealTemplate, MealType } from "@/types/models";
 
-const fmt = (n: number) => n.toLocaleString("vi-VN", { maximumFractionDigits: 0 });
+const fmt = (n: number) => n.toLocaleString(localeTag(), { maximumFractionDigits: 0 });
 
 // Bữa mẫu: lưu các món hay ăn cùng nhau (vd "Sáng đi làm") rồi thêm cả bữa bằng một lần bấm
 export default function MealTemplatesScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const params = useLocalSearchParams<{ mealType?: string; date?: string }>();
   const { meals, error: mealError } = useMeals();
   const mealType: MealType = isMealType(params.mealType)
@@ -63,7 +67,7 @@ export default function MealTemplatesScreen() {
 
   async function saveCurrent() {
     if (!name.trim()) {
-      setNameError("Đặt tên cho bữa mẫu, vd: Sáng đi làm");
+      setNameError(t("Đặt tên cho bữa mẫu, vd: Sáng đi làm"));
       return;
     }
     if (!date) return;
@@ -95,9 +99,9 @@ export default function MealTemplatesScreen() {
 
   async function remove(template: MealTemplate) {
     const ok = await confirmAction({
-      title: "Xoá bữa mẫu?",
-      message: `"${template.name}" sẽ bị xoá. Các món đã ghi trong nhật ký không bị ảnh hưởng.`,
-      confirmText: "Xoá",
+      title: t("Xoá bữa mẫu?"),
+      message: t("\"{value1}\" sẽ bị xoá. Các món đã ghi trong nhật ký không bị ảnh hưởng.", { value1: template.name }),
+      confirmText: t("Xoá"),
       destructive: true,
     });
     if (!ok) return;
@@ -119,63 +123,61 @@ export default function MealTemplatesScreen() {
         <ErrorBanner message={mealError} />
 
         {currentLogs.length > 0 ? (
-          <Card title={`Lưu ${label} này thành bữa mẫu`}>
+          <Card title={t("Lưu {value1} này thành bữa mẫu", { value1: label })}>
             <Text style={styles.muted}>
               {currentLogs.map((l) => l.foodName).join(", ")}
             </Text>
             <TextField
-              label="Tên bữa mẫu"
+              label={t("Tên bữa mẫu")}
               value={name}
               onChangeText={setName}
               error={nameError}
-              placeholder="Ví dụ: Sáng đi làm"
+              placeholder={t("Ví dụ: Sáng đi làm")}
               maxLength={100}
             />
-            <Button title="Lưu bữa mẫu" variant="secondary" onPress={saveCurrent} loading={saving} />
+            <Button title={t("Lưu bữa mẫu")} variant="secondary" onPress={saveCurrent} loading={saving} />
           </Card>
         ) : null}
 
-        <Text style={styles.sectionTitle}>Thêm nhanh vào {label}</Text>
+        <Text style={styles.sectionTitle}>{t("Thêm nhanh vào {value1}", { value1: label })}</Text>
 
         {templates === null ? (
           error ? null : <ActivityIndicator color={colors.primary} />
         ) : templates.length === 0 ? (
-          <Text style={styles.empty}>
-            Chưa có bữa mẫu nào. Ghi các món của một bữa, rồi mở lại màn này để lưu thành bữa mẫu.
-          </Text>
+          <Text style={styles.empty}>{t("Chưa có bữa mẫu nào. Ghi các món của một bữa, rồi mở lại màn này để lưu thành bữa mẫu.")}</Text>
         ) : (
-          templates.map((t) => {
-            const missing = t.items.filter((i) => !i.available).length;
+          templates.map((mealTemplate) => {
+            const missing = mealTemplate.items.filter((i) => !i.available).length;
             return (
-              <Card key={t.id}>
+              <Card key={mealTemplate.id}>
                 <View style={styles.header}>
-                  <Text style={styles.name}>{t.name}</Text>
+                  <Text style={styles.name}>{mealTemplate.name}</Text>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Xoá bữa mẫu ${t.name}`}
+                    accessibilityLabel={t("Xoá bữa mẫu {value1}", { value1: mealTemplate.name })}
                     hitSlop={8}
-                    onPress={() => remove(t)}
+                    onPress={() => remove(mealTemplate)}
                   >
                     <Ionicons name="trash-outline" size={20} color={colors.danger} />
                   </Pressable>
                 </View>
-                {t.items.map((item, index) => (
+                {mealTemplate.items.map((item, index) => (
                   <Text key={`${item.foodId}-${index}`} style={[styles.item, !item.available && styles.gone]}>
                     •{" "}
                     {item.available
                       ? `${item.foodName} · ${formatServing(item.quantity, item.servingUnit!)}`
-                      : "Món đã bị xoá (sẽ bỏ qua)"}
+                      : t("Món đã bị xoá (sẽ bỏ qua)")}
                   </Text>
                 ))}
-                <MacroChips values={t.totals} />
+                <MacroChips values={mealTemplate.totals} />
                 {missing > 0 ? (
-                  <Text style={styles.muted}>{missing} món không còn tồn tại sẽ không được thêm.</Text>
+                  <Text style={styles.muted}>{t("{value1} món không còn tồn tại sẽ không được thêm.", { value1: missing })}</Text>
                 ) : null}
                 <Button
-                  title={`Thêm vào ${label} · ${fmt(t.totals.calories)} kcal`}
-                  onPress={() => apply(t)}
-                  loading={busyId === t.id}
-                  disabled={busyId !== null || missing === t.items.length}
+                  title={t("Thêm vào {value1} · {value2} kcal", { value1: label, value2: fmt(mealTemplate.totals.calories) })}
+                  onPress={() => apply(mealTemplate)}
+                  loading={busyId === mealTemplate.id}
+                  disabled={busyId !== null || missing === mealTemplate.items.length}
                 />
               </Card>
             );

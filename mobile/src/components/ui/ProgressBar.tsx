@@ -36,10 +36,10 @@ export function ProgressBar({ label, value, target, unit, color = colors.primary
 }
 
 const styles = themedStyles(() => ({
-  container: { gap: spacing.xs },
-  header: { flexDirection: "row", justifyContent: "space-between" },
-  label: { fontSize: 14, color: colors.text, fontWeight: "600" },
-  value: { fontSize: 14, color: colors.textMuted, fontVariant: ["tabular-nums"] },
+  container: { gap: spacing.xs, minWidth: 0 },
+  header: { flexDirection: "row", flexWrap: "wrap", alignItems: "baseline", columnGap: spacing.sm, rowGap: spacing.xs },
+  label: { flexShrink: 1, maxWidth: "100%", fontSize: 14, color: colors.text, fontWeight: "600" },
+  value: { flexShrink: 1, maxWidth: "100%", marginLeft: "auto", textAlign: "right", fontSize: 14, color: colors.textMuted, fontVariant: ["tabular-nums"] },
   track: { height: 10, borderRadius: radius.pill, backgroundColor: colors.surfaceMuted, overflow: "hidden" },
   fill: { height: "100%", borderRadius: radius.pill },
 }));

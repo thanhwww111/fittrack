@@ -1,3 +1,4 @@
+import { translate as t } from "@/i18n";
 import { ApiError } from "@/api/client";
 
 export type FieldErrors<T extends string = string> = Partial<Record<T, string>>;
@@ -19,26 +20,26 @@ export function fieldErrorsFrom(err: unknown): FieldErrors {
 export function errorMessage(err: unknown) {
   if (err instanceof ApiError) {
     if (err.message === "Cannot connect to server") {
-      return "Không kết nối được server. Kiểm tra Wi-Fi và địa chỉ API.";
+      return t("Không kết nối được server. Kiểm tra Wi-Fi và địa chỉ API.");
     }
-    if (err.message === "Request timed out") return "Server phản hồi quá lâu, thử lại sau.";
+    if (err.message === "Request timed out") return t("Server phản hồi quá lâu, thử lại sau.");
     return err.message;
   }
-  return "Đã có lỗi xảy ra, thử lại sau.";
+  return t("Đã có lỗi xảy ra, thử lại sau.");
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateEmail(email: string) {
-  if (!email.trim()) return "Vui lòng nhập email";
-  if (!EMAIL_REGEX.test(email.trim())) return "Email không hợp lệ";
+  if (!email.trim()) return t("Vui lòng nhập email");
+  if (!EMAIL_REGEX.test(email.trim())) return t("Email không hợp lệ");
   return undefined;
 }
 
 // Khớp với rule ở server: 8–72 ký tự
 export function validatePassword(password: string) {
-  if (password.length < 8) return "Mật khẩu tối thiểu 8 ký tự";
-  if (password.length > 72) return "Mật khẩu tối đa 72 ký tự";
+  if (password.length < 8) return t("Mật khẩu tối thiểu 8 ký tự");
+  if (password.length > 72) return t("Mật khẩu tối đa 72 ký tự");
   return undefined;
 }
 

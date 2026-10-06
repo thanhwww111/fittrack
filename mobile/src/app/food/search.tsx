@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useRef, useState } from "react";
@@ -14,6 +15,9 @@ import { formatServing, isMealType, mealLabel, mealTypeForHour } from "@/lib/nut
 import type { Food, MealType } from "@/types/models";
 
 export default function FoodSearchScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const params = useLocalSearchParams<{ mealType?: string; date?: string }>();
   const { meals, error, load } = useMeals();
   const [mealType, setMealType] = useState<MealType>(() =>
@@ -29,12 +33,10 @@ export default function FoodSearchScreen() {
   if (choosingMeal) {
     return (
       <ScrollView contentContainerStyle={styles.mealContent} keyboardShouldPersistTaps="handled">
-        <Text style={styles.heading}>Bạn muốn ghi món vào bữa nào?</Text>
-        <Text style={styles.hint}>
-          Đã chọn sẵn bữa ăn. Bạn có thể đổi bữa để ghi bổ sung những gì đã ăn.
-        </Text>
+        <Text style={styles.heading}>{t("Bạn muốn ghi món vào bữa nào?")}</Text>
+        <Text style={styles.hint}>{t("Đã chọn sẵn bữa ăn. Bạn có thể đổi bữa để ghi bổ sung những gì đã ăn.")}</Text>
         <ErrorBanner message={error} />
-        {error ? <Button title="Tải lại danh sách bữa" variant="secondary" onPress={load} /> : null}
+        {error ? <Button title={t("Tải lại danh sách bữa")} variant="secondary" onPress={load} /> : null}
         <View accessibilityRole="radiogroup" style={styles.mealOptions}>
           {meals.map((meal) => {
             const selected = meal.id === mealType;
@@ -55,7 +57,7 @@ export default function FoodSearchScreen() {
           })}
         </View>
         <AddMealForm onAdded={setMealType} />
-        <Button title="Tiếp tục chọn món" onPress={() => setChoosingMeal(false)} />
+        <Button title={t("Tiếp tục chọn món")} onPress={() => setChoosingMeal(false)} />
       </ScrollView>
     );
   }
@@ -69,6 +71,9 @@ function FoodSearchResults({ mealType, mealName, date, onChangeMeal }: {
   date?: string;
   onChangeMeal: () => void;
 }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [query, setQuery] = useState("");
   const { items, isLoading, error, loadMore, refresh } = useFoodSearch(query);
 
@@ -98,7 +103,7 @@ function FoodSearchResults({ mealType, mealName, date, onChangeMeal }: {
       <View style={styles.mealSummary}>
         <Text style={styles.name}>{mealName}</Text>
         <Pressable accessibilityRole="button" onPress={onChangeMeal} style={styles.changeMeal}>
-          <Text style={styles.createText}>Đổi bữa</Text>
+          <Text style={styles.createText}>{t("Đổi bữa")}</Text>
         </Pressable>
       </View>
       <View style={styles.searchBox}>
@@ -106,16 +111,16 @@ function FoodSearchResults({ mealType, mealName, date, onChangeMeal }: {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Tìm món ăn, ví dụ: chicken"
+          placeholder={t("Tìm món ăn, ví dụ: chicken")}
           placeholderTextColor={colors.textMuted}
           style={styles.searchInput}
           autoFocus
           autoCorrect={false}
           returnKeyType="search"
-          accessibilityLabel="Tìm món ăn"
+          accessibilityLabel={t("Tìm món ăn")}
         />
         {query ? (
-          <Pressable accessibilityLabel="Xoá từ khoá" hitSlop={8} onPress={() => setQuery("")}>
+          <Pressable accessibilityLabel={t("Xoá từ khoá")} hitSlop={8} onPress={() => setQuery("")}>
             <Ionicons name="close-circle" size={18} color={colors.textMuted} />
           </Pressable>
         ) : null}
@@ -133,9 +138,9 @@ function FoodSearchResults({ mealType, mealName, date, onChangeMeal }: {
         ListHeaderComponent={
           !query.trim() && (favorites.length > 0 || recent.length > 0) ? (
             <View style={styles.recent}>
-              <QuickFoods title="⭐ Yêu thích" foods={favorites} onPick={openFood} />
-              <QuickFoods title="Gần đây" foods={recent} onPick={openFood} />
-              <Text style={styles.sectionTitle}>Tất cả món</Text>
+              <QuickFoods title={t("⭐ Yêu thích")} foods={favorites} onPick={openFood} />
+              <QuickFoods title={t("Gần đây")} foods={recent} onPick={openFood} />
+              <Text style={styles.sectionTitle}>{t("Tất cả món")}</Text>
             </View>
           ) : null
         }
@@ -149,17 +154,15 @@ function FoodSearchResults({ mealType, mealName, date, onChangeMeal }: {
               <Text style={styles.name} numberOfLines={1}>
                 {item.name}
               </Text>
-              {item.isCustom ? <Text style={styles.badge}>Của bạn</Text> : null}
+              {item.isCustom ? <Text style={styles.badge}>{t("Của bạn")}</Text> : null}
             </View>
-            <Text style={styles.serving}>
-              mỗi {formatServing(item.servingSize, item.servingUnit)}
-            </Text>
+            <Text style={styles.serving}>{t("mỗi {value1}", { value1: formatServing(item.servingSize, item.servingUnit) })}</Text>
             <MacroChips values={item} />
           </Pressable>
         )}
         ListEmptyComponent={
           isLoading ? null : (
-            <Text style={styles.empty}>Không tìm thấy món nào{query ? ` cho "${query}"` : ""}.</Text>
+            <Text style={styles.empty}>{t("Không tìm thấy món nào{value1}.", { value1: query ? ` cho "${query}"` : "" })}</Text>
           )
         }
         ListFooterComponent={
@@ -180,7 +183,7 @@ function FoodSearchResults({ mealType, mealName, date, onChangeMeal }: {
               style={styles.createButton}
             >
               <Ionicons name="add" size={18} color={colors.primary} />
-              <Text style={styles.createText}>Không có món bạn cần? Tạo món mới</Text>
+              <Text style={styles.createText}>{t("Không có món bạn cần? Tạo món mới")}</Text>
             </Pressable>
           </View>
         }
@@ -191,6 +194,9 @@ function FoodSearchResults({ mealType, mealName, date, onChangeMeal }: {
 
 // Hàng chip để thêm nhanh một món (yêu thích / gần đây)
 function QuickFoods({ title, foods, onPick }: { title: string; foods: Food[]; onPick: (food: Food) => void }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   if (foods.length === 0) return null;
   return (
     <>
@@ -200,7 +206,7 @@ function QuickFoods({ title, foods, onPick }: { title: string; foods: Food[]; on
           <Pressable
             key={food.id}
             accessibilityRole="button"
-            accessibilityLabel={`Thêm ${food.name}`}
+            accessibilityLabel={t("Thêm {value1}", { value1: food.name })}
             onPress={() => onPick(food)}
             style={({ pressed }) => [styles.recentChip, pressed && styles.pressed]}
           >

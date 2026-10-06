@@ -1,3 +1,5 @@
+import { BackButton } from "@/components/navigation/BackButton";
+import { translate as t, useTranslation } from "@/i18n";
 import { router, Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -23,6 +25,9 @@ import { useExercisePickerStore } from "@/stores/exercisePickerStore";
 import { useWorkoutStore } from "@/stores/workoutStore";
 
 export default function ActiveWorkoutScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const session = useWorkoutStore((s) => s.activeSession);
   const pending = useWorkoutStore((s) => s.pendingExercises);
   const prAlert = useWorkoutStore((s) => s.prAlert);
@@ -57,8 +62,8 @@ export default function ActiveWorkoutScreen() {
           <ActivityIndicator color={colors.primary} />
         ) : (
           <>
-            <Text style={styles.muted}>Không có buổi tập nào đang diễn ra.</Text>
-            <Button title="Quay lại" variant="secondary" onPress={() => router.back()} />
+            <Text style={styles.muted}>{t("Không có buổi tập nào đang diễn ra.")}</Text>
+            <BackButton />
           </>
         )}
       </View>
@@ -78,9 +83,9 @@ export default function ActiveWorkoutScreen() {
 
   async function handleFinish() {
     const ok = await confirmAction({
-      title: "Hoàn thành buổi tập?",
-      message: `${setCount} set · ${formatVolume(session!.totalVolume)}. Bài chưa có set nào sẽ bị bỏ qua.`,
-      confirmText: "Hoàn thành",
+      title: t("Hoàn thành buổi tập?"),
+      message: t("{value1} set · {value2}. Bài chưa có set nào sẽ bị bỏ qua.", { value1: setCount, value2: formatVolume(session!.totalVolume) }),
+      confirmText: t("Hoàn thành"),
     });
     if (!ok) return;
 
@@ -97,9 +102,9 @@ export default function ActiveWorkoutScreen() {
 
   async function handleCancel() {
     const ok = await confirmAction({
-      title: "Huỷ buổi tập?",
-      message: "Các set đã ghi sẽ không được tính vào lịch sử và PR.",
-      confirmText: "Huỷ buổi tập",
+      title: t("Huỷ buổi tập?"),
+      message: t("Các set đã ghi sẽ không được tính vào lịch sử và PR."),
+      confirmText: t("Huỷ buổi tập"),
       destructive: true,
     });
     if (!ok) return;
@@ -127,10 +132,10 @@ export default function ActiveWorkoutScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.muted}>Buổi theo lịch cần hoàn thành trong ngày. Qua ngày, buổi chưa xong được ghi bỏ lỡ và lịch ngày mới không thay đổi.</Text>
+        <Text style={styles.muted}>{t("Buổi theo lịch cần hoàn thành trong ngày. Qua ngày, buổi chưa xong được ghi bỏ lỡ và lịch ngày mới không thay đổi.")}</Text>
         {prAlert ? (
           <View style={styles.prBanner} accessibilityRole="alert">
-            <Text style={styles.prTitle}>🏆 PR mới: {prAlert.exerciseName}</Text>
+            <Text style={styles.prTitle}>{t("🏆 PR mới: {value1}", { value1: prAlert.exerciseName })}</Text>
             <Text style={styles.prText}>
               {prAlert.improved.map((f) => RECORD_LABELS[f]).join(", ")}
             </Text>
@@ -156,10 +161,10 @@ export default function ActiveWorkoutScreen() {
         ))}
 
         {exercises.length === 0 ? (
-          <Text style={styles.empty}>Thêm bài tập đầu tiên để bắt đầu ghi set.</Text>
+          <Text style={styles.empty}>{t("Thêm bài tập đầu tiên để bắt đầu ghi set.")}</Text>
         ) : null}
 
-        <Button title="+ Thêm bài tập" variant="secondary" onPress={handleAddExercise} />
+        <Button title={t("+ Thêm bài tập")} variant="secondary" onPress={handleAddExercise} />
 
         {editingInfo ? (
           <SessionInfoEditor
@@ -170,18 +175,18 @@ export default function ActiveWorkoutScreen() {
           />
         ) : (
           <Button
-            title={session.notes ? `📝 ${session.notes}` : "✎ Đổi tên / thêm ghi chú"}
+            title={session.notes ? `📝 ${session.notes}` : t("✎ Đổi tên / thêm ghi chú")}
             variant="secondary"
             onPress={() => setEditingInfo(true)}
           />
         )}
         <Button
-          title="Hoàn thành buổi tập"
+          title={t("Hoàn thành buổi tập")}
           onPress={handleFinish}
           loading={finishing}
           disabled={setCount === 0}
         />
-        <Button title="Huỷ buổi tập" variant="danger" onPress={handleCancel} />
+        <Button title={t("Huỷ buổi tập")} variant="danger" onPress={handleCancel} />
       </ScrollView>
 
       {restEndsAt ? (

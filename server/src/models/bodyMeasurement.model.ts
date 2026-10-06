@@ -8,6 +8,7 @@ const bodyMeasurementSchema = new Schema(
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     date: { type: String, required: true, match: DATE_REGEX },
     weight: { type: Number, required: true, min: 20, max: 500 }, // kg
+    height: { type: Number, min: 50, max: 300, default: null }, // cm, weekly check-in
     bodyFat: { type: Number, min: 1, max: 70, default: null }, // %
     chest: { type: Number, min: 0, default: null }, // cm
     waist: { type: Number, min: 0, default: null },

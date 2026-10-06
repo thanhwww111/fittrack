@@ -81,7 +81,7 @@ export async function copyMeal(userId: string, input: CopyMealInput) {
   }
 
   const created = await FoodLogModel.insertMany(
-    source.map(({ _id, createdAt, updatedAt, __v, ...log }) => ({
+    source.map(({ _id, createdAt, updatedAt, __v, sourcePlanId, sourcePlanItemId, ...log }) => ({
       ...log,
       date: toDate,
       mealType: toMealType,

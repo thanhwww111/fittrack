@@ -13,6 +13,8 @@ const foodLogSchema = new Schema(
     mealType: { type: String, validate: isMealId, required: true },
     foodId: { type: Schema.Types.ObjectId, ref: "Food", required: true },
     foodName: { type: String, required: true },
+    sourcePlanId: { type: String },
+    sourcePlanItemId: { type: String },
     servingUnit: { type: String, enum: SERVING_UNITS, required: true },
     quantity: { type: Number, required: true, min: 0.01 }, // cùng đơn vị với servingUnit
     calories: { type: Number, required: true, min: 0 },
@@ -26,6 +28,7 @@ const foodLogSchema = new Schema(
 
 foodLogSchema.index({ userId: 1, date: 1 });
 
+foodLogSchema.index({ userId: 1, sourcePlanId: 1, sourcePlanItemId: 1 }, { unique: true, partialFilterExpression: { sourcePlanId: { $type: "string" }, sourcePlanItemId: { $type: "string" } } });
 applyToJSON(foodLogSchema);
 
 export type FoodLog = InferSchemaType<typeof foodLogSchema>;

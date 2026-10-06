@@ -1,3 +1,4 @@
+import { localeTag , translate as t, useTranslation } from "@/i18n";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
@@ -21,6 +22,9 @@ interface ManualTargetFormProps {
 }
 
 export function ManualTargetForm({ initial, onSubmit, onCancel }: ManualTargetFormProps) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [values, setValues] = useState<Record<keyof Macros, string>>({
     calories: initial ? String(initial.calories) : "",
     protein: initial ? String(initial.protein) : "",
@@ -42,9 +46,9 @@ export function ManualTargetForm({ initial, onSubmit, onCancel }: ManualTargetFo
     const macros = {} as Macros;
     for (const field of FIELDS) {
       const n = parseNumber(values[field.key]);
-      if (n === null) nextErrors[field.key] = "Bắt buộc";
+      if (n === null) nextErrors[field.key] = t("Bắt buộc");
       else if (!Number.isInteger(n) || n < field.min || n > field.max) {
-        nextErrors[field.key] = `Số nguyên từ ${field.min} đến ${field.max}`;
+        nextErrors[field.key] = t("Số nguyên từ {value1} đến {value2}", { value1: field.min, value2: field.max });
       } else macros[field.key] = n;
     }
     setErrors(nextErrors);
@@ -77,13 +81,11 @@ export function ManualTargetForm({ initial, onSubmit, onCancel }: ManualTargetFo
         />
       ))}
       {macroCalories > 0 ? (
-        <Text style={styles.hint}>
-          Protein, carbs, fat trên tương đương khoảng {Math.round(macroCalories).toLocaleString("vi-VN")} kcal.
-        </Text>
+        <Text style={styles.hint}>{t("Protein, carbs, fat trên tương đương khoảng {value1} kcal.", { value1: Math.round(macroCalories).toLocaleString(localeTag()) })}</Text>
       ) : null}
       <View style={styles.actions}>
-        <Button title="Huỷ" variant="secondary" onPress={onCancel} style={styles.flex} />
-        <Button title="Lưu mục tiêu" onPress={handleSubmit} loading={saving} style={styles.flex} />
+        <Button title={t("Huỷ")} variant="secondary" onPress={onCancel} style={styles.flex} />
+        <Button title={t("Lưu mục tiêu")} onPress={handleSubmit} loading={saving} style={styles.flex} />
       </View>
     </View>
   );

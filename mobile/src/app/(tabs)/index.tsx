@@ -1,3 +1,4 @@
+import { localeTag , translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link, router } from "expo-router";
 import { useState, type ComponentProps } from "react";
@@ -20,19 +21,22 @@ import { useAuthStore } from "@/stores/authStore";
 import type { WaterDay } from "@/types/models";
 
 function greeting(hour: number) {
-  if (hour < 11) return "Chào buổi sáng";
-  if (hour < 14) return "Chào buổi trưa";
-  if (hour < 18) return "Chào buổi chiều";
-  return "Chào buổi tối";
+  if (hour < 11) return t("Chào buổi sáng");
+  if (hour < 14) return t("Chào buổi trưa");
+  if (hour < 18) return t("Chào buổi chiều");
+  return t("Chào buổi tối");
 }
 
 function formatNumber(value: number) {
-  return value.toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+  return value.toLocaleString(localeTag(), { maximumFractionDigits: 1 });
 }
 
-const liters = (ml: number) => (ml / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+const liters = (ml: number) => (ml / 1000).toLocaleString(localeTag(), { maximumFractionDigits: 1 });
 
 export default function HomeScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const user = useAuthStore((s) => s.user);
   const { data, error, isLoading, isRefreshing, refresh } = useDashboard();
   // WaterCard tự tải nước của hôm nay và báo lên đây cho ô thống kê
@@ -63,7 +67,7 @@ export default function HomeScreen() {
         </Text>
         {weekly?.weight.current != null ? (
           <View style={styles.weightRow}>
-            <Text style={styles.weight}>{formatNumber(weekly.weight.current)} kg</Text>
+            <Text style={styles.weight} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{formatNumber(weekly.weight.current)} kg</Text>
             {weightChange != null ? (
               <View style={styles.pill}>
                 <Ionicons
@@ -71,10 +75,7 @@ export default function HomeScreen() {
                   size={14}
                   color={colors.onGradient}
                 />
-                <Text style={styles.pillText}>
-                  {weightChange > 0 ? "+" : ""}
-                  {formatNumber(weightChange)} kg tuần này
-                </Text>
+                <Text style={styles.pillText}>{t("{value1} {value2} kg tuần này", { value1: weightChange > 0 ? "+" : "", value2: formatNumber(weightChange) })}</Text>
               </View>
             ) : null}
           </View>
@@ -87,31 +88,31 @@ export default function HomeScreen() {
               value={formatNumber(Math.round(nutrition.consumed.calories))}
               detail={
                 nutrition.remaining
-                  ? `còn ${formatNumber(Math.max(0, Math.round(nutrition.remaining.calories)))}`
-                  : "chưa có mục tiêu"
+                  ? t("còn {value1}", { value1: formatNumber(Math.max(0, Math.round(nutrition.remaining.calories))) })
+                  : t("chưa có mục tiêu")
               }
               progress={nutrition.target ? nutrition.consumed.calories / nutrition.target.calories : 0}
             />
             <HeroRing
               label="Protein"
               value={`${Math.round(nutrition.consumed.protein)}g`}
-              detail={nutrition.target ? `/ ${nutrition.target.protein}g` : "chưa có mục tiêu"}
+              detail={nutrition.target ? `/ ${nutrition.target.protein}g` : t("chưa có mục tiêu")}
               progress={nutrition.target ? nutrition.consumed.protein / nutrition.target.protein : 0}
             />
             <HeroRing
-              label="Buổi tập"
+              label={t("Buổi tập")}
               value={sessionTarget ? `${weekly.workout.sessions}/${sessionTarget}` : String(weekly.workout.sessions)}
-              detail="tuần này"
+              detail={t("tuần này")}
               progress={sessionTarget ? weekly.workout.sessions / sessionTarget : 0}
             />
           </View>
         ) : null}
       </GradientView>
-      <Button title="Lịch sử theo ngày" variant="secondary" onPress={() => router.push("/history")} />
+      <Button title={t("Lịch sử theo ngày")} variant="secondary" onPress={() => router.push("/history")} />
 
       {weekly ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Thống kê nhanh</Text>
+          <Text style={styles.sectionTitle}>{t("Thống kê nhanh")}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -121,35 +122,35 @@ export default function HomeScreen() {
           >
             <StatTile
               icon="flame"
-              label="Chuỗi ngày"
-              value={`${weekly.streak} ngày`}
-              hint={weekly.streak > 0 ? "giữ lửa nhé!" : "bắt đầu hôm nay"}
+              label={t("Chuỗi ngày")}
+              value={t("{value1} ngày", { value1: weekly.streak })}
+              hint={weekly.streak > 0 ? t("giữ lửa nhé!") : t("bắt đầu hôm nay")}
               tint={colors.streak}
               tintSoft={colors.streakSoft}
             />
             <StatTile
               icon="barbell"
-              label="Volume tuần"
+              label={t("Volume tuần")}
               value={formatVolume(weekly.workout.totalVolume)}
               hint={
                 weekly.workout.volumeChange !== null
-                  ? `${formatSignedPercent(weekly.workout.volumeChange)} tuần trước`
-                  : "tuần đầu tiên"
+                  ? t("{value1} tuần trước", { value1: formatSignedPercent(weekly.workout.volumeChange) })
+                  : t("tuần đầu tiên")
               }
               tint={colors.primary}
               tintSoft={colors.primarySoft}
             />
             <StatTile
               icon="trophy"
-              label="PR mới"
+              label={t("PR mới")}
               value={String(weekly.newPersonalRecords)}
-              hint="trong tuần"
+              hint={t("trong tuần")}
               tint={colors.highlightText}
               tintSoft={colors.highlight}
             />
             <StatTile
               icon="water"
-              label="Nước"
+              label={t("Nước")}
               value={water ? `${liters(water.amount)} L` : "—"}
               hint={water ? `/ ${liters(water.target)} L` : undefined}
               tint={colors.water}
@@ -162,31 +163,28 @@ export default function HomeScreen() {
       <View style={styles.quickRow}>
         <QuickAction
           icon="restaurant"
-          label="Ghi món"
+          label={t("Ghi món")}
           onPress={() => router.push("/food/search")}
         />
         <QuickAction
           icon="scale"
-          label="Cân nặng"
+          label={t("Cân nặng")}
           onPress={() => router.push({ pathname: "/measurements/edit", params: { date: localToday() } })}
         />
-        <QuickAction icon="barbell" label="Tập luyện" onPress={() => router.push("/workout")} />
+        <QuickAction icon="barbell" label={t("Tập luyện")} onPress={() => router.push("/workout")} />
       </View>
 
       <ErrorBanner message={error} />
 
       {nutrition ? (
-        <Card title="Dinh dưỡng hôm nay" icon="nutrition">
+        <Card title={t("Dinh dưỡng hôm nay")} icon="nutrition">
           {nutrition.target ? (
             <MacroBars consumed={nutrition.consumed} target={nutrition.target} />
           ) : (
             <>
-              <Text style={styles.muted}>
-                Bạn chưa có mục tiêu dinh dưỡng. Hoàn thiện hồ sơ để FitTrack tính calo và macro
-                phù hợp.
-              </Text>
+              <Text style={styles.muted}>{t("Bạn chưa có mục tiêu dinh dưỡng. Hoàn thiện hồ sơ để FitTrack tính calo và macro phù hợp.")}</Text>
               <Link href="/profile" asChild>
-                <Button title="Thiết lập hồ sơ" onPress={() => {}} variant="secondary" />
+                <Button title={t("Thiết lập hồ sơ")} onPress={() => {}} variant="secondary" />
               </Link>
             </>
           )}
@@ -203,10 +201,10 @@ export default function HomeScreen() {
       ) : null}
 
       {weekly ? (
-        <Card title="Tuần này" icon="calendar">
+        <Card title={t("Tuần này")} icon="calendar">
           <View style={styles.statsRow}>
             <Stat
-              label="Buổi tập"
+              label={t("Buổi tập")}
               value={
                 weekly.adherence.workout.target
                   ? `${weekly.workout.sessions}/${weekly.adherence.workout.target}`
@@ -214,7 +212,7 @@ export default function HomeScreen() {
               }
               hint={
                 weekly.adherence.workout.percent !== null
-                  ? `đạt ${weekly.adherence.workout.percent}%`
+                  ? t("đạt {value1}%", { value1: weekly.adherence.workout.percent })
                   : undefined
               }
             />
@@ -223,16 +221,14 @@ export default function HomeScreen() {
               value={`${formatNumber(weekly.workout.totalVolume)} kg`}
               hint={
                 weekly.workout.volumeChange !== null
-                  ? `${formatSignedPercent(weekly.workout.volumeChange)} so tuần trước`
+                  ? t("{value1} so tuần trước", { value1: formatSignedPercent(weekly.workout.volumeChange) })
                   : undefined
               }
             />
-            <Stat label="PR mới" value={String(weekly.newPersonalRecords)} />
-          </View>
-          <View style={styles.statsRow}>
-            <Stat label="Đúng calo" {...formatDayAdherence(weekly.adherence.calories)} />
-            <Stat label="Đủ protein" {...formatDayAdherence(weekly.adherence.protein)} />
-            <Stat label="Thời gian tập" value={formatDuration(weekly.workout.duration)} />
+            <Stat label={t("PR mới")} value={String(weekly.newPersonalRecords)} />
+            <Stat label={t("Đúng calo")} {...formatDayAdherence(weekly.adherence.calories)} />
+            <Stat label={t("Đủ protein")} {...formatDayAdherence(weekly.adherence.protein)} />
+            <Stat label={t("Thời gian tập")} value={formatDuration(weekly.workout.duration)} />
           </View>
         </Card>
       ) : null}
@@ -251,6 +247,9 @@ function HeroRing({
   detail: string;
   progress: number;
 }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <View style={styles.ringItem}>
       <RingProgress
@@ -266,7 +265,7 @@ function HeroRing({
         </Text>
       </RingProgress>
       <Text style={styles.ringLabel}>{label}</Text>
-      <Text style={styles.ringDetail} numberOfLines={1}>
+      <Text style={styles.ringDetail}>
         {detail}
       </Text>
     </View>
@@ -282,6 +281,9 @@ function QuickAction({
   label: string;
   onPress: () => void;
 }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <Pressable
       accessibilityRole="button"
@@ -297,9 +299,12 @@ function QuickAction({
 }
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statValue} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
       {hint ? <Text style={styles.statHint}>{hint}</Text> : null}
     </View>
@@ -312,78 +317,32 @@ const styles = themedStyles(() => ({
   hero: { padding: spacing.xl, gap: spacing.xs },
   greeting: { fontSize: 14, fontWeight: "600", color: colors.onGradientMuted },
   name: { fontSize: 26, fontWeight: "800", color: colors.onGradient, letterSpacing: -0.4 },
-  weightRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.xs },
-  weight: { fontSize: 22, fontWeight: "800", color: colors.onGradient, fontVariant: ["tabular-nums"] },
+  weightRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.sm, marginTop: spacing.xs },
+  weight: { maxWidth: "100%", fontSize: 22, fontWeight: "800", color: colors.onGradient, fontVariant: ["tabular-nums"] },
   pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
+    flexDirection: "row", alignItems: "center", gap: 4, maxWidth: "100%",
+    paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.pill,
     backgroundColor: colors.onGradientTrack,
   },
-  pillText: { fontSize: 12, fontWeight: "700", color: colors.onGradient },
-  rings: { flexDirection: "row", justifyContent: "space-between", marginTop: spacing.lg },
-  ringItem: { alignItems: "center", flex: 1, gap: 2 },
-  ringValue: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: colors.onGradient,
-    maxWidth: 62,
-    textAlign: "center",
-    fontVariant: ["tabular-nums"],
-  },
-  ringLabel: {
-    marginTop: spacing.xs,
-    fontSize: 11,
-    fontWeight: "800",
-    color: colors.onGradient,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  ringDetail: { fontSize: 12, color: colors.onGradientMuted },
+  pillText: { flexShrink: 1, minWidth: 0, fontSize: 12, fontWeight: "700", color: colors.onGradient },
+  rings: { flexDirection: "row", flexWrap: "wrap", columnGap: spacing.sm, rowGap: spacing.md, marginTop: spacing.lg },
+  ringItem: { alignItems: "center", flexGrow: 1, flexBasis: 84, minWidth: 84, gap: 2 },
+  ringValue: { fontSize: 16, fontWeight: "800", color: colors.onGradient, maxWidth: 62, textAlign: "center", fontVariant: ["tabular-nums"] },
+  ringLabel: { maxWidth: "100%", marginTop: spacing.xs, fontSize: 11, fontWeight: "800", color: colors.onGradient, textTransform: "uppercase", letterSpacing: 0.8, textAlign: "center" },
+  ringDetail: { maxWidth: "100%", fontSize: 12, color: colors.onGradientMuted, textAlign: "center" },
   section: { gap: spacing.sm },
   sectionTitle: { fontSize: 18, fontWeight: "800", color: colors.text, letterSpacing: -0.2 },
   tilesScroll: { marginHorizontal: -spacing.lg },
   tiles: { gap: spacing.md, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   muted: { fontSize: 15, color: colors.textMuted, lineHeight: 22 },
-  statsRow: { flexDirection: "row", gap: spacing.md },
-  stat: {
-    flex: 1,
-    gap: 2,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceMuted,
-  },
-  statValue: { fontSize: 18, fontWeight: "800", color: colors.text, fontVariant: ["tabular-nums"] },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  statHint: { fontSize: 12, color: colors.textMuted },
+  statsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  stat: { flexGrow: 1, flexShrink: 1, flexBasis: "30%", minWidth: 120, gap: 4, padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.surfaceMuted },
+  statValue: { width: "100%", fontSize: 18, fontWeight: "800", color: colors.text, fontVariant: ["tabular-nums"] },
+  statLabel: { maxWidth: "100%", fontSize: 11, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
+  statHint: { maxWidth: "100%", fontSize: 12, color: colors.textMuted },
   quickRow: { flexDirection: "row", gap: spacing.md },
-  quick: {
-    flex: 1,
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  quickIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.primary,
-  },
-  quickText: { fontSize: 13, fontWeight: "700", color: colors.text },
+  quick: { flex: 1, minWidth: 0, alignItems: "center", gap: spacing.sm, paddingVertical: spacing.md, paddingHorizontal: spacing.xs, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  quickIcon: { width: 44, height: 44, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", backgroundColor: colors.primary },
+  quickText: { maxWidth: "100%", textAlign: "center", fontSize: 13, fontWeight: "700", color: colors.text },
   pressed: { opacity: 0.7 },
 }));

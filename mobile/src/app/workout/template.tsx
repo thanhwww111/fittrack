@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack, useLocalSearchParams } from "expo-router";
@@ -12,7 +13,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { templateApi } from "@/api/workoutApi";
+import { templateApi, programApi, exerciseApi } from "@/api/workoutApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -25,6 +26,8 @@ import { DEFAULT_REST_SECONDS } from "@/lib/workout";
 import { useExercisePickerStore } from "@/stores/exercisePickerStore";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import type { WorkoutTemplate } from "@/types/models";
+import { ExerciseNote } from "@/components/workout/ExerciseNote";
+import { ExerciseGuideButton } from "@/components/workout/ExerciseGuideButton";
 
 interface DraftExercise {
   exerciseId: string;
@@ -38,7 +41,7 @@ interface DraftExercise {
 const LIMITS = {
   sets: { min: 1, max: 20, label: "Set" },
   reps: { min: 1, max: 100, label: "Rep" },
-  rest: { min: 0, max: 900, label: "Nghỉ (giây)" },
+  rest: { min: 0, max: 900, get label() { return t("Nghỉ (giây)"); } },
 } as const;
 
 type NumberKey = keyof typeof LIMITS;
@@ -48,7 +51,7 @@ function toDraft(template: WorkoutTemplate): DraftExercise[] {
     .sort((a, b) => a.order - b.order)
     .map((e) => ({
       exerciseId: typeof e.exerciseId === "string" ? e.exerciseId : e.exerciseId.id,
-      name: typeof e.exerciseId === "string" ? "Bài tập" : e.exerciseId.name,
+      name: typeof e.exerciseId === "string" ? t("Bài tập") : e.exerciseId.name,
       sets: String(e.targetSets),
       reps: String(e.targetReps),
       rest: String(e.restSeconds),
@@ -56,6 +59,9 @@ function toDraft(template: WorkoutTemplate): DraftExercise[] {
 }
 
 export default function TemplateEditorScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [template, setTemplate] = useState<WorkoutTemplate | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -80,6 +86,9 @@ export default function TemplateEditorScreen() {
 }
 
 function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const saveTemplate = useWorkoutStore((s) => s.saveTemplate);
   const deleteTemplate = useWorkoutStore((s) => s.deleteTemplate);
   const openPicker = useExercisePickerStore((s) => s.open);
@@ -91,6 +100,31 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+
+  async function chooseSplit(key: "upper" | "lower") {
+    if (loadingSuggestion || saving) return;
+    if (exercises.length && !await confirmAction({
+      title: t("Thay bài tập đang soạn?"), message: t("Bộ bài Upper/Lower sẽ thay danh sách bài hiện tại."), confirmText: t("Thay bài tập"),
+    })) return;
+    setLoadingSuggestion(true);
+    setFormError(null);
+    try {
+      const [presets, library] = await Promise.all([programApi.presets(), exerciseApi.list({})]);
+      const workout = presets.find(p => p.key === "upper-lower-4")?.days[key === "upper" ? 0 : 1];
+      if (!workout) throw new Error("Missing preset");
+      const draft = workout.exercises.map(e => {
+        const exercise = library.find(item => !item.isCustom && item.name === e.name);
+        if (!exercise) throw new Error("Missing exercise");
+        return { exerciseId: exercise.id, name: exercise.name, sets: String(e.sets), reps: String(e.reps), rest: String(e.rest) };
+      });
+      setName(key === "upper" ? t("Upper (thân trên)") : t("Lower (thân dưới)"));
+      setExercises(draft);
+      setErrors({});
+    } catch {
+      setFormError(t("Chưa tải được bộ bài tập. Kiểm tra kết nối và thư viện bài tập, rồi thử lại."));
+    } finally { setLoadingSuggestion(false); }
+  }
 
   function addExercise() {
     openPicker(
@@ -130,8 +164,8 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
 
   async function handleSave() {
     const nextErrors: Record<string, string> = {};
-    if (!name.trim()) nextErrors.name = "Vui lòng nhập tên template";
-    if (exercises.length === 0) nextErrors.exercises = "Thêm ít nhất một bài tập";
+    if (!name.trim()) nextErrors.name = t("Vui lòng nhập tên template");
+    if (exercises.length === 0) nextErrors.exercises = t("Thêm ít nhất một bài tập");
 
     const payload = exercises.map((e, i) => {
       const values = {} as Record<NumberKey, number>;
@@ -183,9 +217,9 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
   async function handleDelete() {
     if (!template) return;
     const ok = await confirmAction({
-      title: "Xoá template?",
-      message: `"${template.name}" sẽ bị xoá. Các buổi tập cũ vẫn được giữ.`,
-      confirmText: "Xoá",
+      title: t("Xoá template?"),
+      message: t("\"{value1}\" sẽ bị xoá. Các buổi tập cũ vẫn được giữ.", { value1: template.name }),
+      confirmText: t("Xoá"),
       destructive: true,
     });
     if (!ok) return;
@@ -203,16 +237,22 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
       style={styles.flex}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Stack.Screen options={{ title: template ? "Sửa template" : "Tạo template" }} />
+      <Stack.Screen options={{ title: template ? t("Sửa template") : t("Tạo template") }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ErrorBanner message={formError} />
+        {!template ? <Card title={t("Điền từ buổi tập đề xuất")}>
+          <Button title={t("Upper (thân trên)")} variant="secondary" disabled={saving || loadingSuggestion} onPress={() => chooseSplit("upper")} />
+          <Button title={t("Lower (thân dưới)")} variant="secondary" disabled={saving || loadingSuggestion} onPress={() => chooseSplit("lower")} />
+          <Text style={styles.numberLabel}>{t("Điền sẵn bài, set và rep. Bạn có thể chỉnh trước khi lưu.")}</Text>
+          {loadingSuggestion ? <ActivityIndicator color={colors.primary} /> : null}
+        </Card> : null}
 
         <TextField
-          label="Tên template"
+          label={t("Tên template")}
           value={name}
           onChangeText={setName}
           error={errors.name}
-          placeholder="Ví dụ: Push Day"
+          placeholder={t("Ví dụ: Push Day")}
         />
 
         {exercises.map((e, index) => (
@@ -223,26 +263,28 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
               </Text>
               <IconButton
                 icon="arrow-up"
-                label="Lên"
+                label={t("Lên")}
                 disabled={index === 0}
                 onPress={() => move(index, -1)}
               />
               <IconButton
                 icon="arrow-down"
-                label="Xuống"
+                label={t("Xuống")}
                 disabled={index === exercises.length - 1}
                 onPress={() => move(index, 1)}
               />
-              <IconButton icon="trash-outline" label="Xoá" danger onPress={() => remove(index)} />
+              <IconButton icon="trash-outline" label={t("Xoá")} danger onPress={() => remove(index)} />
             </View>
             <View style={styles.numberRow}>
+              <ExerciseNote name={e.name} />
+              <ExerciseGuideButton name={e.name} />
               {(Object.keys(LIMITS) as NumberKey[]).map((key) => (
                 <View key={key} style={styles.numberField}>
                   <Text style={styles.numberLabel}>{LIMITS[key].label}</Text>
                   {key !== "rest" ? <NumberStepper
                     value={e[key]}
                     onChangeText={(v) => update(index, key, v)}
-                    label={`${LIMITS[key].label} của ${e.name}`}
+                    label={t("{value1} của {value2}", { value1: LIMITS[key].label, value2: e.name })}
                     min={LIMITS[key].min}
                     max={LIMITS[key].max}
                     error={!!errors[`${index}.${key}`]}
@@ -252,7 +294,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
                     onChangeText={(v) => update(index, key, v)}
                     keyboardType="number-pad"
                     selectTextOnFocus
-                    accessibilityLabel={`${LIMITS[key].label} của ${e.name}`}
+                    accessibilityLabel={t("{value1} của {value2}", { value1: LIMITS[key].label, value2: e.name })}
                     style={[styles.numberInput, errors[`${index}.${key}`] && styles.inputError]}
                   />}
                 </View>
@@ -270,17 +312,17 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
 
         {errors.exercises ? <Text style={styles.error}>{errors.exercises}</Text> : null}
 
-        <Button title="+ Thêm bài tập" variant="secondary" onPress={addExercise} />
-        <Button title="Lưu template" onPress={handleSave} loading={saving} />
+        <Button title={t("+ Thêm bài tập")} variant="secondary" onPress={addExercise} />
+        <Button title={t("Lưu template")} onPress={handleSave} loading={saving} disabled={loadingSuggestion} />
         {template ? (
           <Button
-            title="Nhân bản template"
+            title={t("Nhân bản template")}
             variant="secondary"
             onPress={handleDuplicate}
             loading={duplicating}
           />
         ) : null}
-        {template ? <Button title="Xoá template" variant="danger" onPress={handleDelete} /> : null}
+        {template ? <Button title={t("Xoá template")} variant="danger" onPress={handleDelete} /> : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -299,6 +341,9 @@ function IconButton({
   disabled?: boolean;
   danger?: boolean;
 }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <Pressable
       accessibilityRole="button"

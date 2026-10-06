@@ -1,11 +1,14 @@
+import { localeTag, useTranslation } from "@/i18n";
 import { Text, View } from "react-native";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import type { Macros } from "@/types/models";
 
-const fmt = (n: number) => n.toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+const fmt = (n: number) => n.toLocaleString(localeTag(), { maximumFractionDigits: 1 });
 
 // Dòng tóm tắt "165 kcal · P 31 · C 0 · F 3.6"
 export function MacroChips({ values, size = "sm" }: { values: Macros; size?: "sm" | "lg" }) {
+  "use no memo"; // Numeric formatting reads the external language preference.
+  useTranslation();
   const large = size === "lg";
   return (
     <View style={styles.row}>
@@ -41,6 +44,8 @@ function Chip({
 const styles = themedStyles(() => ({
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
   chip: {
+    maxWidth: "100%",
+    flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -51,6 +56,6 @@ const styles = themedStyles(() => ({
   },
   chipLarge: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  text: { fontSize: 12, color: colors.textMuted, fontVariant: ["tabular-nums"] },
+  text: { flexShrink: 1, minWidth: 0, fontSize: 12, color: colors.textMuted, fontVariant: ["tabular-nums"] },
   textLarge: { fontSize: 15, color: colors.text, fontWeight: "600" },
 }));

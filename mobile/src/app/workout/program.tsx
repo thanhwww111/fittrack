@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
@@ -21,9 +22,11 @@ import { useDraftState, getFormDraft, clearFormDrafts } from "@/hooks/useDraftSt
 const REST = "rest";
 const WEEK = [1, 2, 3, 4, 5, 6, 7];
 const SUGGESTIONS = [
-  { key: "push", name: "Ngực vai tay sau" },
-  { key: "pull", name: "Lưng xô tay trước" },
-  { key: "legs", name: "Chân bụng" },
+  { key: "push", get name() { return t("Ngực vai tay sau"); } },
+  { key: "pull", get name() { return t("Lưng xô tay trước"); } },
+  { key: "legs", get name() { return t("Chân bụng"); } },
+  { key: "upper", get name() { return t("Upper (thân trên)"); } },
+  { key: "lower", get name() { return t("Lower (thân dưới)"); } },
 ];
 const SUGGESTION_PREFIX = "suggestion:";
 
@@ -37,6 +40,9 @@ function scheduleOf(program: WeeklyProgram | null): Schedule {
 
 // Tạo / sửa lịch tuần: mỗi thứ chọn một template hoặc Nghỉ
 export default function ProgramScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const { id, setup } = useLocalSearchParams<{ id?: string; setup?: string }>();
   const applyRequest = useRef(scheduleRequestId());
   const savedProgram = useRef<WeeklyProgram | null>(null);
@@ -71,7 +77,7 @@ export default function ProgramScreen() {
   }, [id, draftKey, setName, setSchedule]);
 
   const options: ChipOption<string>[] = [
-    { value: REST, label: "Nghỉ" },
+    { value: REST, label: t("Nghỉ") },
     ...SUGGESTIONS.map((suggestion) => {
       const saved = templates.find((template) => template.suggestedKey === suggestion.key);
       return {
@@ -79,9 +85,9 @@ export default function ProgramScreen() {
         label: saved?.name ?? suggestion.name,
       };
     }),
-    ...templates.filter((t) => !t.suggestedKey).map((t) => ({
-      value: t.id,
-      label: SUGGESTIONS.some((s) => s.name === t.name) ? `${t.name} (đã lưu)` : t.name,
+    ...templates.filter((item) => !item.suggestedKey).map((item) => ({
+      value: item.id,
+      label: SUGGESTIONS.some((s) => s.name === item.name) ? t("{value1} (đã lưu)", { value1: item.name }) : item.name,
     })),
   ];
 
@@ -97,11 +103,11 @@ export default function ProgramScreen() {
       templateId: schedule[d],
     }));
     if (!name.trim()) {
-      setError("Đặt tên cho lịch tuần.");
+      setError(t("Đặt tên cho lịch tuần."));
       return;
     }
     if (days.length === 0) {
-      setError("Chọn template cho ít nhất một ngày.");
+      setError(t("Chọn template cho ít nhất một ngày."));
       return;
     }
 
@@ -142,9 +148,9 @@ export default function ProgramScreen() {
 
   async function handleDelete() {
     const ok = await confirmAction({
-      title: "Xoá lịch tuần này?",
-      message: "Các template trong lịch vẫn được giữ lại.",
-      confirmText: "Xoá",
+      title: t("Xoá lịch tuần này?"),
+      message: t("Các template trong lịch vẫn được giữ lại."),
+      confirmText: t("Xoá"),
       destructive: true,
     });
     if (!ok || !program) return;
@@ -166,20 +172,17 @@ export default function ProgramScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Stack.Screen options={{ title: program ? "Sửa lịch tuần" : "Tạo lịch tuần" }} />
+      <Stack.Screen options={{ title: program ? t("Sửa lịch tuần") : t("Tạo lịch tuần") }} />
       <ErrorBanner message={error} />
 
-      <TextField label="Tên lịch" value={name} onChangeText={setName} placeholder="Ví dụ: PPL của tôi" />
+      <TextField label={t("Tên lịch")} value={name} onChangeText={setName} placeholder={t("Ví dụ: PPL của tôi")} />
 
-      <Card title="Các buổi tập để xếp lịch">
-        <Button title="Chỉnh bài, set và rep của các buổi" variant="secondary" onPress={() => router.push("/workout/templates")} />
-        <Text style={styles.muted}>Sau khi sửa, quay lại thư viện lịch và bấm Áp dụng để cập nhật từ ngày mai. Buổi hôm nay và lịch sử được giữ nguyên.</Text>
-        <Text style={styles.muted}>
-          Chọn buổi gợi ý có sẵn bài tập hoặc buổi bạn đã lưu cho từng ngày.
-          Bấm “+ Thêm buổi tập” để tự tạo buổi khác.
-        </Text>
+      <Card title={t("Các buổi tập để xếp lịch")}>
+        <Button title={t("Chỉnh bài, set và rep của các buổi")} variant="secondary" onPress={() => router.push("/workout/templates")} />
+        <Text style={styles.muted}>{t("Sau khi sửa, quay lại thư viện lịch và bấm Áp dụng để cập nhật từ ngày mai. Buổi hôm nay và lịch sử được giữ nguyên.")}</Text>
+        <Text style={styles.muted}>{t("Chọn buổi gợi ý có sẵn bài tập hoặc buổi bạn đã lưu cho từng ngày. Bấm “+ Thêm buổi tập” để tự tạo buổi khác.")}</Text>
         <Button
-          title="+ Thêm buổi tập"
+          title={t("+ Thêm buổi tập")}
           variant="secondary"
           disabled={saving}
           onPress={() => router.push("/workout/template")}
@@ -200,8 +203,8 @@ export default function ProgramScreen() {
           ))}
       </Card>
 
-      <Button title="Lưu lịch tuần" onPress={handleSave} loading={saving} />
-      {program ? <Button title="Xoá lịch" variant="danger" onPress={handleDelete} /> : null}
+      <Button title={t("Lưu lịch tuần")} onPress={handleSave} loading={saving} />
+      {program ? <Button title={t("Xoá lịch")} variant="danger" onPress={handleDelete} /> : null}
     </ScrollView>
   );
 }

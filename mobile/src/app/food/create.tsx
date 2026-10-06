@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useDraftState, clearFormDrafts } from "@/hooks/useDraftState";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -23,17 +24,17 @@ import type { CreateFoodInput, Food, ServingUnit } from "@/types/models";
 
 const UNIT_OPTIONS: ChipOption<ServingUnit>[] = (["g", "ml", "piece"] as const).map((u) => ({
   value: u,
-  label: UNIT_LABELS[u],
+  get label() { return UNIT_LABELS[u]; },
 }));
 
 // Khớp giới hạn ở server (schemas/food.schema.ts)
 const NUMBER_FIELDS = [
-  { key: "servingSize", label: "Khẩu phần", max: 10000, required: true },
+  { key: "servingSize", get label() { return t("Khẩu phần"); }, max: 10000, required: true },
   { key: "calories", label: "Calories", max: 5000, required: true, suffix: "kcal" },
   { key: "protein", label: "Protein", max: 5000, required: true, suffix: "g" },
   { key: "carbs", label: "Carbs", max: 5000, required: true, suffix: "g" },
   { key: "fat", label: "Fat", max: 5000, required: true, suffix: "g" },
-  { key: "fiber", label: "Chất xơ (không bắt buộc)", max: 5000, required: false, suffix: "g" },
+  { key: "fiber", get label() { return t("Chất xơ (không bắt buộc)"); }, max: 5000, required: false, suffix: "g" },
 ] as const;
 
 type NumberKey = (typeof NUMBER_FIELDS)[number]["key"];
@@ -41,6 +42,9 @@ type Field = NumberKey | "name";
 
 // Có `id` = sửa món custom đã có, không có = tạo món mới
 export default function CreateFoodScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [food, setFood] = useState<Food | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -65,6 +69,9 @@ export default function CreateFoodScreen() {
 }
 
 function FoodForm({ food }: { food: Food | null }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const params = useLocalSearchParams<{ name?: string; mealType?: string; date?: string }>();
 
   const draftKey = `food-${food?.id ?? "new"}`;
@@ -90,17 +97,17 @@ function FoodForm({ food }: { food: Food | null }) {
     const nextErrors: FieldErrors<Field> = {};
     const numbers = {} as Record<NumberKey, number>;
 
-    if (!name.trim()) nextErrors.name = "Vui lòng nhập tên món";
+    if (!name.trim()) nextErrors.name = t("Vui lòng nhập tên món");
 
     for (const field of NUMBER_FIELDS) {
       const value = parseNumber(values[field.key]);
       if (value === null) {
-        if (field.required) nextErrors[field.key] = "Bắt buộc";
+        if (field.required) nextErrors[field.key] = t("Bắt buộc");
         else numbers[field.key] = 0;
       } else if (Number.isNaN(value) || value < 0 || value > field.max) {
-        nextErrors[field.key] = `Nhập từ 0 đến ${field.max}`;
+        nextErrors[field.key] = t("Nhập từ 0 đến {value1}", { value1: field.max });
       } else if (field.key === "servingSize" && value === 0) {
-        nextErrors[field.key] = "Khẩu phần phải lớn hơn 0";
+        nextErrors[field.key] = t("Khẩu phần phải lớn hơn 0");
       } else {
         numbers[field.key] = value;
       }
@@ -143,13 +150,13 @@ function FoodForm({ food }: { food: Food | null }) {
       style={styles.flex}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Stack.Screen options={{ title: food ? "Sửa món" : "Tạo món mới" }} />
+      <Stack.Screen options={{ title: food ? t("Sửa món") : t("Tạo món mới") }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ErrorBanner message={formError} />
 
         <Card>
-          <TextField label="Tên món" value={name} onChangeText={setName} error={errors.name} />
-          <ChipGroup label="Đơn vị" options={UNIT_OPTIONS} value={unit} onChange={setUnit} />
+          <TextField label={t("Tên món")} value={name} onChangeText={setName} error={errors.name} />
+          <ChipGroup label={t("Đơn vị")} options={UNIT_OPTIONS} value={unit} onChange={setUnit} />
         </Card>
 
         {!food ? (
@@ -169,10 +176,8 @@ function FoodForm({ food }: { food: Food | null }) {
           }} />
         ) : null}
 
-        <Card title="Dinh dưỡng trên mỗi khẩu phần">
-          <Text style={styles.hint}>
-            Ví dụ ức gà: khẩu phần 100 g có 165 kcal, 31 g protein, 0 g carbs, 3.6 g fat.
-          </Text>
+        <Card title={t("Dinh dưỡng trên mỗi khẩu phần")}>
+          <Text style={styles.hint}>{t("Ví dụ ức gà: khẩu phần 100 g có 165 kcal, 31 g protein, 0 g carbs, 3.6 g fat.")}</Text>
           {NUMBER_FIELDS.map((field) => (
             <TextField
               key={field.key}
@@ -187,11 +192,9 @@ function FoodForm({ food }: { food: Food | null }) {
         </Card>
 
         {food ? (
-          <Text style={styles.hint}>
-            Món đã ghi trong nhật ký giữ nguyên số liệu cũ, chỉ lần ghi sau mới dùng số mới.
-          </Text>
+          <Text style={styles.hint}>{t("Món đã ghi trong nhật ký giữ nguyên số liệu cũ, chỉ lần ghi sau mới dùng số mới.")}</Text>
         ) : null}
-        <Button title={food ? "Lưu thay đổi" : "Tạo món"} onPress={handleSubmit} loading={saving} />
+        <Button title={food ? t("Lưu thay đổi") : t("Tạo món")} onPress={handleSubmit} loading={saving} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

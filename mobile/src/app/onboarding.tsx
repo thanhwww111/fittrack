@@ -1,4 +1,8 @@
+import { BackButton } from "@/components/navigation/BackButton";
+import { localeTag , translate as t, useTranslation } from "@/i18n";
+import { LanguagePicker } from "@/components/ui/LanguagePicker";
 import { useEffect, useState } from "react";
+import { router } from "expo-router";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { goalApi } from "@/api/profileApi";
@@ -35,6 +39,9 @@ const toText = (value: number | null | undefined) => (value == null ? "" : Strin
 // Thiết lập lần đầu (bắt buộc): chỉ số cơ thể → mục tiêu → FitTrack tự tính calo & macro.
 // Root layout chỉ cho vào app khi hồ sơ đủ các trường server cần để tính mục tiêu.
 export default function OnboardingScreen() {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const profile = useProfileStore((s) => s.profile);
   const updateProfile = useProfileStore((s) => s.updateProfile);
   const recalculateTarget = useProfileStore((s) => s.recalculateTarget);
@@ -72,7 +79,7 @@ export default function OnboardingScreen() {
   function nextFromBody() {
     const { errors: nextErrors } = parseProfileNumbers(numbers, BODY_FIELDS, BODY_FIELDS);
     const all: FieldErrors<Field> = { ...nextErrors };
-    if (!gender) all.gender = "Chọn giới tính";
+    if (!gender) all.gender = t("Chọn giới tính");
     setErrors(all);
     if (Object.keys(all).length === 0) setStep(1);
   }
@@ -84,16 +91,16 @@ export default function OnboardingScreen() {
         : ["goalWeight", "goalRate", "trainingDaysPerWeek"];
     const parsed = parseProfileNumbers(numbers, [...BODY_FIELDS, ...goalFields], BODY_FIELDS);
     const all: FieldErrors<Field> = { ...parsed.errors };
-    if (!goalType) all.goalType = "Chọn mục tiêu";
-    if (!activityLevel) all.activityLevel = "Chọn mức vận động";
+    if (!goalType) all.goalType = t("Chọn mục tiêu");
+    if (!activityLevel) all.activityLevel = t("Chọn mức vận động");
     // Cùng quy tắc với server (profile.service): cân mục tiêu phải đúng chiều với mục tiêu
     const { goalWeight, currentWeight } = parsed.input;
     if (goalWeight != null && currentWeight != null) {
       if (goalType === "WEIGHT_LOSS" && goalWeight >= currentWeight) {
-        all.goalWeight = "Giảm cân thì cân mục tiêu phải nhỏ hơn cân hiện tại";
+        all.goalWeight = t("Giảm cân thì cân mục tiêu phải nhỏ hơn cân hiện tại");
       }
       if (goalType === "MUSCLE_GAIN" && goalWeight <= currentWeight) {
-        all.goalWeight = "Tăng cơ thì cân mục tiêu phải lớn hơn cân hiện tại";
+        all.goalWeight = t("Tăng cơ thì cân mục tiêu phải lớn hơn cân hiện tại");
       }
     }
     setErrors(all);
@@ -132,21 +139,22 @@ export default function OnboardingScreen() {
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <LanguagePicker />
           <View style={styles.header}>
-            <Text style={styles.kicker}>Bước {step + 1}/4 · {STEPS[step]}</Text>
+            <Text style={styles.kicker}>{t("Bước {value1}/4 · {value2}", { value1: step + 1, value2: t(STEPS[step]) })}</Text>
             <Text style={styles.title}>
               {step === 0
-                ? `Chào ${user?.name ?? "bạn"} 👋`
+                ? t("Chào {value1} 👋", { value1: user?.name ?? t("bạn") })
                 : step === 1
-                  ? "Mục tiêu của bạn"
-                  : step === 3 ? "Chọn lịch tập tuần" : "Mục tiêu mỗi ngày"}
+                  ? t("Mục tiêu của bạn")
+                  : step === 3 ? t("Chọn hình thức vận động") : t("Mục tiêu mỗi ngày")}
             </Text>
             <Text style={styles.subtitle}>
               {step === 0
-                ? "Cho FitTrack biết chỉ số cơ thể để tính lượng calo và protein phù hợp với bạn."
+                ? t("Cho FitTrack biết chỉ số cơ thể để tính lượng calo và protein phù hợp với bạn.")
                 : step === 1
-                  ? "Chọn mục tiêu và mức vận động, FitTrack sẽ tự tính phần còn lại."
-                  : "FitTrack đã tính sẵn cho bạn. Bạn có thể đổi bất cứ lúc nào ở tab Cá nhân."}
+                  ? t("Chọn mục tiêu và mức vận động, FitTrack sẽ tự tính phần còn lại.")
+                  : t("FitTrack đã tính sẵn cho bạn. Bạn có thể đổi bất cứ lúc nào ở tab Cá nhân.")}
             </Text>
             <View style={styles.progress}>
               {STEPS.map((label, i) => (
@@ -158,8 +166,8 @@ export default function OnboardingScreen() {
           <ErrorBanner message={formError} />
 
           {step === 0 ? (
-            <Card title="Chỉ số cơ thể" icon="body">
-              <ChipGroup label="Giới tính" options={GENDER_OPTIONS} value={gender} onChange={setGender} />
+            <Card title={t("Chỉ số cơ thể")} icon="body">
+              <ChipGroup label={t("Giới tính")} options={GENDER_OPTIONS} value={gender} onChange={setGender} />
               {errors.gender ? <Text style={styles.error}>{errors.gender}</Text> : null}
               {BODY_FIELDS.map((key) => (
                 <TextField
@@ -172,16 +180,16 @@ export default function OnboardingScreen() {
                   keyboardType={NUMBER_FIELDS[key].integer ? "number-pad" : "decimal-pad"}
                 />
               ))}
-              <Button title="Tiếp tục" onPress={nextFromBody} />
+              <Button title={t("Tiếp tục")} onPress={nextFromBody} />
             </Card>
           ) : null}
 
           {step === 1 ? (
-            <Card title="Mục tiêu" icon="flag">
-              <ChipGroup label="Bạn muốn" options={GOAL_OPTIONS} value={goalType} onChange={setGoalType} />
+            <Card title={t("Mục tiêu")} icon="flag">
+              <ChipGroup label={t("Bạn muốn")} options={GOAL_OPTIONS} value={goalType} onChange={setGoalType} />
               {errors.goalType ? <Text style={styles.error}>{errors.goalType}</Text> : null}
               <ChipGroup
-                label="Mức độ vận động"
+                label={t("Mức độ vận động")}
                 options={ACTIVITY_OPTIONS}
                 value={activityLevel}
                 onChange={setActivityLevel}
@@ -193,7 +201,7 @@ export default function OnboardingScreen() {
               ).map((key) => (
                 <TextField
                   key={key}
-                  label={`${NUMBER_FIELDS[key].label}${key === "goalRate" ? "" : " (không bắt buộc)"}`}
+                  label={`${NUMBER_FIELDS[key].label}${key === "goalRate" ? "" : t(" (không bắt buộc)")}`}
                   suffix={NUMBER_FIELDS[key].suffix}
                   value={numbers[key]}
                   onChangeText={setNumber(key)}
@@ -202,8 +210,8 @@ export default function OnboardingScreen() {
                 />
               ))}
               <View style={styles.row}>
-                <Button title="Quay lại" variant="secondary" onPress={() => setStep(0)} style={styles.flex} />
-                <Button title="Tính cho tôi" onPress={saveGoal} loading={busy} style={styles.flex} />
+                <BackButton onPress={() => setStep(0)} />
+                <Button title={t("Tính cho tôi")} onPress={saveGoal} loading={busy} style={styles.flex} />
               </View>
             </Card>
           ) : null}
@@ -211,30 +219,32 @@ export default function OnboardingScreen() {
           {step === 2 && suggestion ? (
             <>
               <GradientView style={styles.result}>
-                <Text style={styles.resultLabel}>Calo mỗi ngày</Text>
-                <Text style={styles.resultValue}>{suggestion.calories.toLocaleString("vi-VN")} kcal</Text>
+                <Text style={styles.resultLabel}>{t("Calo mỗi ngày")}</Text>
+                <Text style={styles.resultValue}>{suggestion.calories.toLocaleString(localeTag())} kcal</Text>
                 <View style={styles.macros}>
                   <MacroPill label="Protein" value={suggestion.protein} />
                   <MacroPill label="Carbs" value={suggestion.carbs} />
                   <MacroPill label="Fat" value={suggestion.fat} />
                 </View>
               </GradientView>
-              <Text style={styles.subtitle}>
-                Tính theo công thức Mifflin-St Jeor từ chiều cao, cân nặng, tuổi và mức vận động,
-                {goalType === "WEIGHT_LOSS"
-                  ? " trừ bớt calo để giảm cân"
+              <Text style={styles.subtitle}>{t("Tính theo công thức Mifflin-St Jeor từ chiều cao, cân nặng, tuổi và mức vận động, {value1} {value2}. Protein tính theo cân nặng.", { value1: goalType === "WEIGHT_LOSS"
+                  ? t(" trừ bớt calo để giảm cân")
                   : goalType === "MUSCLE_GAIN"
-                    ? " cộng thêm calo để tăng cơ"
-                    : " giữ nguyên để duy trì cân nặng"}
-                {numbers.goalRate.trim() ? " theo tốc độ bạn chọn" : ""}. Protein tính theo cân nặng.
-              </Text>
-              <Button title="Tiếp tục chọn lịch tuần" onPress={finish} loading={busy} />
-              <Button title="Sửa mục tiêu" variant="secondary" onPress={() => setStep(1)} />
+                    ? t(" cộng thêm calo để tăng cơ")
+                    : t(" giữ nguyên để duy trì cân nặng"), value2: numbers.goalRate.trim() ? t(" theo tốc độ bạn chọn") : "" })}</Text>
+              <Button title={t("Tiếp tục chọn hình thức vận động")} onPress={finish} loading={busy} />
+              <Button title={t("Sửa mục tiêu")} variant="secondary" onPress={() => setStep(1)} />
             </>
           ) : null}
 
-          {step === 3 ? <ScheduleSelection setup onApplied={() => setOnboardingActive(false)} /> : null}
-          <Button title="Đăng xuất" variant="secondary" onPress={logout} style={styles.logout} />
+          {step === 3 ? <>
+            <Card title={t("Chọn hình thức vận động")}>
+              <Button title={t("Gym")} variant="secondary" loading={busy} onPress={async () => { setBusy(true); setFormError(null); try { await updateProfile({ trainingMode: "GYM" }); } catch (e) { setFormError(errorMessage(e)); } finally { setBusy(false); } }} />
+              <Button title={t("Yoga / Đi bộ")} loading={busy} onPress={async () => { setBusy(true); setFormError(null); try { await updateProfile({ trainingMode: "OTHER" }); setOnboardingActive(false); router.replace("/plan/survey"); } catch (e) { setFormError(errorMessage(e)); } finally { setBusy(false); } }} />
+            </Card>
+            {profile?.trainingMode !== "OTHER" ? <ScheduleSelection setup onApplied={() => setOnboardingActive(false)} /> : null}
+          </> : null}
+          <Button title={t("Đăng xuất")} variant="secondary" onPress={logout} style={styles.logout} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -242,6 +252,9 @@ export default function OnboardingScreen() {
 }
 
 function MacroPill({ label, value }: { label: string; value: number }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <View style={styles.pill}>
       <Text style={styles.pillValue}>{value} g</Text>

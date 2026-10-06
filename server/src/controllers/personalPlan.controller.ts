@@ -1,0 +1,15 @@
+import type { RequestHandler } from 'express';
+import * as service from '../services/personalPlan.service';
+import { objectIdSchema, dateSchema } from '../schemas/personalPlan.schema';
+const id = (value: unknown) => objectIdSchema.parse(value);
+export const survey: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.getSurvey(req.user!.id) }); };
+export const saveSurvey: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.saveSurvey(req.user!.id, req.body) }); };
+export const createDraft: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.createDraft(req.user!.id, req.body) }); };
+export const draft: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.getDraft(req.user!.id, id(req.params.id)) }); };
+export const editDraft: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.editDraft(req.user!.id, id(req.params.id), req.body) }); };
+export const apply: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.applyDraft(req.user!.id, id(req.params.id), req.body) }); };
+export const current: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.getCurrent(req.user!.id, req.query.date === undefined ? undefined : dateSchema.parse(req.query.date)) }); };
+export const history: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.getHistory(req.user!.id) }); };
+export const historyPlan: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.getHistoryPlan(req.user!.id, id(req.params.id)) }); };
+export const logActivity: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.logActivity(req.user!.id, id(req.params.id), id(req.params.activityId), req.body) }); };
+export const logItem: RequestHandler = async (req, res) => { res.json({ success: true, data: await service.logItem(req.user!.id, id(req.params.id), id(req.params.itemId), req.body) }); };

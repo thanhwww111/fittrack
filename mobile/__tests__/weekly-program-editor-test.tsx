@@ -38,6 +38,8 @@ it("always offers three suggested sessions even without saved templates, creatin
   expect(screen.getAllByRole("radio", { name: "Ngực vai tay sau" })).toHaveLength(7);
   expect(screen.getAllByRole("radio", { name: "Lưng xô tay trước" })).toHaveLength(7);
   expect(screen.getAllByRole("radio", { name: "Chân bụng" })).toHaveLength(7);
+  expect(screen.getAllByRole("radio", { name: "Upper (thân trên)" })).toHaveLength(7);
+  expect(screen.getAllByRole("radio", { name: "Lower (thân dưới)" })).toHaveLength(7);
   expect(templateApi.applySuggestion).not.toHaveBeenCalled();
   await fireEvent.changeText(screen.getByLabelText("Tên lịch"), "Tuần mới");
   await fireEvent.press(screen.getAllByRole("radio", { name: "Lưng xô tay trước" })[0]);

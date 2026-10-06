@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { Text, View } from "react-native";
 import { Card } from "@/components/ui/Card";
 import { ChipGroup } from "@/components/ui/ChipGroup";
@@ -29,12 +30,15 @@ export function QuantityForm({
   onMealTypeChange,
   preview,
 }: QuantityFormProps) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const { meals, error } = useMeals();
   return (
     <Card>
-      <Text style={styles.previewLabel}>Số lượng ({UNIT_LABELS[unit]})</Text>
+      <Text style={styles.previewLabel}>{t("Số lượng ({value1})", { value1: UNIT_LABELS[unit] })}</Text>
       <NumberStepper
-        label="Số lượng thực phẩm"
+        label={t("Số lượng thực phẩm")}
         value={quantity}
         onChangeText={onQuantityChange}
         error={!!quantityError}
@@ -45,13 +49,13 @@ export function QuantityForm({
       />
       {quantityError ? <Text style={styles.error}>{quantityError}</Text> : null}
       <ErrorBanner message={error} />
-      <ChipGroup label="Bữa" options={meals.map((meal) => ({ value: meal.id, label: meal.name }))} value={mealType} onChange={onMealTypeChange} />
+      <ChipGroup label={t("Bữa")} options={meals.map((meal) => ({ value: meal.id, label: meal.name }))} value={mealType} onChange={onMealTypeChange} />
       <View style={styles.preview}>
-        <Text style={styles.previewLabel}>Dinh dưỡng</Text>
+        <Text style={styles.previewLabel}>{t("Dinh dưỡng")}</Text>
         {preview ? (
           <MacroChips values={preview} size="lg" />
         ) : (
-          <Text style={styles.muted}>Nhập khối lượng để xem dinh dưỡng</Text>
+          <Text style={styles.muted}>{t("Nhập khối lượng để xem dinh dưỡng")}</Text>
         )}
       </View>
     </Card>

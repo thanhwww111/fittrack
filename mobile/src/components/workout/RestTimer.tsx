@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, Vibration, View } from "react-native";
 import { colors, radius, spacing, themedStyles } from "@/constants/theme";
@@ -11,6 +12,9 @@ interface RestTimerProps {
 
 // Đếm ngược thời gian nghỉ giữa các set, rung máy khi hết giờ
 export function RestTimer({ endsAt, onAdjust, onDismiss }: RestTimerProps) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [now, setNow] = useState(() => Date.now());
   const vibrated = useRef(false);
 
@@ -32,18 +36,21 @@ export function RestTimer({ endsAt, onAdjust, onDismiss }: RestTimerProps) {
 
   return (
     <View style={[styles.bar, done && styles.barDone]} accessibilityLiveRegion="polite">
-      <Text style={styles.label}>{done ? "Hết giờ nghỉ!" : "Nghỉ"}</Text>
+      <Text style={styles.label}>{done ? t("Hết giờ nghỉ!") : t("Nghỉ")}</Text>
       <Text style={styles.time}>{formatClock(remaining)}</Text>
       <View style={styles.actions}>
         <SmallButton label="−15s" onPress={() => onAdjust(-15)} />
         <SmallButton label="+15s" onPress={() => onAdjust(15)} />
-        <SmallButton label={done ? "Đóng" : "Bỏ qua"} onPress={onDismiss} />
+        <SmallButton label={done ? t("Đóng") : t("Bỏ qua")} onPress={onDismiss} />
       </View>
     </View>
   );
 }
 
 function SmallButton({ label, onPress }: { label: string; onPress: () => void }) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.button} hitSlop={4}>
       <Text style={styles.buttonText}>{label}</Text>

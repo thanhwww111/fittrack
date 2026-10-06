@@ -22,6 +22,7 @@ export interface User {
 }
 
 export interface UserProfile {
+  trainingMode?: "GYM" | "OTHER";
   id: string;
   userId: string;
   gender: Gender | null;
@@ -279,7 +280,7 @@ export interface TemplateExercise {
 export interface WorkoutTemplate {
   id: string;
   name: string;
-  suggestedKey?: "push" | "pull" | "legs";
+  suggestedKey?: "push" | "pull" | "legs" | "upper" | "lower";
   exercises: TemplateExercise[];
   updatedAt: string;
 }
@@ -347,6 +348,7 @@ export interface BodyMeasurement {
   id: string;
   date: string;
   weight: number;
+  height?: number | null;
   bodyFat: number | null;
   chest: number | null;
   waist: number | null;

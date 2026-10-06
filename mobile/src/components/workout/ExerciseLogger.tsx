@@ -1,3 +1,4 @@
+import { translate as t, useTranslation } from "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
@@ -8,6 +9,8 @@ import { colors, radius, spacing, themedStyles } from "@/constants/theme";
 import { errorMessage, parseNumber } from "@/lib/formErrors";
 import { formatWeight } from "@/lib/workout";
 import type { SessionExercise, WorkoutSet } from "@/types/models";
+import { ExerciseNote } from "./ExerciseNote";
+import { ExerciseGuideButton } from "./ExerciseGuideButton";
 
 interface ExerciseLoggerProps {
   exercise: SessionExercise;
@@ -25,6 +28,9 @@ function suggestion(exercise: SessionExercise) {
 }
 
 export function ExerciseLogger({ exercise, onRecord, onRemoveSet }: ExerciseLoggerProps) {
+  "use no memo"; // Locale-aware legacy formatters/getters read the external language store.
+
+  useTranslation();
   const [weight, setWeight] = useState(() => suggestion(exercise).weight);
   const [reps, setReps] = useState(() => suggestion(exercise).reps);
   const [editing, setEditing] = useState<WorkoutSet | null>(null);
@@ -33,7 +39,7 @@ export function ExerciseLogger({ exercise, onRecord, onRemoveSet }: ExerciseLogg
 
   const target =
     exercise.targetSets && exercise.targetReps
-      ? `Mục tiêu ${exercise.targetSets} × ${exercise.targetReps}`
+      ? t("Mục tiêu {value1} × {value2}", { value1: exercise.targetSets, value2: exercise.targetReps })
       : null;
 
   function startEdit(set: WorkoutSet) {
@@ -54,11 +60,11 @@ export function ExerciseLogger({ exercise, onRecord, onRemoveSet }: ExerciseLogg
     const w = parseNumber(weight) ?? 0; // để trống = bodyweight (0 kg)
     const r = parseNumber(reps);
     if (Number.isNaN(w) || w < 0 || w > 1000) {
-      setError("Mức tạ từ 0 đến 1000 kg");
+      setError(t("Mức tạ từ 0 đến 1000 kg"));
       return;
     }
     if (r === null || !Number.isInteger(r) || r < 1 || r > 1000) {
-      setError("Số rep phải là số nguyên từ 1");
+      setError(t("Số rep phải là số nguyên từ 1"));
       return;
     }
 
@@ -81,6 +87,8 @@ export function ExerciseLogger({ exercise, onRecord, onRemoveSet }: ExerciseLogg
         <Text style={styles.name}>{exercise.exerciseName}</Text>
         {target ? <Text style={styles.target}>{target}</Text> : null}
       </View>
+      <ExerciseNote name={exercise.exerciseName} />
+      <ExerciseGuideButton name={exercise.exerciseName} />
 
       {exercise.sets.map((set) => {
         const isEditing = editing?.setNumber === set.setNumber;
@@ -88,19 +96,17 @@ export function ExerciseLogger({ exercise, onRecord, onRemoveSet }: ExerciseLogg
           <View key={set.setNumber} style={[styles.setRow, isEditing && styles.setRowEditing]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Sửa set ${set.setNumber}`}
+              accessibilityLabel={t("Sửa set {value1}", { value1: set.setNumber })}
               onPress={() => startEdit(set)}
               style={styles.setMain}
             >
               <Text style={styles.setNumber}>{set.setNumber}</Text>
-              <Text style={styles.setValue}>
-                {set.weight > 0 ? formatWeight(set.weight) : "Bodyweight"} × {set.reps}
-              </Text>
+              <Text style={styles.setValue}>{t("{value1} × {value2}", { value1: set.weight > 0 ? formatWeight(set.weight) : "Bodyweight", value2: set.reps })}</Text>
               <Ionicons name="checkmark-circle" size={20} color={colors.success} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Xoá set ${set.setNumber}`}
+              accessibilityLabel={t("Xoá set {value1}", { value1: set.setNumber })}
               hitSlop={8}
               onPress={() => {
                 if (isEditing) cancelEdit();
@@ -123,17 +129,17 @@ export function ExerciseLogger({ exercise, onRecord, onRemoveSet }: ExerciseLogg
             placeholder="0"
             placeholderTextColor={colors.textMuted}
             selectTextOnFocus
-            accessibilityLabel={`Mức tạ ${exercise.exerciseName}`}
+            accessibilityLabel={t("Mức tạ {value1}", { value1: exercise.exerciseName })}
             style={styles.input}
           />
         </View>
-        <Text style={styles.times}>×</Text>
+        <Text style={styles.times}>{t("×")}</Text>
         <View style={styles.repGroup}>
           <Text style={styles.inputLabel}>rep</Text>
           <NumberStepper
             value={reps}
             onChangeText={setReps}
-            label={`Số rep ${exercise.exerciseName}`}
+            label={t("Số rep {value1}", { value1: exercise.exerciseName })}
             min={1}
             max={1000}
             disabled={saving}
@@ -141,14 +147,14 @@ export function ExerciseLogger({ exercise, onRecord, onRemoveSet }: ExerciseLogg
         </View>
       </View>
       <Button
-        title={editing ? `Lưu set ${editing.setNumber}` : `Ghi set ${exercise.sets.length + 1}`}
+        title={editing ? t("Lưu set {value1}", { value1: editing.setNumber }) : `Ghi set ${exercise.sets.length + 1}`}
         onPress={submit}
         loading={saving}
         style={styles.recordButton}
       />
       {editing ? (
         <Pressable onPress={cancelEdit} accessibilityRole="button">
-          <Text style={styles.cancelEdit}>Huỷ sửa</Text>
+          <Text style={styles.cancelEdit}>{t("Huỷ sửa")}</Text>
         </Pressable>
       ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
